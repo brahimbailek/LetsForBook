@@ -20,7 +20,11 @@ export interface Context {
 
 // Create context function
 // This will be called for each request
-export async function createContext(opts?: { session?: Session | null }): Promise<Context> {
+export async function createContext(opts?: {
+  session?: Session | null;
+  req?: Request;
+  res?: Response;
+}): Promise<Context> {
   return {
     session: opts?.session ?? null,
     prisma,
@@ -28,5 +32,7 @@ export async function createContext(opts?: { session?: Session | null }): Promis
 }
 
 export type CreateContextOptions = {
-  session: Session | null;
+  session?: Session | null;
+  req?: Request;
+  res?: Response;
 };

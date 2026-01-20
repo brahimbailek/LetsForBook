@@ -1,0 +1,40 @@
+{
+  "name": "@planity/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@planity/api": "workspace:*",
+    "@planity/database": "workspace:*",
+    "@planity/validation": "workspace:*",
+    "@planity/types": "workspace:*",
+    "@planity/utils": "workspace:*",
+    "@planity/constants": "workspace:*",
+    "@trpc/client": "^10.45.0",
+    "@trpc/server": "^10.45.0",
+    "@trpc/react-query": "^10.45.0",
+    "@tanstack/react-query": "^5.17.19",
+    "next": "15.0.3",
+    "next-auth": "^5.0.0-beta.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "superjson": "^2.2.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@planity/config": "workspace:*",
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.46",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3"
+  }
+}
