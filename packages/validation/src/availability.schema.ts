@@ -37,6 +37,16 @@ export const updateProfessionalAvailabilitySchema = z.object({
   isAvailable: z.boolean().optional(),
 });
 
+// Update availability (simpler version without ID)
+export const updateAvailabilitySchema = z.object({
+  dayOfWeek: dayOfWeekEnum,
+  startTime: timeFormat.optional(),
+  endTime: timeFormat.optional(),
+  breakStartTime: timeFormat.optional(),
+  breakEndTime: timeFormat.optional(),
+  isAvailable: z.boolean().optional(),
+});
+
 // Create availability exception schema
 export const createAvailabilityExceptionSchema = z.object({
   professionalId: z.string().cuid('Invalid professional ID'),
@@ -73,6 +83,7 @@ export type CreateProfessionalAvailabilityInput = z.infer<
 export type UpdateProfessionalAvailabilityInput = z.infer<
   typeof updateProfessionalAvailabilitySchema
 >;
+export type UpdateAvailabilityInput = z.infer<typeof updateAvailabilitySchema>;
 export type CreateAvailabilityExceptionInput = z.infer<
   typeof createAvailabilityExceptionSchema
 >;

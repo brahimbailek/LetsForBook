@@ -44,9 +44,25 @@ export const updateProfileSchema = z.object({
   avatar: z.string().url('Invalid avatar URL').optional(),
 });
 
+// Create client profile schema
+export const createClientProfileSchema = z.object({
+  preferredLanguage: z.string().optional(),
+  marketingOptIn: z.boolean().optional(),
+});
+
+// Create professional profile schema
+export const createProfessionalProfileSchema = z.object({
+  salonId: z.string().cuid('Invalid salon ID'),
+  bio: z.string().max(1000).optional(),
+  specialties: z.array(z.string()).optional(),
+  yearsExperience: z.number().int().min(0).max(50).optional(),
+});
+
 // Type exports
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ResetPasswordRequestInput = z.infer<typeof resetPasswordRequestSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type CreateClientProfileInput = z.infer<typeof createClientProfileSchema>;
+export type CreateProfessionalProfileInput = z.infer<typeof createProfessionalProfileSchema>;
