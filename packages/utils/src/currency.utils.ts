@@ -35,8 +35,7 @@ export function calculatePercentage(amount: number, percentage: number): number 
  * Format currency without symbol
  */
 export function formatPriceWithoutSymbol(
-  amountInCents: number,
-  currency: string = 'EUR'
+  amountInCents: number
 ): string {
   const amount = amountInCents / 100;
 
