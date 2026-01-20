@@ -1,0 +1,32 @@
+import type { PrismaClient } from '@planity/database';
+import { prisma } from '@planity/database';
+
+// Session type (will be provided by NextAuth)
+export interface Session {
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    name?: string;
+  };
+  expires: string;
+}
+
+// Context interface
+export interface Context {
+  session: Session | null;
+  prisma: PrismaClient;
+}
+
+// Create context function
+// This will be called for each request
+export async function createContext(opts?: { session?: Session | null }): Promise<Context> {
+  return {
+    session: opts?.session ?? null,
+    prisma,
+  };
+}
+
+export type CreateContextOptions = {
+  session: Session | null;
+};
