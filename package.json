@@ -50,5 +50,8 @@
     "*.{md,json}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "date-fns-tz": "^3.0.0"
   }
 }
