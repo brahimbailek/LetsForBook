@@ -28,6 +28,8 @@
     "db:migrate": "turbo run db:migrate",
     "db:studio": "turbo run db:studio",
     "db:seed": "turbo run db:seed",
+    "db:migrate:deploy": "cd packages/database && pnpm prisma migrate deploy",
+    "postinstall": "pnpm db:generate",
     "clean": "turbo run clean && rm -rf node_modules",
     "prepare": "husky install"
   },

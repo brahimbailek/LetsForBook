@@ -20,11 +20,11 @@
   },
   "dependencies": {
     "@prisma/client": "^5.9.1",
-    "@prisma/extension-accelerate": "^1.0.0"
+    "@prisma/extension-accelerate": "^1.0.0",
+    "prisma": "^5.9.1"
   },
   "devDependencies": {
     "@planity/config": "workspace:*",
-    "prisma": "^5.9.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }
