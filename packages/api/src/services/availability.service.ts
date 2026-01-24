@@ -6,7 +6,7 @@ import {
   endOfDay,
   getDay,
 } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz';
+import { toZonedTime } from 'date-fns-tz';
 import type { TimeSlot } from '@planity/types';
 import { doTimeSlotsOverlap } from '@planity/utils';
 
@@ -46,7 +46,7 @@ export class AvailabilityService {
     }
 
     const timezone = professional.salon.timezone;
-    const zonedDate = utcToZonedTime(date, timezone);
+    const zonedDate = toZonedTime(date, timezone);
 
     // 2. Calculate total service duration
     const services = await prisma.service.findMany({

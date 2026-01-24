@@ -7,7 +7,7 @@ import {
   endOfDay,
   differenceInMinutes,
 } from 'date-fns';
-import { formatInTimeZone, utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
+import { formatInTimeZone, toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 /**
  * Format date to HH:mm string
@@ -84,18 +84,18 @@ export function formatDisplayTime(date: Date, timezone: string): string {
  * Get start of day in timezone
  */
 export function getStartOfDay(date: Date, timezone: string): Date {
-  const zonedDate = utcToZonedTime(date, timezone);
+  const zonedDate = toZonedTime(date, timezone);
   const startOfDayZoned = startOfDay(zonedDate);
-  return zonedTimeToUtc(startOfDayZoned, timezone);
+  return fromZonedTime(startOfDayZoned, timezone);
 }
 
 /**
  * Get end of day in timezone
  */
 export function getEndOfDay(date: Date, timezone: string): Date {
-  const zonedDate = utcToZonedTime(date, timezone);
+  const zonedDate = toZonedTime(date, timezone);
   const endOfDayZoned = endOfDay(zonedDate);
-  return zonedTimeToUtc(endOfDayZoned, timezone);
+  return fromZonedTime(endOfDayZoned, timezone);
 }
 
 /**
@@ -116,12 +116,12 @@ export function isInPast(date: Date): boolean {
  * Convert timezone date to UTC
  */
 export function toUTC(date: Date, timezone: string): Date {
-  return zonedTimeToUtc(date, timezone);
+  return fromZonedTime(date, timezone);
 }
 
 /**
  * Convert UTC date to timezone
  */
 export function fromUTC(date: Date, timezone: string): Date {
-  return utcToZonedTime(date, timezone);
+  return toZonedTime(date, timezone);
 }

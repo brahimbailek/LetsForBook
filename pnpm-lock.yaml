@@ -199,13 +199,13 @@ importers:
       '@prisma/extension-accelerate':
         specifier: ^1.0.0
         version: 1.3.0(@prisma/client@5.22.0(prisma@5.22.0))
+      prisma:
+        specifier: ^5.9.1
+        version: 5.22.0
     devDependencies:
       '@planity/config':
         specifier: workspace:*
         version: link:../config
-      prisma:
-        specifier: ^5.9.1
-        version: 5.22.0
       tsx:
         specifier: ^4.7.0
         version: 4.21.0

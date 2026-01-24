@@ -44,6 +44,9 @@ async function main() {
           },
         },
       },
+      include: {
+        clientProfile: true,
+      },
     }),
     prisma.user.create({
       data: {
@@ -61,6 +64,9 @@ async function main() {
           },
         },
       },
+      include: {
+        clientProfile: true,
+      },
     }),
     prisma.user.create({
       data: {
@@ -77,6 +83,9 @@ async function main() {
             marketingOptIn: true,
           },
         },
+      },
+      include: {
+        clientProfile: true,
       },
     }),
   ]);
@@ -140,15 +149,10 @@ async function main() {
         logo: 'https://placehold.co/400x400/9333ea/ffffff?text=BE',
         coverImage: 'https://placehold.co/1200x400/9333ea/ffffff?text=Beauté+Éternelle',
         ownerId: salonOwners[0].id,
-        acceptsOnlineBooking: true,
-        requiresDeposit: true,
-        depositAmount: 20,
-        cancellationPolicy: 'Annulation gratuite jusqu\'à 24h avant le rendez-vous. Au-delà, l\'acompte est conservé.',
-        settings: {
-          bookingLeadTime: 60,
-          bufferTime: 15,
-          maxAdvanceBooking: 60,
-        },
+        depositRequired: true,
+        depositPercentage: 20,
+        cancellationPolicyHours: 24,
+        bookingBufferMinutes: 15,
       },
     }),
     prisma.salon.create({
@@ -167,14 +171,9 @@ async function main() {
         logo: 'https://placehold.co/400x400/ec4899/ffffff?text=EC',
         coverImage: 'https://placehold.co/1200x400/ec4899/ffffff?text=Élégance+Coiffure',
         ownerId: salonOwners[1].id,
-        acceptsOnlineBooking: true,
-        requiresDeposit: false,
-        cancellationPolicy: 'Annulation gratuite jusqu\'à 12h avant le rendez-vous.',
-        settings: {
-          bookingLeadTime: 30,
-          bufferTime: 10,
-          maxAdvanceBooking: 45,
-        },
+        depositRequired: false,
+        cancellationPolicyHours: 12,
+        bookingBufferMinutes: 10,
       },
     }),
     prisma.salon.create({
@@ -193,15 +192,10 @@ async function main() {
         logo: 'https://placehold.co/400x400/10b981/ffffff?text=ZS',
         coverImage: 'https://placehold.co/1200x400/10b981/ffffff?text=Zénitude+Spa',
         ownerId: salonOwners[2].id,
-        acceptsOnlineBooking: true,
-        requiresDeposit: true,
-        depositAmount: 30,
-        cancellationPolicy: 'Annulation gratuite jusqu\'à 48h avant le rendez-vous pour les forfaits spa.',
-        settings: {
-          bookingLeadTime: 120,
-          bufferTime: 20,
-          maxAdvanceBooking: 90,
-        },
+        depositRequired: true,
+        depositPercentage: 30,
+        cancellationPolicyHours: 48,
+        bookingBufferMinutes: 20,
       },
     }),
     prisma.salon.create({
@@ -219,14 +213,9 @@ async function main() {
         logo: 'https://placehold.co/400x400/f59e0b/ffffff?text=AS',
         coverImage: 'https://placehold.co/1200x400/f59e0b/ffffff?text=L\'Atelier+du+Sourcil',
         ownerId: salonOwners[0].id,
-        acceptsOnlineBooking: true,
-        requiresDeposit: false,
-        cancellationPolicy: 'Annulation gratuite jusqu\'à 6h avant le rendez-vous.',
-        settings: {
-          bookingLeadTime: 15,
-          bufferTime: 5,
-          maxAdvanceBooking: 30,
-        },
+        depositRequired: false,
+        cancellationPolicyHours: 6,
+        bookingBufferMinutes: 5,
       },
     }),
     prisma.salon.create({
@@ -244,14 +233,9 @@ async function main() {
         logo: 'https://placehold.co/400x400/ef4444/ffffff?text=NP',
         coverImage: 'https://placehold.co/1200x400/ef4444/ffffff?text=Nail+Art+Paradise',
         ownerId: salonOwners[1].id,
-        acceptsOnlineBooking: true,
-        requiresDeposit: false,
-        cancellationPolicy: 'Annulation gratuite jusqu\'à 24h avant.',
-        settings: {
-          bookingLeadTime: 30,
-          bufferTime: 10,
-          maxAdvanceBooking: 30,
-        },
+        depositRequired: false,
+        cancellationPolicyHours: 24,
+        bookingBufferMinutes: 10,
       },
     }),
     prisma.salon.create({
@@ -270,14 +254,9 @@ async function main() {
         logo: 'https://placehold.co/400x400/1f2937/ffffff?text=BC',
         coverImage: 'https://placehold.co/1200x400/1f2937/ffffff?text=Barber\'s+Club',
         ownerId: salonOwners[2].id,
-        acceptsOnlineBooking: true,
-        requiresDeposit: false,
-        cancellationPolicy: 'Annulation gratuite jusqu\'à 2h avant.',
-        settings: {
-          bookingLeadTime: 30,
-          bufferTime: 5,
-          maxAdvanceBooking: 21,
-        },
+        depositRequired: false,
+        cancellationPolicyHours: 2,
+        bookingBufferMinutes: 5,
       },
     }),
   ]);
@@ -302,9 +281,12 @@ async function main() {
             salonId: salons[0].id,
             bio: 'Coiffeuse passionnée depuis 10 ans. Spécialisée en coupes femmes et colorations.',
             specialties: ['Coupe femme', 'Coloration', 'Balayage'],
-            yearsExperience: 10,
+            experience: 10,
           },
         },
+      },
+      include: {
+        professionalProfile: true,
       },
     }),
     prisma.user.create({
@@ -322,9 +304,12 @@ async function main() {
             salonId: salons[0].id,
             bio: 'Expert en soins du visage et massages relaxants. Formation en aromathérapie.',
             specialties: ['Soin visage', 'Massage', 'Aromathérapie'],
-            yearsExperience: 7,
+            experience: 7,
           },
         },
+      },
+      include: {
+        professionalProfile: true,
       },
     }),
     // Élégance Coiffure
@@ -343,9 +328,12 @@ async function main() {
             salonId: salons[1].id,
             bio: 'Styliste visagiste, passionnée par les coupes tendances et les colorations végétales.',
             specialties: ['Coupe', 'Coloration végétale', 'Visagisme'],
-            yearsExperience: 12,
+            experience: 12,
           },
         },
+      },
+      include: {
+        professionalProfile: true,
       },
     }),
     prisma.user.create({
@@ -363,9 +351,12 @@ async function main() {
             salonId: salons[1].id,
             bio: 'Coiffeur barbier spécialisé en coupes homme et taille de barbe.',
             specialties: ['Coupe homme', 'Barbe', 'Rasage'],
-            yearsExperience: 8,
+            experience: 8,
           },
         },
+      },
+      include: {
+        professionalProfile: true,
       },
     }),
     // Zénitude Spa
@@ -384,9 +375,12 @@ async function main() {
             salonId: salons[2].id,
             bio: 'Masseuse certifiée, spécialisée en massages suédois, deep tissue et pierres chaudes.',
             specialties: ['Massage suédois', 'Deep tissue', 'Pierres chaudes'],
-            yearsExperience: 15,
+            experience: 15,
           },
         },
+      },
+      include: {
+        professionalProfile: true,
       },
     }),
   ]);
@@ -403,7 +397,7 @@ async function main() {
         description: 'Coupe femme avec shampoing et brushing inclus',
         category: 'Coiffure',
         price: 45,
-        duration: 60,
+        durationMinutes: 60,
         active: true,
       },
     }),
@@ -414,7 +408,7 @@ async function main() {
         description: 'Coloration sur l\'ensemble de la chevelure',
         category: 'Coiffure',
         price: 85,
-        duration: 120,
+        durationMinutes: 120,
         active: true,
       },
     }),
@@ -425,7 +419,7 @@ async function main() {
         description: 'Technique de coloration naturelle pour un effet soleil',
         category: 'Coiffure',
         price: 95,
-        duration: 150,
+        durationMinutes: 150,
         active: true,
       },
     }),
@@ -436,7 +430,7 @@ async function main() {
         description: 'Soin des mains et pose de vernis classique',
         category: 'Manucure',
         price: 25,
-        duration: 45,
+        durationMinutes: 45,
         active: true,
       },
     }),
@@ -447,7 +441,7 @@ async function main() {
         description: 'Soin complet du visage avec nettoyage, gommage et masque hydratant',
         category: 'Soin visage',
         price: 65,
-        duration: 75,
+        durationMinutes: 75,
         active: true,
       },
     }),
@@ -459,7 +453,7 @@ async function main() {
         description: 'Coupe homme avec lavage et styling',
         category: 'Coiffure',
         price: 28,
-        duration: 45,
+        durationMinutes: 45,
         active: true,
       },
     }),
@@ -470,7 +464,7 @@ async function main() {
         description: 'Coupe homme et taille de barbe',
         category: 'Coiffure',
         price: 38,
-        duration: 60,
+        durationMinutes: 60,
         active: true,
       },
     }),
@@ -481,7 +475,7 @@ async function main() {
         description: 'Brushing professionnel',
         category: 'Coiffure',
         price: 25,
-        duration: 30,
+        durationMinutes: 30,
         active: true,
       },
     }),
@@ -493,7 +487,7 @@ async function main() {
         description: 'Massage relaxant du corps entier',
         category: 'Massage',
         price: 75,
-        duration: 60,
+        durationMinutes: 60,
         active: true,
       },
     }),
@@ -504,7 +498,7 @@ async function main() {
         description: 'Massage en profondeur pour dénouer les tensions',
         category: 'Massage',
         price: 85,
-        duration: 75,
+        durationMinutes: 75,
         active: true,
       },
     }),
@@ -515,7 +509,7 @@ async function main() {
         description: 'Séance de hammam suivie d\'un gommage corporel',
         category: 'Spa',
         price: 55,
-        duration: 90,
+        durationMinutes: 90,
         active: true,
       },
     }),
@@ -638,6 +632,8 @@ async function main() {
   await Promise.all(availabilities);
   console.log(`✅ ${availabilities.length} disponibilités créées`);
 
+  // DÉSACTIVÉ : Les reviews nécessitent des appointments complétés
+  /*
   // Créer des avis
   const reviews = await Promise.all([
     prisma.review.create({
@@ -681,6 +677,7 @@ async function main() {
   ]);
 
   console.log(`✅ ${reviews.length} avis créés`);
+  */
 
   // Créer quelques favoris
   await Promise.all([
@@ -716,7 +713,7 @@ async function main() {
 - ${services.length} services
 - ${professionalServices.length} services professionnels
 - ${availabilities.length} créneaux de disponibilité
-- ${reviews.length} avis
+- 0 avis (désactivé temporairement)
 
 🔐 Connexion de test:
 Email: marie.dupont@example.com
