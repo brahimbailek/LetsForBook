@@ -67,7 +67,7 @@ export const authRouter = router({
    * Get current user profile
    * PROTECTED
    */
-  getMe: protectedProcedure.query(async ({ ctx }) => {
+  me: protectedProcedure.query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       include: {

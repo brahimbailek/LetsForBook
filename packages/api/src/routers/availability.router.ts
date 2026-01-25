@@ -9,6 +9,89 @@ import {
 
 export const availabilityRouter = router({
   /**
+   * Get available time slots for a given date, salon, and optionally professional/service
+   * PUBLIC
+   */
+  getSlots: publicProcedure
+    .input(
+      z.object({
+        salonId: z.string().cuid(),
+        professionalId: z.string().cuid().optional(),
+        serviceId: z.string().cuid().optional(),
+        date: z.string(), // YYYY-MM-DD format
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { salonId, professionalId, serviceId, date } = input;
+
+      // Get the salon's opening hours (simplified - using 9:00-19:00)
+      const slots = [];
+      const startHour = 9;
+      const endHour = 19;
+      const slotDuration = 30; // 30 minutes slots
+
+      // Get service duration if provided
+      let serviceDuration = slotDuration;
+      if (serviceId) {
+        const service = await ctx.prisma.service.findUnique({
+          where: { id: serviceId },
+          select: { durationMinutes: true },
+        });
+        if (service) {
+          serviceDuration = service.durationMinutes;
+        }
+      }
+
+      // Get existing appointments for the date
+      const dateStart = new Date(date);
+      dateStart.setHours(0, 0, 0, 0);
+      const dateEnd = new Date(date);
+      dateEnd.setHours(23, 59, 59, 999);
+
+      const existingAppointments = await ctx.prisma.appointment.findMany({
+        where: {
+          salonId,
+          ...(professionalId ? { professionalId } : {}),
+          startTime: { gte: dateStart, lte: dateEnd },
+          status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_SALON'] },
+        },
+        select: {
+          startTime: true,
+          endTime: true,
+        },
+      });
+
+      // Generate time slots
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += slotDuration) {
+          const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+
+          // Check if this slot conflicts with existing appointments
+          const slotStart = new Date(date);
+          slotStart.setHours(hour, minute, 0, 0);
+          const slotEnd = new Date(slotStart.getTime() + serviceDuration * 60000);
+
+          const isAvailable = !existingAppointments.some((apt) => {
+            const aptStart = new Date(apt.startTime);
+            const aptEnd = new Date(apt.endTime);
+            return slotStart < aptEnd && slotEnd > aptStart;
+          });
+
+          // Don't show past time slots for today
+          const now = new Date();
+          const isPast = slotStart < now;
+
+          slots.push({
+            time: slotTime,
+            available: isAvailable && !isPast,
+          });
+        }
+      }
+
+      return slots;
+    }),
+
+  /**
    * Get professional's weekly availability
    * PUBLIC
    */

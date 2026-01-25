@@ -1,15 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { trpc } from '@/lib/trpc/client';
 import Link from 'next/link';
-import { Button, Card, Input, Header } from '@/components/ui';
+import { Button, Card, Header } from '@/components/ui';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationPermission, setLocationPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+
+  // Autocomplete states
+  const [showQuerySuggestions, setShowQuerySuggestions] = useState(false);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const queryInputRef = useRef<HTMLInputElement>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+
+  // Autocomplete queries
+  const { data: querySuggestions } = trpc.salon.autocomplete.useQuery(
+    { query: searchQuery },
+    { enabled: searchQuery.length >= 2 }
+  );
+
+  const { data: locationSuggestions } = trpc.salon.autocompleteCities.useQuery(
+    { query: searchLocation },
+    { enabled: searchLocation.length >= 2 }
+  );
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (queryInputRef.current && !queryInputRef.current.parentElement?.contains(e.target as Node)) {
+        setShowQuerySuggestions(false);
+      }
+      if (locationInputRef.current && !locationInputRef.current.parentElement?.contains(e.target as Node)) {
+        setShowLocationSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const { data: salons, isLoading } = trpc.salon.getAll.useQuery({
     limit: 6,
@@ -50,7 +81,7 @@ export default function HomePage() {
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
-    if (searchLocation) params.set('location', searchLocation);
+    if (searchLocation) params.set('city', searchLocation);
     window.location.href = `/search?${params.toString()}`;
   };
 
@@ -158,33 +189,101 @@ export default function HomePage() {
           {/* Barre de recherche */}
           <Card padding="lg" className="max-w-4xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              <div className="md:col-span-6">
-                <Input
-                  type="text"
-                  placeholder="Coiffeur, massage, coach sportif..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  icon={
+              {/* Champ de recherche avec autocomplétion */}
+              <div className="md:col-span-6 relative">
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-coffee-400">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                  }
-                />
+                  </span>
+                  <input
+                    ref={queryInputRef}
+                    type="text"
+                    placeholder="Coiffeur, massage, coach sportif..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowQuerySuggestions(e.target.value.length >= 2);
+                    }}
+                    onFocus={() => setShowQuerySuggestions(searchQuery.length >= 2)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-sand-200 focus:outline-none focus:ring-2 focus:ring-cream-500 focus:border-transparent transition-all bg-white"
+                  />
+                </div>
+                {/* Dropdown suggestions */}
+                {showQuerySuggestions && querySuggestions && querySuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-sand-200 rounded-xl shadow-lg z-50 max-h-60 overflow-auto">
+                    {querySuggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSearchQuery(suggestion);
+                          setShowQuerySuggestions(false);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-cream-50 transition flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl"
+                      >
+                        <span className="text-cream-600">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </span>
+                        <span className="text-coffee-700">{suggestion}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="md:col-span-4">
-                <Input
-                  type="text"
-                  placeholder="Ville ou code postal"
-                  value={searchLocation}
-                  onChange={(e) => setSearchLocation(e.target.value)}
-                  icon={
+
+              {/* Champ ville avec autocomplétion */}
+              <div className="md:col-span-4 relative">
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-coffee-400">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                  }
-                />
+                  </span>
+                  <input
+                    ref={locationInputRef}
+                    type="text"
+                    placeholder="Ville ou code postal"
+                    value={searchLocation}
+                    onChange={(e) => {
+                      setSearchLocation(e.target.value);
+                      setShowLocationSuggestions(e.target.value.length >= 2);
+                    }}
+                    onFocus={() => setShowLocationSuggestions(searchLocation.length >= 2)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-sand-200 focus:outline-none focus:ring-2 focus:ring-cream-500 focus:border-transparent transition-all bg-white"
+                  />
+                </div>
+                {/* Dropdown suggestions villes */}
+                {showLocationSuggestions && locationSuggestions && locationSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-sand-200 rounded-xl shadow-lg z-50 max-h-60 overflow-auto">
+                    {locationSuggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSearchLocation(suggestion);
+                          setShowLocationSuggestions(false);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-cream-50 transition flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl"
+                      >
+                        <span className="text-cream-600">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          </svg>
+                        </span>
+                        <span className="text-coffee-700">{suggestion}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+
               <div className="md:col-span-2">
                 <Button
                   fullWidth

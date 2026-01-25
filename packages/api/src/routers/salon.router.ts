@@ -5,6 +5,90 @@ import { createSalonSchema, updateSalonSchema, searchSalonsSchema } from '@plani
 
 export const salonRouter = router({
   /**
+   * Autocomplete for search queries (services, categories, salon names)
+   * PUBLIC
+   */
+  autocomplete: publicProcedure
+    .input(z.object({ query: z.string().min(2) }))
+    .query(async ({ ctx, input }) => {
+      const { query } = input;
+
+      // Search in services
+      const services = await ctx.prisma.service.findMany({
+        where: {
+          active: true,
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { category: { contains: query, mode: 'insensitive' } },
+          ],
+        },
+        select: {
+          name: true,
+          category: true,
+        },
+        take: 10,
+      });
+
+      // Search in salon names
+      const salons = await ctx.prisma.salon.findMany({
+        where: {
+          active: true,
+          name: { contains: query, mode: 'insensitive' },
+        },
+        select: {
+          name: true,
+        },
+        take: 5,
+      });
+
+      // Get unique suggestions
+      const suggestions = new Set<string>();
+
+      // Add service categories first (most relevant)
+      services.forEach(s => {
+        if (s.category && s.category.toLowerCase().includes(query.toLowerCase())) {
+          suggestions.add(s.category);
+        }
+      });
+
+      // Add service names
+      services.forEach(s => {
+        if (s.name.toLowerCase().includes(query.toLowerCase())) {
+          suggestions.add(s.name);
+        }
+      });
+
+      // Add salon names
+      salons.forEach(s => suggestions.add(s.name));
+
+      return Array.from(suggestions).slice(0, 8);
+    }),
+
+  /**
+   * Autocomplete for cities
+   * PUBLIC
+   */
+  autocompleteCities: publicProcedure
+    .input(z.object({ query: z.string().min(2) }))
+    .query(async ({ ctx, input }) => {
+      const { query } = input;
+
+      const salons = await ctx.prisma.salon.findMany({
+        where: {
+          active: true,
+          city: { contains: query, mode: 'insensitive' },
+        },
+        select: {
+          city: true,
+        },
+        distinct: ['city'],
+        take: 8,
+      });
+
+      return salons.map(s => s.city);
+    }),
+
+  /**
    * Get all salons (with pagination)
    * PUBLIC
    */
@@ -68,21 +152,21 @@ export const salonRouter = router({
 
       const where: any = {
         active: true,
-        AND: [],
       };
 
-      // Text search
+      // Text search - also search in services
       if (query) {
         where.OR = [
           { name: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
-          { city: { contains: query, mode: 'insensitive' } },
+          { services: { some: { name: { contains: query, mode: 'insensitive' }, active: true } } },
+          { services: { some: { category: { contains: query, mode: 'insensitive' }, active: true } } },
         ];
       }
 
-      // City filter
+      // City filter - use contains for partial matching
       if (city) {
-        where.city = city;
+        where.city = { contains: city, mode: 'insensitive' };
       }
 
       // Location-based search (simplified - in production use PostGIS)
@@ -310,6 +394,13 @@ export const salonRouter = router({
                   },
                 },
               },
+            },
+          },
+          _count: {
+            select: {
+              reviews: true,
+              services: true,
+              professionals: true,
             },
           },
         },

@@ -9,7 +9,25 @@
       "Bash(pnpm dev:web:*)",
       "Bash(pnpm db:push:*)",
       "Bash(pnpm db:seed:*)",
-      "Bash(git add .)"
+      "Bash(git add .)",
+      "Bash(taskkill:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(timeout /t 8)",
+      "Bash(findstr:*)",
+      "Bash(pnpm db:generate:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(ping:*)",
+      "Bash(cmd //c \"taskkill /F /PID 29964\")",
+      "Bash(curl:*)",
+      "Bash(cmd //c \"taskkill /F /PID 28100\")",
+      "Bash(cmd //c \"taskkill /F /IM node.exe\")",
+      "Bash(pnpm build:*)",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(netstat:*)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 23792 -Force\")",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")"
     ]
   }
 }
