@@ -27,7 +27,8 @@
       "Bash(tasklist:*)",
       "Bash(wmic process:*)",
       "Bash(powershell -Command \"Stop-Process -Id 23792 -Force\")",
-      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")"
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(git add:*)"
     ]
   }
 }
