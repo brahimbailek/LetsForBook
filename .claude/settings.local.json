@@ -31,7 +31,11 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nRename project from Planity to LetsForBook\n\n- Rename all packages from @planity/* to @letsforbook/*\n- Update UI text \\(Header, Footer, pages\\)\n- Update test emails \\(@letsforbook.fr\\)\n- Update documentation and README\n- Regenerate pnpm-lock.yaml\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git push:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd Dockerfile for Railway deployment\n\n- Create Dockerfile with pnpm support\n- Add .dockerignore\n- Configure railway.toml to use DOCKERFILE builder\n- Enable standalone output in next.config.js\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(powershell:*)",
+      "Bash(npm run dev:*)"
     ]
   }
 }
