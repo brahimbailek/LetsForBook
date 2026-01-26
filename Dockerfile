@@ -6,8 +6,11 @@ WORKDIR /app
 # Copy everything
 COPY . .
 
-# Install dependencies
-RUN npm ci
+# Debug: show what files are present
+RUN ls -la && echo "---" && cat package.json | head -10
+
+# Install dependencies (using npm install as fallback if no lock file)
+RUN npm install
 
 # Generate Prisma client
 RUN npm run db:generate
