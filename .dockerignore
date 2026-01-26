@@ -1,8 +1,41 @@
+# Dependencies
 node_modules
+**/node_modules
+
+# Build outputs
 .next
+**/.next
+dist
+**/dist
+
+# Git
 .git
 .gitignore
-*.md
-.env*.local
+
+# Cache
 .turbo
-dist
+**/.turbo
+.npm
+.cache
+
+# Environment files (local only)
+.env*.local
+**/.env*.local
+
+# Documentation (not needed for build)
+*.md
+docs/
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+__tests__
+coverage

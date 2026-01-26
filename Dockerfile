@@ -1,38 +1,48 @@
-# Build stage
+# ===========================================
+# Stage 1: Build
+# ===========================================
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy everything
+# Copy entire project (respects .dockerignore)
 COPY . .
 
-# Debug: show what files are present
-RUN ls -la && echo "---" && cat package.json | head -10
-
-# Install dependencies (using npm install as fallback if no lock file)
+# Install all dependencies
 RUN npm install
 
 # Generate Prisma client
 RUN npm run db:generate
 
-# Build the app
+# Build the Next.js application
+ENV NODE_ENV=production
 RUN npm run build:web
 
-# Production stage
+# ===========================================
+# Stage 2: Production
+# ===========================================
 FROM node:22-alpine AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# Copy built files
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy standalone build from builder
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
 
-EXPOSE 3000
+# Set permissions
+RUN chown -R nextjs:nodejs /app
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+USER nextjs
+
+EXPOSE 3000
 
 CMD ["node", "apps/web/server.js"]
