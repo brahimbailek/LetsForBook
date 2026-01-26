@@ -5,15 +5,8 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy root config files
-COPY package.json package-lock.json tsconfig.json .npmrc ./
-
-# Copy workspace directories explicitly
-COPY apps/ ./apps/
-COPY packages/ ./packages/
-
-# Debug: verify files are present
-RUN ls -la && ls -la packages/ && ls -la apps/
+# Copy everything (Root Directory is now set to ./ in Railway)
+COPY . .
 
 # Install all dependencies
 RUN npm install
