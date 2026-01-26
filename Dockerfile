@@ -1,8 +1,8 @@
 # Build stage
 FROM node:22-alpine AS builder
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
+# Install pnpm via npm (more memory-efficient than corepack)
+RUN npm install -g pnpm@9.1.0
 
 WORKDIR /app
 
@@ -32,8 +32,6 @@ RUN pnpm build --filter=web
 
 # Production stage
 FROM node:22-alpine AS runner
-
-RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
 
 WORKDIR /app
 
