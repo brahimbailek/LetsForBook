@@ -1,5 +1,5 @@
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
-import { appRouter, createContext } from '@planity/api';
+import { appRouter, createContext } from '@letsforbook/api';
 
 const handler = (req: Request) =>
   fetchRequestHandler({

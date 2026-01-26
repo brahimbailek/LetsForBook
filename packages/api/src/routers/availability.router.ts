@@ -5,7 +5,7 @@ import { availabilityService } from '../services/availability.service';
 import {
   updateAvailabilitySchema,
   createAvailabilityExceptionSchema,
-} from '@planity/validation';
+} from '@letsforbook/validation';
 
 export const availabilityRouter = router({
   /**

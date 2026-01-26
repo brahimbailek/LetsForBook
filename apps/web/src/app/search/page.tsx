@@ -321,7 +321,7 @@ export default function SearchPage() {
         <div className="container mx-auto px-4 py-4 max-w-6xl">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold text-amber-700">
-              Planity
+              LetsForBook
             </Link>
             <nav className="flex items-center gap-6">
               <Link href="/login" className="text-gray-600 hover:text-amber-700">

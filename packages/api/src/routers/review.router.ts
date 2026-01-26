@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure, professionalProcedure, publicProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
-import { createReviewSchema, respondToReviewSchema } from '@planity/validation';
+import { createReviewSchema, respondToReviewSchema } from '@letsforbook/validation';
 
 export const reviewRouter = router({
   /**

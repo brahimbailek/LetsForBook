@@ -6,7 +6,7 @@ import {
   updateProfileSchema,
   createClientProfileSchema,
   createProfessionalProfileSchema,
-} from '@planity/validation';
+} from '@letsforbook/validation';
 import bcrypt from 'bcryptjs';
 
 export const authRouter = router({

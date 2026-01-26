@@ -1,4 +1,4 @@
-# Planity Clone
+# letsforbook Clone
 
 Plateforme de réservation pour salons de beauté - Architecture monorepo moderne avec TypeScript strict.
 
@@ -17,7 +17,7 @@ Plateforme de réservation pour salons de beauté - Architecture monorepo modern
 ## Structure du Projet
 
 ```
-planity-clone/
+letsforbook-clone/
 ├── apps/
 │   ├── web/           # Site clients (Next.js)
 │   ├── admin/         # Dashboard professionnels (Next.js)

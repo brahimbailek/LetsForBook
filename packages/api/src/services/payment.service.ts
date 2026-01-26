@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@planity/database';
+import type { PrismaClient } from '@letsforbook/database';
 import { TRPCError } from '@trpc/server';
 import Stripe from 'stripe';
 import { stripe } from '../lib/stripe';

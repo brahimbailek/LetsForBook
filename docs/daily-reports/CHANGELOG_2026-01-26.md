@@ -1,6 +1,6 @@
 # Cahier des Charges - Rapport de Développement Détaillé
 
-**Projet:** Planity Clone - Plateforme de réservation en ligne pour salons de beauté
+**Projet:** LetsForBook - Plateforme de réservation en ligne pour salons de beauté
 **Date:** 26 Janvier 2026
 **Développeur:** Assistant IA Claude (Opus 4.5)
 **Version:** 1.0.0
@@ -27,7 +27,7 @@
 ## 1. Résumé Exécutif
 
 ### Objectif de la Session
-Développement des pages principales de l'application Planity Clone :
+Développement des pages principales de l'application LetsForBook :
 - Page détail salon
 - Page de réservation
 - Page de confirmation
@@ -52,7 +52,7 @@ Développement des pages principales de l'application Planity Clone :
 ## 2. Contexte du Projet
 
 ### 2.1 Description
-Clone de Planity, une plateforme permettant aux utilisateurs de :
+Clone de letsforbook, une plateforme permettant aux utilisateurs de :
 - Rechercher des salons de beauté par ville/service
 - Consulter les détails d'un salon (services, prix, avis)
 - Réserver un rendez-vous en ligne
@@ -82,7 +82,7 @@ Pour les professionnels :
 ### 2.3 Structure du Monorepo
 
 ```
-planity/
+letsforbook/
 ├── apps/
 │   └── web/                          # Application Next.js
 │       ├── src/
@@ -1071,20 +1071,20 @@ mutation.mutate({
 ```bash
 $ pnpm build
 
-> planity-clone@1.0.0 build
+> letsforbook-clone@1.0.0 build
 > turbo run build
 
-• Packages in scope: @planity/api, @planity/config, @planity/constants,
-  @planity/database, @planity/types, @planity/utils, @planity/validation, @planity/web
+• Packages in scope: @letsforbook/api, @letsforbook/config, @letsforbook/constants,
+  @letsforbook/database, @letsforbook/types, @letsforbook/utils, @letsforbook/validation, @letsforbook/web
 • Running build in 8 packages
 
-@planity/web:build: ▲ Next.js 15.5.9
-@planity/web:build: Creating an optimized production build ...
-@planity/web:build: ✓ Compiled successfully
-@planity/web:build: ✓ Linting and checking validity of types
-@planity/web:build: ✓ Collecting page data
-@planity/web:build: ✓ Generating static pages (9/9)
-@planity/web:build: ✓ Finalizing page optimization
+@letsforbook/web:build: ▲ Next.js 15.5.9
+@letsforbook/web:build: Creating an optimized production build ...
+@letsforbook/web:build: ✓ Compiled successfully
+@letsforbook/web:build: ✓ Linting and checking validity of types
+@letsforbook/web:build: ✓ Collecting page data
+@letsforbook/web:build: ✓ Generating static pages (9/9)
+@letsforbook/web:build: ✓ Finalizing page optimization
 
  Tasks:    8 successful, 8 total
 Cached:    0 cached, 8 total
@@ -1119,12 +1119,12 @@ RESULT: SUCCESS (0 errors)
 ```
 $ pnpm dev
 
-@planity/web:dev:    ▲ Next.js 15.5.9
-@planity/web:dev:    - Local:        http://localhost:3000
-@planity/web:dev:    - Network:      http://10.5.0.2:3000
-@planity/web:dev:    - Environments: .env
-@planity/web:dev:    - Experiments:  serverActions
-@planity/web:dev:  ✓ Ready in 3.4s
+@letsforbook/web:dev:    ▲ Next.js 15.5.9
+@letsforbook/web:dev:    - Local:        http://localhost:3000
+@letsforbook/web:dev:    - Network:      http://10.5.0.2:3000
+@letsforbook/web:dev:    - Environments: .env
+@letsforbook/web:dev:    - Experiments:  serverActions
+@letsforbook/web:dev:  ✓ Ready in 3.4s
 
 All packages: 0 TypeScript errors
 ```
@@ -1199,13 +1199,13 @@ pnpm dev
 pnpm build
 
 # Lancer les migrations Prisma
-pnpm --filter @planity/database prisma migrate dev
+pnpm --filter @letsforbook/database prisma migrate dev
 
 # Générer le client Prisma
-pnpm --filter @planity/database prisma generate
+pnpm --filter @letsforbook/database prisma generate
 
 # Voir le studio Prisma (GUI BDD)
-pnpm --filter @planity/database prisma studio
+pnpm --filter @letsforbook/database prisma studio
 
 # Linter
 pnpm lint

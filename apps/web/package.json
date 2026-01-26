@@ -1,5 +1,5 @@
 {
-  "name": "@planity/web",
+  "name": "@letsforbook/web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -13,12 +13,12 @@
     "db:studio": "cd ../../packages/database && pnpm db:studio"
   },
   "dependencies": {
-    "@planity/api": "workspace:*",
-    "@planity/constants": "workspace:*",
-    "@planity/database": "workspace:*",
-    "@planity/types": "workspace:*",
-    "@planity/utils": "workspace:*",
-    "@planity/validation": "workspace:*",
+    "@letsforbook/api": "workspace:*",
+    "@letsforbook/constants": "workspace:*",
+    "@letsforbook/database": "workspace:*",
+    "@letsforbook/types": "workspace:*",
+    "@letsforbook/utils": "workspace:*",
+    "@letsforbook/validation": "workspace:*",
     "@tanstack/react-query": "^5.90.19",
     "@trpc/client": "^11.0.0",
     "@trpc/react-query": "^11.0.0",
@@ -31,7 +31,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@planity/config": "workspace:*",
+    "@letsforbook/config": "workspace:*",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",

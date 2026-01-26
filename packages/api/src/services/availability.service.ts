@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@planity/database';
+import type { PrismaClient } from '@letsforbook/database';
 import {
   addMinutes,
   isBefore,
@@ -7,8 +7,8 @@ import {
   getDay,
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import type { TimeSlot } from '@planity/types';
-import { doTimeSlotsOverlap } from '@planity/utils';
+import type { TimeSlot } from '@letsforbook/types';
+import { doTimeSlotsOverlap } from '@letsforbook/utils';
 
 const DAY_OF_WEEK_MAP: Record<number, string> = {
   0: 'SUNDAY',

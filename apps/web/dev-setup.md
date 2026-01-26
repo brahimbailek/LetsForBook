@@ -9,7 +9,7 @@
 
 ### 1. Installer les dépendances
 ```bash
-cd C:\Users\Brahim\Desktop\planity-clone
+cd C:\Users\Brahim\Desktop\letsforbook-clone
 pnpm install
 ```
 
@@ -22,7 +22,7 @@ Le fichier .env est déjà configuré pour SQLite.
 ```bash
 # Installer PostgreSQL et créer une base de données
 # Modifier .env avec l'URL de connexion:
-DATABASE_URL="postgresql://user:password@localhost:5432/planity"
+DATABASE_URL="postgresql://user:password@localhost:5432/letsforbook"
 ```
 
 ### 3. Générer le client Prisma et créer la base

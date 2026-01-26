@@ -1,5 +1,5 @@
 {
-  "name": "@planity/api",
+  "name": "@letsforbook/api",
   "version": "1.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -13,11 +13,11 @@
     "clean": "rm -rf .turbo node_modules dist"
   },
   "dependencies": {
-    "@planity/constants": "workspace:*",
-    "@planity/database": "workspace:*",
-    "@planity/types": "workspace:*",
-    "@planity/utils": "workspace:*",
-    "@planity/validation": "workspace:*",
+    "@letsforbook/constants": "workspace:*",
+    "@letsforbook/database": "workspace:*",
+    "@letsforbook/types": "workspace:*",
+    "@letsforbook/utils": "workspace:*",
+    "@letsforbook/validation": "workspace:*",
     "@trpc/server": "^11.0.0",
     "@upstash/ratelimit": "^1.0.1",
     "@upstash/redis": "^1.28.4",
@@ -32,7 +32,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@planity/config": "workspace:*",
+    "@letsforbook/config": "workspace:*",
     "@types/bcryptjs": "^2.4.6",
     "typescript": "^5.3.3"
   }

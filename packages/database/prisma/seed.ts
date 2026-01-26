@@ -32,16 +32,16 @@ async function main() {
   // ============================================
   await prisma.user.create({
     data: {
-      email: 'admin@planity.fr',
+      email: 'admin@letsforbook.fr',
       password: defaultPassword,
       firstName: 'Admin',
-      lastName: 'Planity',
+      lastName: 'LetsForBook',
       phone: '+33600000000',
       role: UserRole.ADMIN,
       emailVerified: new Date(),
     },
   });
-  console.log('✅ 1 Admin créé (admin@planity.fr)');
+  console.log('✅ 1 Admin créé (admin@letsforbook.fr)');
 
   // ============================================
   // 2. CLIENTS (15 utilisateurs)
@@ -89,14 +89,14 @@ async function main() {
   // 3. PROPRIÉTAIRES DE SALONS (8)
   // ============================================
   const ownersData = [
-    { email: 'owner1@planity.fr', firstName: 'Pierre', lastName: 'Laurent', phone: '+33700000001' },
-    { email: 'owner2@planity.fr', firstName: 'Catherine', lastName: 'Moreau', phone: '+33700000002' },
-    { email: 'owner3@planity.fr', firstName: 'Thomas', lastName: 'Petit', phone: '+33700000003' },
-    { email: 'owner4@planity.fr', firstName: 'Isabelle', lastName: 'Dubois', phone: '+33700000004' },
-    { email: 'owner5@planity.fr', firstName: 'François', lastName: 'Robert', phone: '+33700000005' },
-    { email: 'owner6@planity.fr', firstName: 'Nathalie', lastName: 'Richard', phone: '+33700000006' },
-    { email: 'owner7@planity.fr', firstName: 'Jean', lastName: 'Durand', phone: '+33700000007' },
-    { email: 'owner8@planity.fr', firstName: 'Sylvie', lastName: 'Leroy', phone: '+33700000008' },
+    { email: 'owner1@letsforbook.fr', firstName: 'Pierre', lastName: 'Laurent', phone: '+33700000001' },
+    { email: 'owner2@letsforbook.fr', firstName: 'Catherine', lastName: 'Moreau', phone: '+33700000002' },
+    { email: 'owner3@letsforbook.fr', firstName: 'Thomas', lastName: 'Petit', phone: '+33700000003' },
+    { email: 'owner4@letsforbook.fr', firstName: 'Isabelle', lastName: 'Dubois', phone: '+33700000004' },
+    { email: 'owner5@letsforbook.fr', firstName: 'François', lastName: 'Robert', phone: '+33700000005' },
+    { email: 'owner6@letsforbook.fr', firstName: 'Nathalie', lastName: 'Richard', phone: '+33700000006' },
+    { email: 'owner7@letsforbook.fr', firstName: 'Jean', lastName: 'Durand', phone: '+33700000007' },
+    { email: 'owner8@letsforbook.fr', firstName: 'Sylvie', lastName: 'Leroy', phone: '+33700000008' },
   ];
 
   const owners = await Promise.all(
@@ -513,26 +513,26 @@ async function main() {
   // 5. PROFESSIONNELS (20+)
   // ============================================
   const professionalsData = [
-    { email: 'pro1@planity.fr', firstName: 'Camille', lastName: 'Rousseau', salonIndex: 0, bio: 'Coiffeuse passionnée depuis 10 ans', specialties: ['Coupe femme', 'Coloration'], experience: 10 },
-    { email: 'pro2@planity.fr', firstName: 'Lucas', lastName: 'Dubois', salonIndex: 0, bio: 'Expert en soins du visage', specialties: ['Soin visage', 'Massage'], experience: 7 },
-    { email: 'pro3@planity.fr', firstName: 'Emma', lastName: 'Vincent', salonIndex: 1, bio: 'Styliste visagiste', specialties: ['Coupe', 'Visagisme'], experience: 12 },
-    { email: 'pro4@planity.fr', firstName: 'Hugo', lastName: 'Garcia', salonIndex: 4, bio: 'Barbier expert', specialties: ['Coupe homme', 'Barbe'], experience: 8 },
-    { email: 'pro5@planity.fr', firstName: 'Léa', lastName: 'Martinez', salonIndex: 5, bio: 'Masseuse certifiée', specialties: ['Massage suédois', 'Deep tissue'], experience: 15 },
-    { email: 'pro6@planity.fr', firstName: 'Nathan', lastName: 'Thomas', salonIndex: 2, bio: 'Tatoueur réaliste', specialties: ['Réaliste', 'Portrait'], experience: 9 },
-    { email: 'pro7@planity.fr', firstName: 'Chloé', lastName: 'Robert', salonIndex: 2, bio: 'Tatoueuse old school', specialties: ['Old school', 'Japonais'], experience: 6 },
-    { email: 'pro8@planity.fr', firstName: 'Maxime', lastName: 'Lefevre', salonIndex: 3, bio: 'Coach sportif certifié', specialties: ['HIIT', 'Musculation'], experience: 5 },
-    { email: 'pro9@planity.fr', firstName: 'Clara', lastName: 'Moreau', salonIndex: 6, bio: 'Coiffeuse coloriste', specialties: ['Coloration', 'Balayage'], experience: 11 },
-    { email: 'pro10@planity.fr', firstName: 'Antoine', lastName: 'Simon', salonIndex: 7, bio: 'Perceur professionnel', specialties: ['Piercing', 'Bijoux'], experience: 7 },
-    { email: 'pro11@planity.fr', firstName: 'Manon', lastName: 'Laurent', salonIndex: 8, bio: 'Masseuse thaï', specialties: ['Massage thaï', 'Réflexologie'], experience: 10 },
-    { email: 'pro12@planity.fr', firstName: 'Théo', lastName: 'Michel', salonIndex: 9, bio: 'Prothésiste ongulaire', specialties: ['Gel', 'Nail art'], experience: 4 },
-    { email: 'pro13@planity.fr', firstName: 'Jade', lastName: 'Garcia', salonIndex: 10, bio: 'Esthéticienne spa', specialties: ['Soins corps', 'Hammam'], experience: 8 },
-    { email: 'pro14@planity.fr', firstName: 'Romain', lastName: 'Durand', salonIndex: 11, bio: 'Coiffeur homme/femme', specialties: ['Coupe', 'Brushing'], experience: 13 },
-    { email: 'pro15@planity.fr', firstName: 'Sarah', lastName: 'Petit', salonIndex: 12, bio: 'Tatoueuse géométrique', specialties: ['Géométrique', 'Minimaliste'], experience: 5 },
-    { email: 'pro16@planity.fr', firstName: 'Julien', lastName: 'Roux', salonIndex: 13, bio: 'Coach CrossFit', specialties: ['CrossFit', 'Haltérophilie'], experience: 6 },
-    { email: 'pro17@planity.fr', firstName: 'Océane', lastName: 'Blanc', salonIndex: 14, bio: 'Experte microblading', specialties: ['Microblading', 'Sourcils'], experience: 4 },
-    { email: 'pro18@planity.fr', firstName: 'Alexandre', lastName: 'Faure', salonIndex: 15, bio: 'Professeur de yoga', specialties: ['Hatha', 'Vinyasa'], experience: 9 },
-    { email: 'pro19@planity.fr', firstName: 'Inès', lastName: 'Girard', salonIndex: 16, bio: 'Barbier traditionnel', specialties: ['Rasage', 'Taille barbe'], experience: 7 },
-    { email: 'pro20@planity.fr', firstName: 'Paul', lastName: 'Bonnet', salonIndex: 17, bio: 'Styliste ongulaire', specialties: ['Nail art', 'Gel UV'], experience: 6 },
+    { email: 'pro1@letsforbook.fr', firstName: 'Camille', lastName: 'Rousseau', salonIndex: 0, bio: 'Coiffeuse passionnée depuis 10 ans', specialties: ['Coupe femme', 'Coloration'], experience: 10 },
+    { email: 'pro2@letsforbook.fr', firstName: 'Lucas', lastName: 'Dubois', salonIndex: 0, bio: 'Expert en soins du visage', specialties: ['Soin visage', 'Massage'], experience: 7 },
+    { email: 'pro3@letsforbook.fr', firstName: 'Emma', lastName: 'Vincent', salonIndex: 1, bio: 'Styliste visagiste', specialties: ['Coupe', 'Visagisme'], experience: 12 },
+    { email: 'pro4@letsforbook.fr', firstName: 'Hugo', lastName: 'Garcia', salonIndex: 4, bio: 'Barbier expert', specialties: ['Coupe homme', 'Barbe'], experience: 8 },
+    { email: 'pro5@letsforbook.fr', firstName: 'Léa', lastName: 'Martinez', salonIndex: 5, bio: 'Masseuse certifiée', specialties: ['Massage suédois', 'Deep tissue'], experience: 15 },
+    { email: 'pro6@letsforbook.fr', firstName: 'Nathan', lastName: 'Thomas', salonIndex: 2, bio: 'Tatoueur réaliste', specialties: ['Réaliste', 'Portrait'], experience: 9 },
+    { email: 'pro7@letsforbook.fr', firstName: 'Chloé', lastName: 'Robert', salonIndex: 2, bio: 'Tatoueuse old school', specialties: ['Old school', 'Japonais'], experience: 6 },
+    { email: 'pro8@letsforbook.fr', firstName: 'Maxime', lastName: 'Lefevre', salonIndex: 3, bio: 'Coach sportif certifié', specialties: ['HIIT', 'Musculation'], experience: 5 },
+    { email: 'pro9@letsforbook.fr', firstName: 'Clara', lastName: 'Moreau', salonIndex: 6, bio: 'Coiffeuse coloriste', specialties: ['Coloration', 'Balayage'], experience: 11 },
+    { email: 'pro10@letsforbook.fr', firstName: 'Antoine', lastName: 'Simon', salonIndex: 7, bio: 'Perceur professionnel', specialties: ['Piercing', 'Bijoux'], experience: 7 },
+    { email: 'pro11@letsforbook.fr', firstName: 'Manon', lastName: 'Laurent', salonIndex: 8, bio: 'Masseuse thaï', specialties: ['Massage thaï', 'Réflexologie'], experience: 10 },
+    { email: 'pro12@letsforbook.fr', firstName: 'Théo', lastName: 'Michel', salonIndex: 9, bio: 'Prothésiste ongulaire', specialties: ['Gel', 'Nail art'], experience: 4 },
+    { email: 'pro13@letsforbook.fr', firstName: 'Jade', lastName: 'Garcia', salonIndex: 10, bio: 'Esthéticienne spa', specialties: ['Soins corps', 'Hammam'], experience: 8 },
+    { email: 'pro14@letsforbook.fr', firstName: 'Romain', lastName: 'Durand', salonIndex: 11, bio: 'Coiffeur homme/femme', specialties: ['Coupe', 'Brushing'], experience: 13 },
+    { email: 'pro15@letsforbook.fr', firstName: 'Sarah', lastName: 'Petit', salonIndex: 12, bio: 'Tatoueuse géométrique', specialties: ['Géométrique', 'Minimaliste'], experience: 5 },
+    { email: 'pro16@letsforbook.fr', firstName: 'Julien', lastName: 'Roux', salonIndex: 13, bio: 'Coach CrossFit', specialties: ['CrossFit', 'Haltérophilie'], experience: 6 },
+    { email: 'pro17@letsforbook.fr', firstName: 'Océane', lastName: 'Blanc', salonIndex: 14, bio: 'Experte microblading', specialties: ['Microblading', 'Sourcils'], experience: 4 },
+    { email: 'pro18@letsforbook.fr', firstName: 'Alexandre', lastName: 'Faure', salonIndex: 15, bio: 'Professeur de yoga', specialties: ['Hatha', 'Vinyasa'], experience: 9 },
+    { email: 'pro19@letsforbook.fr', firstName: 'Inès', lastName: 'Girard', salonIndex: 16, bio: 'Barbier traditionnel', specialties: ['Rasage', 'Taille barbe'], experience: 7 },
+    { email: 'pro20@letsforbook.fr', firstName: 'Paul', lastName: 'Bonnet', salonIndex: 17, bio: 'Styliste ongulaire', specialties: ['Nail art', 'Gel UV'], experience: 6 },
   ];
 
   const professionals = await Promise.all(
@@ -751,10 +751,10 @@ async function main() {
 
 🔐 COMPTES DE TEST:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ADMIN:      admin@planity.fr / password123
+ADMIN:      admin@letsforbook.fr / password123
 CLIENT:     marie.dupont@gmail.com / password123
-OWNER:      owner1@planity.fr / password123
-PRO:        pro1@planity.fr / password123
+OWNER:      owner1@letsforbook.fr / password123
+PRO:        pro1@letsforbook.fr / password123
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🏪 SALONS PAR VILLE:

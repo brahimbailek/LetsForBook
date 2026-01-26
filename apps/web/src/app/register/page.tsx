@@ -65,7 +65,7 @@ export default function RegisterPage() {
             Créer un compte
           </h1>
           <p className="text-coffee-600">
-            Rejoignez Planity et gérez vos rendez-vous facilement
+            Rejoignez LetsForBook et gérez vos rendez-vous facilement
           </p>
         </div>
 

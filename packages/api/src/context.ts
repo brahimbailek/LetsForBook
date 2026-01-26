@@ -1,5 +1,5 @@
-import type { PrismaClient } from '@planity/database';
-import { prisma } from '@planity/database';
+import type { PrismaClient } from '@letsforbook/database';
+import { prisma } from '@letsforbook/database';
 
 // Session type (will be provided by NextAuth)
 export interface Session {

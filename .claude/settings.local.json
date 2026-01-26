@@ -28,7 +28,8 @@
       "Bash(wmic process:*)",
       "Bash(powershell -Command \"Stop-Process -Id 23792 -Force\")",
       "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nRename project from Planity to LetsForBook\n\n- Rename all packages from @planity/* to @letsforbook/*\n- Update UI text \\(Header, Footer, pages\\)\n- Update test emails \\(@letsforbook.fr\\)\n- Update documentation and README\n- Regenerate pnpm-lock.yaml\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

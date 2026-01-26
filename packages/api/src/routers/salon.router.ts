@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure, professionalProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
-import { createSalonSchema, updateSalonSchema, searchSalonsSchema } from '@planity/validation';
+import { createSalonSchema, updateSalonSchema, searchSalonsSchema } from '@letsforbook/validation';
 
 export const salonRouter = router({
   /**

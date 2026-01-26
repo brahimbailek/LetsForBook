@@ -7,7 +7,7 @@ import {
   getAvailableSlotsSchema,
   cancelBookingSchema,
   updateBookingSchema,
-} from '@planity/validation';
+} from '@letsforbook/validation';
 
 export const bookingRouter = router({
   /**

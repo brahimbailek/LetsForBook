@@ -6,7 +6,7 @@ import '../styles/globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Planity - Réservez votre rendez-vous beauté en ligne',
+  title: 'LetsForBook - Réservez votre rendez-vous beauté en ligne',
   description:
     'Trouvez et réservez vos rendez-vous chez les meilleurs salons de coiffure et instituts de beauté près de chez vous.',
   keywords: [

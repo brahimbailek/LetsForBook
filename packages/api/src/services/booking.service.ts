@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@planity/database';
+import type { PrismaClient } from '@letsforbook/database';
 import { TRPCError } from '@trpc/server';
 import { addMinutes } from 'date-fns';
 import { availabilityService } from './availability.service';

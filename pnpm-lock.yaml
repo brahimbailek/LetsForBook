@@ -42,22 +42,22 @@ importers:
 
   apps/web:
     dependencies:
-      '@planity/api':
+      '@letsforbook/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@planity/constants':
+      '@letsforbook/constants':
         specifier: workspace:*
         version: link:../../packages/constants
-      '@planity/database':
+      '@letsforbook/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@planity/types':
+      '@letsforbook/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@planity/utils':
+      '@letsforbook/utils':
         specifier: workspace:*
         version: link:../../packages/utils
-      '@planity/validation':
+      '@letsforbook/validation':
         specifier: workspace:*
         version: link:../../packages/validation
       '@tanstack/react-query':
@@ -91,7 +91,7 @@ importers:
         specifier: ^3.22.4
         version: 3.25.76
     devDependencies:
-      '@planity/config':
+      '@letsforbook/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -118,19 +118,19 @@ importers:
 
   packages/api:
     dependencies:
-      '@planity/constants':
+      '@letsforbook/constants':
         specifier: workspace:*
         version: link:../constants
-      '@planity/database':
+      '@letsforbook/database':
         specifier: workspace:*
         version: link:../database
-      '@planity/types':
+      '@letsforbook/types':
         specifier: workspace:*
         version: link:../types
-      '@planity/utils':
+      '@letsforbook/utils':
         specifier: workspace:*
         version: link:../utils
-      '@planity/validation':
+      '@letsforbook/validation':
         specifier: workspace:*
         version: link:../validation
       '@trpc/server':
@@ -170,7 +170,7 @@ importers:
         specifier: ^3.22.4
         version: 3.25.76
     devDependencies:
-      '@planity/config':
+      '@letsforbook/config':
         specifier: workspace:*
         version: link:../config
       '@types/bcryptjs':
@@ -184,7 +184,7 @@ importers:
 
   packages/constants:
     devDependencies:
-      '@planity/config':
+      '@letsforbook/config':
         specifier: workspace:*
         version: link:../config
       typescript:
@@ -203,7 +203,7 @@ importers:
         specifier: ^5.9.1
         version: 5.22.0
     devDependencies:
-      '@planity/config':
+      '@letsforbook/config':
         specifier: workspace:*
         version: link:../config
       tsx:
@@ -215,7 +215,7 @@ importers:
 
   packages/types:
     devDependencies:
-      '@planity/config':
+      '@letsforbook/config':
         specifier: workspace:*
         version: link:../config
       typescript:
@@ -231,7 +231,7 @@ importers:
         specifier: ^3.0.0
         version: 3.2.0(date-fns@3.6.0)
     devDependencies:
-      '@planity/config':
+      '@letsforbook/config':
         specifier: workspace:*
         version: link:../config
       typescript:
@@ -244,7 +244,7 @@ importers:
         specifier: ^3.22.4
         version: 3.25.76
     devDependencies:
-      '@planity/config':
+      '@letsforbook/config':
         specifier: workspace:*
         version: link:../config
       typescript:

@@ -1,4 +1,4 @@
-import type { PrismaClient, NotificationType, NotificationChannel } from '@planity/database';
+import type { PrismaClient, NotificationType, NotificationChannel } from '@letsforbook/database';
 import { TRPCError } from '@trpc/server';
 import { twilioClient, TWILIO_PHONE_NUMBER } from '../lib/twilio';
 import { resend } from '../lib/resend';
@@ -324,7 +324,7 @@ export class NotificationService {
     text: string
   ): Promise<void> {
     await resend.emails.send({
-      from: 'Planity <notifications@planity.com>',
+      from: 'LetsForBook <notifications@letsforbook.com>',
       to,
       subject,
       text,

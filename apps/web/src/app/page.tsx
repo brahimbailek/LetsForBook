@@ -643,7 +643,7 @@ export default function HomePage() {
             Vous êtes professionnel ?
           </h2>
           <p className="text-xl text-cream-50 mb-8 max-w-2xl mx-auto">
-            Rejoignez Planity et développez votre activité grâce à notre plateforme de réservation en ligne
+            Rejoignez LetsForBook et développez votre activité grâce à notre plateforme de réservation en ligne
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/for-professionals">
@@ -674,7 +674,7 @@ export default function HomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <span className="text-2xl font-bold">Planity</span>
+                <span className="text-2xl font-bold">LetsForBook</span>
               </div>
               <p className="text-coffee-300">
                 La plateforme de réservation pour tous les professionnels
@@ -692,8 +692,8 @@ export default function HomePage() {
             <div>
               <h4 className="font-bold mb-4">Pour les professionnels</h4>
               <ul className="space-y-2 text-coffee-300">
-                <li><Link href="/for-professionals" className="hover:text-white transition-colors">Planity Pro</Link></li>
-                <li><Link href="/register" className="hover:text-white transition-colors">Rejoindre Planity</Link></li>
+                <li><Link href="/for-professionals" className="hover:text-white transition-colors">LetsForBook Pro</Link></li>
+                <li><Link href="/register" className="hover:text-white transition-colors">Rejoindre LetsForBook</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition-colors">Tarifs</Link></li>
                 <li><Link href="/resources" className="hover:text-white transition-colors">Ressources</Link></li>
               </ul>
@@ -709,7 +709,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="border-t border-coffee-700 pt-8 text-center text-coffee-400">
-            <p>&copy; 2024 Planity. Tous droits réservés.</p>
+            <p>&copy; 2024 LetsForBook. Tous droits réservés.</p>
           </div>
         </div>
       </footer>

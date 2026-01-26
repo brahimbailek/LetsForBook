@@ -37,7 +37,7 @@ export default function LoginPage() {
         {/* Logo et titre */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-coffee-800 mb-2">
-            Planity
+            LetsForBook
           </h1>
           <p className="text-coffee-600">
             Connectez-vous pour gérer vos rendez-vous

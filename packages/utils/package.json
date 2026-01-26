@@ -1,5 +1,5 @@
 {
-  "name": "@planity/utils",
+  "name": "@letsforbook/utils",
   "version": "1.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -17,7 +17,7 @@
     "date-fns-tz": "^3.0.0"
   },
   "devDependencies": {
-    "@planity/config": "workspace:*",
+    "@letsforbook/config": "workspace:*",
     "typescript": "^5.3.3"
   }
 }

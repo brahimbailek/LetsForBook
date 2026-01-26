@@ -1,5 +1,5 @@
 /**
- * @planity/api - Main API package exports
+ * @letsforbook/api - Main API package exports
  *
  * This package contains:
  * - tRPC configuration and procedures

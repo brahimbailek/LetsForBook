@@ -2,12 +2,12 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: [
-    '@planity/api',
-    '@planity/database',
-    '@planity/validation',
-    '@planity/types',
-    '@planity/utils',
-    '@planity/constants',
+    '@letsforbook/api',
+    '@letsforbook/database',
+    '@letsforbook/validation',
+    '@letsforbook/types',
+    '@letsforbook/utils',
+    '@letsforbook/constants',
   ],
   experimental: {
     serverActions: {
