@@ -7,9 +7,15 @@
     "node": ">=20.0.0"
   },
   "workspaces": [
-    "apps/*",
-    "packages/*",
-    "packages/config/*"
+    "apps/web",
+    "packages/api",
+    "packages/config",
+    "packages/config/typescript",
+    "packages/constants",
+    "packages/database",
+    "packages/types",
+    "packages/utils",
+    "packages/validation"
   ],
   "scripts": {
     "dev": "turbo run dev",
