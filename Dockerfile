@@ -1,13 +1,10 @@
 # Build stage
 FROM node:22-alpine AS builder
 
-# Install pnpm via npm (more memory-efficient than corepack)
-RUN npm install -g pnpm@9.1.0
-
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/api/package.json ./packages/api/
 COPY packages/database/package.json ./packages/database/
@@ -19,16 +16,16 @@ COPY packages/config/package.json ./packages/config/
 COPY packages/config/typescript/package.json ./packages/config/typescript/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Generate Prisma client
-RUN pnpm db:generate
+RUN npm run db:generate
 
 # Build the app
-RUN pnpm build --filter=web
+RUN npm run build:web
 
 # Production stage
 FROM node:22-alpine AS runner

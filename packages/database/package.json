@@ -24,7 +24,7 @@
     "prisma": "^5.9.1"
   },
   "devDependencies": {
-    "@letsforbook/config": "workspace:*",
+    "@letsforbook/config": "*",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }

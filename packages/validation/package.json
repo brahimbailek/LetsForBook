@@ -16,7 +16,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@letsforbook/config": "workspace:*",
+    "@letsforbook/config": "*",
     "typescript": "^5.3.3"
   }
 }

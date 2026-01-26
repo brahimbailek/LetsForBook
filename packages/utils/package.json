@@ -17,7 +17,7 @@
     "date-fns-tz": "^3.0.0"
   },
   "devDependencies": {
-    "@letsforbook/config": "workspace:*",
+    "@letsforbook/config": "*",
     "typescript": "^5.3.3"
   }
 }
