@@ -8,14 +8,8 @@ WORKDIR /app
 # Copy entire project (respects .dockerignore)
 COPY . .
 
-# DEBUG: Show what files are present
-RUN echo "=== Root files ===" && ls -la
-RUN echo "=== package.json workspaces ===" && cat package.json | head -20
-RUN echo "=== Packages directory ===" && ls -la packages/
-RUN echo "=== Apps directory ===" && ls -la apps/
-
 # Install all dependencies
-RUN npm install --verbose 2>&1 | head -100
+RUN npm install
 
 # Generate Prisma client
 RUN npm run db:generate
