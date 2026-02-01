@@ -39,7 +39,9 @@
       "Bash(git ls-tree:*)",
       "Bash(git cat-file:*)",
       "Bash(npm ls:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }

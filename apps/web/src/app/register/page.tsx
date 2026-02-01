@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 import { Button, Input, Card } from '@/components/ui';
+import { trpc } from '@/lib/trpc/client';
 
 type UserType = 'CLIENT' | 'PROFESSIONAL' | 'SALON_OWNER';
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [userType, setUserType] = useState<UserType>('CLIENT');
   const [formData, setFormData] = useState({
     firstName: '',
@@ -18,6 +22,32 @@ export default function RegisterPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess: async () => {
+      // After registration, sign in automatically
+      const result = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError('Compte créé mais erreur de connexion. Veuillez vous connecter manuellement.');
+        router.push('/login');
+      } else {
+        router.push('/');
+        router.refresh();
+      }
+    },
+    onError: (err) => {
+      if (err.message.includes('already exists')) {
+        setError('Un compte avec cet email existe déjà');
+      } else {
+        setError(err.message || 'Une erreur est survenue lors de l\'inscription');
+      }
+    },
+  });
 
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
@@ -41,17 +71,24 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Implement user registration
-      console.log('Register with:', { ...formData, userType });
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Redirect to homepage after successful registration
-      window.location.href = '/';
-    } catch (err) {
-      setError('Une erreur est survenue lors de l\'inscription');
+      await registerMutation.mutateAsync({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        password: formData.password,
+      });
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await signIn('google', { callbackUrl: '/' });
+    } catch {
+      setError('Une erreur est survenue avec Google');
       setIsLoading(false);
     }
   };
@@ -186,7 +223,6 @@ export default function RegisterPage() {
               placeholder="+33 6 12 34 56 78"
               value={formData.phone}
               onChange={handleInputChange('phone')}
-              required
               disabled={isLoading}
               icon={
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,9 +280,9 @@ export default function RegisterPage() {
                 className="mt-1 w-4 h-4 rounded border-sand-300 text-sage-600 focus:ring-sage-500"
               />
               <label htmlFor="terms" className="text-sm text-coffee-600">
-                J'accepte les{' '}
+                J&apos;accepte les{' '}
                 <Link href="/terms" className="text-sage-600 hover:text-sage-700 underline">
-                  conditions générales d'utilisation
+                  conditions générales d&apos;utilisation
                 </Link>
                 {' '}et la{' '}
                 <Link href="/privacy" className="text-sage-600 hover:text-sage-700 underline">
@@ -292,6 +328,7 @@ export default function RegisterPage() {
               fullWidth
               size="lg"
               disabled={isLoading}
+              onClick={handleGoogleSignIn}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
