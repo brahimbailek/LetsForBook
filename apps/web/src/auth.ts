@@ -6,43 +6,11 @@ import { prisma } from '@letsforbook/database';
 import bcrypt from 'bcryptjs';
 import type { UserRole } from '@letsforbook/database';
 import type { Adapter } from 'next-auth/adapters';
-
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string;
-      email: string;
-      name: string;
-      role: UserRole;
-      image?: string | null;
-    };
-  }
-
-  interface User {
-    id: string;
-    email: string;
-    role: UserRole;
-    firstName: string;
-    lastName: string;
-  }
-}
-
-declare module '@auth/core/jwt' {
-  interface JWT {
-    id: string;
-    role: UserRole;
-  }
-}
+import { authConfig } from './auth.config';
 
 const result = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma) as Adapter,
-  session: {
-    strategy: 'jwt',
-  },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
   providers: [
     Google({
       clientId: process.env['GOOGLE_CLIENT_ID'],
@@ -107,28 +75,7 @@ const result = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.name = `${user.firstName} ${user.lastName}`;
-      }
-
-      if (trigger === 'update' && session) {
-        token.name = session.name;
-        token.role = session.role;
-      }
-
-      return token;
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.user.name = token.name || '';
-      }
-      return session;
-    },
+    ...authConfig.callbacks,
     async signIn({ user, account }) {
       if (account?.provider === 'google') {
         const existingUser = await prisma.user.findUnique({
