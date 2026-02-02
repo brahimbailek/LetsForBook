@@ -3,35 +3,26 @@
 import { trpc } from '@/lib/trpc/client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Button, Card, Header } from '@/components/ui';
+import { Button, Card, Badge, Spinner } from '@/components/ui';
+import { AppointmentsList, SalonForm, ServiceForm } from '@/components/dashboard';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'appointments' | 'salons' | 'services' | 'team'>('overview');
+  const [showSalonForm, setShowSalonForm] = useState(false);
+  const [editingSalon, setEditingSalon] = useState<any>(null);
+  const [showServiceForm, setShowServiceForm] = useState(false);
+  const [selectedSalonForService, setSelectedSalonForService] = useState<string | null>(null);
 
   const { data: user, isLoading: isLoadingUser } = trpc.auth.me.useQuery();
-  const { data: mySalons, isLoading: isLoadingSalons } = trpc.salon.getMySalons.useQuery(
+  const { data: mySalons, isLoading: isLoadingSalons, refetch: refetchSalons } = trpc.salon.getMySalons.useQuery(
     undefined,
     { enabled: !!user }
   );
 
-  // Get today's date for filtering
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   if (isLoadingUser) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-10 bg-gray-200 rounded w-1/3" />
-            <div className="grid grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-32 bg-gray-200 rounded-xl" />
-              ))}
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -39,7 +30,6 @@ export default function DashboardPage() {
   if (!user || (user.role !== 'PROFESSIONAL' && user.role !== 'ADMIN')) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white">
-        <Header />
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-3xl font-bold text-coffee-800 mb-4">Accès refusé</h1>
           <p className="text-coffee-600 mb-8">
@@ -57,8 +47,23 @@ export default function DashboardPage() {
   const totalServices = mySalons?.reduce((sum, s) => sum + (s._count?.services || 0), 0) || 0;
   const totalReviews = mySalons?.reduce((sum, s) => sum + (s._count?.reviews || 0), 0) || 0;
 
+  const handleEditSalon = (salon: any) => {
+    setEditingSalon(salon);
+    setShowSalonForm(true);
+  };
+
+  const handleCloseSalonForm = () => {
+    setShowSalonForm(false);
+    setEditingSalon(null);
+  };
+
+  const handleAddService = (salonId: string) => {
+    setSelectedSalonForService(salonId);
+    setShowServiceForm(true);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-sand-50">
       {/* Sidebar + Main Layout */}
       <div className="flex">
         {/* Sidebar */}
@@ -133,30 +138,30 @@ export default function DashboardPage() {
                   </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <Card className="bg-gradient-to-br from-sage-500 to-sage-600 text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-100">Rendez-vous</p>
+                      <p className="text-sage-100">Rendez-vous</p>
                       <p className="text-3xl font-bold">{totalAppointments}</p>
                     </div>
                     <div className="text-4xl opacity-50">📅</div>
                   </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+                <Card className="bg-gradient-to-br from-sand-500 to-sand-600 text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-green-100">Prestations</p>
+                      <p className="text-sand-100">Prestations</p>
                       <p className="text-3xl font-bold">{totalServices}</p>
                     </div>
                     <div className="text-4xl opacity-50">✂️</div>
                   </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <Card className="bg-gradient-to-br from-coffee-500 to-coffee-600 text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-purple-100">Avis clients</p>
+                      <p className="text-coffee-200">Avis clients</p>
                       <p className="text-3xl font-bold">{totalReviews}</p>
                     </div>
                     <div className="text-4xl opacity-50">⭐</div>
@@ -169,7 +174,7 @@ export default function DashboardPage() {
                 <Card>
                   <h2 className="text-xl font-semibold text-coffee-800 mb-4">Actions rapides</h2>
                   <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" fullWidth onClick={() => setActiveTab('salons')}>
+                    <Button variant="outline" fullWidth onClick={() => setShowSalonForm(true)}>
                       + Nouvel établissement
                     </Button>
                     <Button variant="outline" fullWidth onClick={() => setActiveTab('services')}>
@@ -185,7 +190,7 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card>
-                  <h2 className="text-xl font-semibold text-coffee-800 mb-4">Activité récente</h2>
+                  <h2 className="text-xl font-semibold text-coffee-800 mb-4">Mes établissements</h2>
                   <div className="space-y-3">
                     {mySalons?.slice(0, 3).map((salon) => (
                       <div key={salon.id} className="flex items-center justify-between p-3 bg-sand-50 rounded-lg">
@@ -195,15 +200,20 @@ export default function DashboardPage() {
                             {salon._count?.appointments || 0} RDV · {salon._count?.reviews || 0} avis
                           </p>
                         </div>
-                        <Link href={`/salon/${salon.slug}`}>
-                          <Button variant="ghost" size="sm">Voir</Button>
-                        </Link>
+                        <div className="flex gap-2">
+                          <Badge variant={salon.active ? 'success' : 'error'}>
+                            {salon.active ? 'Actif' : 'Inactif'}
+                          </Badge>
+                        </div>
                       </div>
                     ))}
                     {(!mySalons || mySalons.length === 0) && (
-                      <p className="text-coffee-500 text-center py-4">
-                        Aucun établissement pour le moment
-                      </p>
+                      <div className="text-center py-4">
+                        <p className="text-coffee-500 mb-4">Aucun établissement</p>
+                        <Button size="sm" onClick={() => setShowSalonForm(true)}>
+                          Créer mon premier établissement
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </Card>
@@ -214,26 +224,8 @@ export default function DashboardPage() {
           {/* Appointments Tab */}
           {activeTab === 'appointments' && (
             <div>
-              <div className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold text-coffee-800">Rendez-vous</h1>
-                <div className="flex gap-2">
-                  <Button variant="outline">Aujourd'hui</Button>
-                  <Button variant="outline">Cette semaine</Button>
-                  <Button variant="outline">Ce mois</Button>
-                </div>
-              </div>
-
-              <Card>
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">📅</div>
-                  <h3 className="text-xl font-semibold text-coffee-800 mb-2">
-                    Agenda en cours de développement
-                  </h3>
-                  <p className="text-coffee-600">
-                    Cette fonctionnalité sera bientôt disponible avec un calendrier interactif.
-                  </p>
-                </div>
-              </Card>
+              <h1 className="text-3xl font-bold text-coffee-800 mb-8">Rendez-vous</h1>
+              <AppointmentsList />
             </div>
           )}
 
@@ -242,14 +234,12 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center justify-between mb-8">
                 <h1 className="text-3xl font-bold text-coffee-800">Mes établissements</h1>
-                <Button>+ Nouvel établissement</Button>
+                <Button onClick={() => setShowSalonForm(true)}>+ Nouvel établissement</Button>
               </div>
 
               {isLoadingSalons ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[1, 2].map(i => (
-                    <div key={i} className="h-48 bg-gray-200 rounded-2xl animate-pulse" />
-                  ))}
+                <div className="flex justify-center py-12">
+                  <Spinner size="lg" />
                 </div>
               ) : mySalons && mySalons.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -265,12 +255,24 @@ export default function DashboardPage() {
                               <h3 className="text-lg font-semibold text-coffee-800">{salon.name}</h3>
                               <p className="text-sm text-coffee-500">{salon.city}</p>
                             </div>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              salon.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                            }`}>
+                            <Badge variant={salon.active ? 'success' : 'error'}>
                               {salon.active ? 'Actif' : 'Inactif'}
-                            </span>
+                            </Badge>
                           </div>
+
+                          {/* Deposit info */}
+                          <div className="mt-2">
+                            {salon.depositRequired ? (
+                              <Badge variant="info" size="sm">
+                                Acompte {salon.depositPercentage}%
+                              </Badge>
+                            ) : (
+                              <Badge variant="default" size="sm">
+                                Pas d'acompte
+                              </Badge>
+                            )}
+                          </div>
+
                           <div className="flex gap-4 mt-4 text-sm text-coffee-600">
                             <span>{salon._count?.services || 0} services</span>
                             <span>{salon._count?.professionals || 0} pros</span>
@@ -280,7 +282,12 @@ export default function DashboardPage() {
                             <Link href={`/salon/${salon.slug}`}>
                               <Button variant="outline" size="sm">Voir</Button>
                             </Link>
-                            <Button variant="ghost" size="sm">Modifier</Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleEditSalon(salon)}>
+                              Modifier
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleAddService(salon.id)}>
+                              + Service
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -296,7 +303,7 @@ export default function DashboardPage() {
                   <p className="text-coffee-600 mb-6">
                     Créez votre premier établissement pour commencer à recevoir des réservations.
                   </p>
-                  <Button>+ Créer mon établissement</Button>
+                  <Button onClick={() => setShowSalonForm(true)}>+ Créer mon établissement</Button>
                 </Card>
               )}
             </div>
@@ -307,21 +314,16 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center justify-between mb-8">
                 <h1 className="text-3xl font-bold text-coffee-800">Prestations</h1>
-                <Button>+ Nouvelle prestation</Button>
               </div>
 
               {mySalons && mySalons.length > 0 ? (
                 <div className="space-y-6">
                   {mySalons.map((salon) => (
-                    <Card key={salon.id}>
-                      <h2 className="text-lg font-semibold text-coffee-800 mb-4">{salon.name}</h2>
-                      <p className="text-coffee-500">
-                        {salon._count?.services || 0} prestation(s) configurée(s)
-                      </p>
-                      <div className="mt-4">
-                        <Button variant="outline" size="sm">Gérer les prestations</Button>
-                      </div>
-                    </Card>
+                    <SalonServicesCard
+                      key={salon.id}
+                      salon={salon}
+                      onAddService={() => handleAddService(salon.id)}
+                    />
                   ))}
                 </div>
               ) : (
@@ -330,9 +332,10 @@ export default function DashboardPage() {
                   <h3 className="text-xl font-semibold text-coffee-800 mb-2">
                     Aucune prestation
                   </h3>
-                  <p className="text-coffee-600">
+                  <p className="text-coffee-600 mb-6">
                     Créez d'abord un établissement pour ajouter des prestations.
                   </p>
+                  <Button onClick={() => setShowSalonForm(true)}>Créer un établissement</Button>
                 </Card>
               )}
             </div>
@@ -375,6 +378,69 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
+
+      {/* Modals */}
+      <SalonForm
+        isOpen={showSalonForm}
+        onClose={handleCloseSalonForm}
+        salon={editingSalon}
+        onSuccess={() => refetchSalons()}
+      />
+
+      {selectedSalonForService && (
+        <ServiceForm
+          isOpen={showServiceForm}
+          onClose={() => {
+            setShowServiceForm(false);
+            setSelectedSalonForService(null);
+          }}
+          salonId={selectedSalonForService}
+          onSuccess={() => refetchSalons()}
+        />
+      )}
     </div>
+  );
+}
+
+// Sous-composant pour afficher les services d'un salon
+function SalonServicesCard({ salon, onAddService }: { salon: any; onAddService: () => void }) {
+  const { data: services, isLoading } = trpc.service.getBySalonId.useQuery({ salonId: salon.id });
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-coffee-800">{salon.name}</h2>
+        <Button size="sm" onClick={onAddService}>+ Ajouter</Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-4">
+          <Spinner />
+        </div>
+      ) : services && services.length > 0 ? (
+        <div className="space-y-3">
+          {services.map((service) => (
+            <div key={service.id} className="flex items-center justify-between p-3 bg-sand-50 rounded-lg">
+              <div>
+                <p className="font-medium text-coffee-800">{service.name}</p>
+                <p className="text-sm text-coffee-500">
+                  {service.category} · {service.durationMinutes} min
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-coffee-800">
+                  {(service.price / 100).toFixed(2)} €
+                </span>
+                <Button variant="ghost" size="sm">Modifier</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-coffee-500 text-center py-4">
+          Aucune prestation pour cet établissement
+        </p>
+      )}
+    </Card>
   );
 }

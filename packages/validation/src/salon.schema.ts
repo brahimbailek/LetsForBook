@@ -6,7 +6,8 @@ export const createSalonSchema = z.object({
   slug: z
     .string()
     .min(2, 'Slug must be at least 2 characters')
-    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
+    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
+    .optional(), // Auto-generated from name if not provided
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
   email: z.string().email('Invalid email address'),
   phone: z.string().min(1, 'Phone is required'),
