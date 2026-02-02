@@ -4,7 +4,8 @@ import { trpc } from '@/lib/trpc/client';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Button, Card, Header } from '@/components/ui';
+import { Button, Card, Header, Badge } from '@/components/ui';
+import { PaymentModal } from '@/components/payment';
 
 export default function BookingPage() {
   const params = useParams();
@@ -21,6 +22,8 @@ export default function BookingPage() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [isBooking, setIsBooking] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [createdAppointmentId, setCreatedAppointmentId] = useState<string | null>(null);
 
   const { data: salon, isLoading } = trpc.salon.getBySlug.useQuery(
     { slug },
@@ -40,7 +43,14 @@ export default function BookingPage() {
 
   const createBookingMutation = trpc.booking.create.useMutation({
     onSuccess: (data) => {
-      router.push(`/booking/confirmation?id=${data.id}`);
+      // Check if salon requires deposit
+      if (salon?.depositRequired && salon?.depositPercentage && salon.depositPercentage > 0) {
+        setCreatedAppointmentId(data.id);
+        setShowPaymentModal(true);
+        setIsBooking(false);
+      } else {
+        router.push(`/booking/confirmation?id=${data.id}`);
+      }
     },
     onError: (error) => {
       alert(`Erreur: ${error.message}`);
@@ -62,6 +72,17 @@ export default function BookingPage() {
 
   const selectedServiceData = salon?.services?.find(s => s.id === selectedService);
   const selectedProfessionalData = salon?.professionals?.find(p => p.id === selectedProfessional);
+
+  const requiresDeposit = salon?.depositRequired && salon?.depositPercentage && salon.depositPercentage > 0;
+  const depositPercentage = salon?.depositPercentage || 100;
+  const totalPrice = selectedServiceData?.price || 0;
+  const depositAmount = Math.round((totalPrice * depositPercentage) / 100);
+
+  const handlePaymentSuccess = () => {
+    if (createdAppointmentId) {
+      router.push(`/booking/confirmation?id=${createdAppointmentId}`);
+    }
+  };
 
   const handleBooking = async () => {
     if (!selectedService || !selectedProfessional || !selectedDate || !selectedTime || !salon) return;
@@ -453,12 +474,51 @@ export default function BookingPage() {
                       {selectedServiceData?.price.toFixed(2) || '0.00'} €
                     </span>
                   </div>
+
+                  {requiresDeposit && selectedServiceData && (
+                    <div className="mt-3 p-3 bg-sage-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="info">Acompte requis</Badge>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-coffee-600">À payer maintenant ({depositPercentage}%)</span>
+                        <span className="font-semibold text-sage-700">
+                          {(depositAmount / 100).toFixed(2)} €
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm text-coffee-500">
+                        <span>Reste à payer sur place</span>
+                        <span>{((totalPrice - depositAmount) / 100).toFixed(2)} €</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && createdAppointmentId && selectedServiceData && salon && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            // If user closes without paying, redirect to confirmation anyway
+            router.push(`/booking/confirmation?id=${createdAppointmentId}`);
+          }}
+          appointmentId={createdAppointmentId}
+          salonName={salon.name}
+          services={[{
+            name: selectedServiceData.name,
+            price: selectedServiceData.price,
+            duration: selectedServiceData.durationMinutes,
+          }]}
+          depositPercentage={depositPercentage}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
     </div>
   );
 }

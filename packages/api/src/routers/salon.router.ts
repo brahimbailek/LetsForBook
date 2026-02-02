@@ -148,7 +148,7 @@ export const salonRouter = router({
   search: publicProcedure
     .input(searchSalonsSchema)
     .query(async ({ ctx, input }) => {
-      const { query, city, latitude, longitude, radius, limit, cursor } = input;
+      const { query, city, categories, minRating, latitude, longitude, radius, limit, cursor } = input;
 
       const where: any = {
         active: true,
@@ -169,6 +169,16 @@ export const salonRouter = router({
         where.city = { contains: city, mode: 'insensitive' };
       }
 
+      // Categories filter - filter salons that have services in selected categories
+      if (categories && categories.length > 0) {
+        where.services = {
+          some: {
+            category: { in: categories },
+            active: true,
+          },
+        };
+      }
+
       // Location-based search (simplified - in production use PostGIS)
       if (latitude && longitude && radius) {
         // Calculate bounding box (simplified)
@@ -185,9 +195,12 @@ export const salonRouter = router({
         };
       }
 
+      // Fetch more salons if minRating filter is applied (since we filter after calculating)
+      const fetchLimit = minRating ? limit * 3 : limit;
+
       const salons = await ctx.prisma.salon.findMany({
         where,
-        take: limit,
+        take: fetchLimit,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
         include: {
@@ -223,7 +236,7 @@ export const salonRouter = router({
       });
 
       // Calculate average rating
-      const salonsWithRating = salons.map((salon) => {
+      let salonsWithRating = salons.map((salon) => {
         const totalRating = salon.reviews.reduce((sum, r) => sum + r.rating, 0);
         const averageRating = salon.reviews.length > 0 ? totalRating / salon.reviews.length : 0;
 
@@ -235,10 +248,20 @@ export const salonRouter = router({
         };
       });
 
+      // Filter by minimum rating if specified
+      if (minRating) {
+        salonsWithRating = salonsWithRating.filter(
+          (salon) => salon.averageRating >= minRating
+        );
+      }
+
+      // Limit results after filtering
+      const limitedResults = salonsWithRating.slice(0, limit);
+
       return {
-        items: salonsWithRating,
-        nextCursor: salons.length === limit ? salons[salons.length - 1]?.id : null,
-        hasMore: salons.length === limit,
+        items: limitedResults,
+        nextCursor: limitedResults.length === limit ? limitedResults[limitedResults.length - 1]?.id : null,
+        hasMore: salonsWithRating.length > limit,
       };
     }),
 
@@ -628,4 +651,32 @@ export const salonRouter = router({
 
     return favorites.map((fav) => fav.salon);
   }),
+
+  /**
+   * Check if a salon is favorited
+   * PROTECTED
+   */
+  isFavorite: protectedProcedure
+    .input(z.object({ salonId: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      // Get client profile
+      const clientProfile = await ctx.prisma.clientProfile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+
+      if (!clientProfile) {
+        return { isFavorite: false };
+      }
+
+      const favorite = await ctx.prisma.favoriteSalon.findUnique({
+        where: {
+          clientId_salonId: {
+            clientId: clientProfile.id,
+            salonId: input.salonId,
+          },
+        },
+      });
+
+      return { isFavorite: !!favorite };
+    }),
 });

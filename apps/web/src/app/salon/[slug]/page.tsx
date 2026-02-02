@@ -19,6 +19,20 @@ export default function SalonDetailPage() {
     { enabled: !!slug }
   );
 
+  const { data: user } = trpc.auth.me.useQuery();
+  const { data: favoriteStatus } = trpc.salon.isFavorite.useQuery(
+    { salonId: salon?.id || '' },
+    { enabled: !!salon?.id && !!user }
+  );
+
+  const utils = trpc.useUtils();
+  const toggleFavoriteMutation = trpc.salon.toggleFavorite.useMutation({
+    onSuccess: () => {
+      utils.salon.isFavorite.invalidate({ salonId: salon?.id || '' });
+      utils.salon.getFavorites.invalidate();
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white">
@@ -92,6 +106,34 @@ export default function SalonDetailPage() {
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+
+        {/* Favorite Button */}
+        {user && (
+          <button
+            onClick={() => toggleFavoriteMutation.mutate({ salonId: salon.id })}
+            disabled={toggleFavoriteMutation.isPending}
+            className={`absolute top-4 right-4 p-3 rounded-full shadow-lg transition-all ${
+              favoriteStatus?.isFavorite
+                ? 'bg-red-500 hover:bg-red-600 text-white'
+                : 'bg-white/90 hover:bg-white text-coffee-600 hover:text-red-500'
+            } ${toggleFavoriteMutation.isPending ? 'opacity-50' : ''}`}
+            aria-label={favoriteStatus?.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          >
+            <svg
+              className="w-6 h-6"
+              fill={favoriteStatus?.isFavorite ? 'currentColor' : 'none'}
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
+            </svg>
+          </button>
+        )}
         <div className="absolute bottom-0 left-0 right-0 p-6">
           <div className="container mx-auto max-w-6xl">
             <div className="flex items-end gap-4">

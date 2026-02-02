@@ -39,6 +39,8 @@ export const searchSalonsSchema = z.object({
   query: z.string().optional(),
   city: z.string().optional(),
   category: z.string().optional(),
+  categories: z.array(z.string()).optional(), // Multiple categories filter
+  minRating: z.number().min(1).max(5).optional(), // Minimum average rating filter
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   radius: z.number().min(0).max(100).optional(), // in kilometers

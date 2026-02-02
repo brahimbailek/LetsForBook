@@ -5,6 +5,7 @@ import { trpc } from '@/lib/trpc/client';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
+import { Header } from '@/components/ui';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -15,6 +16,20 @@ function SearchContent() {
   const [city, setCity] = useState(initialCity);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [searchCity, setSearchCity] = useState(initialCity);
+
+  // Filter states
+  const [minRating, setMinRating] = useState<number | undefined>(undefined);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  // Available categories
+  const availableCategories = [
+    'Coiffure',
+    'Manucure',
+    'Pédicure',
+    'Massage',
+    'Soins du visage',
+    'Épilation',
+  ];
 
   // Autocomplete states
   const [showQuerySuggestions, setShowQuerySuggestions] = useState(false);
@@ -36,8 +51,19 @@ function SearchContent() {
   const { data: salons, isLoading } = trpc.salon.search.useQuery({
     query: searchQuery,
     city: searchCity,
+    categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+    minRating: minRating,
     limit: 20,
   });
+
+  // Toggle category filter
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,55 +189,62 @@ function SearchContent() {
         {/* Filters Sidebar */}
         <aside className="w-64 flex-shrink-0">
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="font-semibold text-lg mb-4">Filtres</h3>
-
-            <div className="mb-6">
-              <h4 className="font-medium mb-2">Prix</h4>
-              <label className="flex items-center gap-2 mb-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm">€ - Économique</span>
-              </label>
-              <label className="flex items-center gap-2 mb-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm">€€ - Modéré</span>
-              </label>
-              <label className="flex items-center gap-2 mb-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm">€€€ - Premium</span>
-              </label>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg">Filtres</h3>
+              {(minRating || selectedCategories.length > 0) && (
+                <button
+                  onClick={() => {
+                    setMinRating(undefined);
+                    setSelectedCategories([]);
+                  }}
+                  className="text-xs text-amber-600 hover:text-amber-700"
+                >
+                  Réinitialiser
+                </button>
+              )}
             </div>
 
             <div className="mb-6">
-              <h4 className="font-medium mb-2">Note</h4>
+              <h4 className="font-medium mb-2">Note minimum</h4>
               {[5, 4, 3].map((rating) => (
-                <label key={rating} className="flex items-center gap-2 mb-2">
-                  <input type="checkbox" className="rounded" />
+                <label key={rating} className="flex items-center gap-2 mb-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="rating"
+                    className="rounded"
+                    checked={minRating === rating}
+                    onChange={() => setMinRating(minRating === rating ? undefined : rating)}
+                  />
                   <span className="text-sm flex items-center gap-1">
-                    {'★'.repeat(rating)}
-                    {'☆'.repeat(5 - rating)} et +
+                    <span className="text-yellow-500">{'★'.repeat(rating)}</span>
+                    <span className="text-gray-300">{'★'.repeat(5 - rating)}</span>
+                    <span className="text-gray-600">et +</span>
                   </span>
                 </label>
               ))}
+              {minRating && (
+                <button
+                  onClick={() => setMinRating(undefined)}
+                  className="text-xs text-gray-500 hover:text-gray-700 mt-1"
+                >
+                  Effacer
+                </button>
+              )}
             </div>
 
             <div>
               <h4 className="font-medium mb-2">Services</h4>
-              <label className="flex items-center gap-2 mb-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm">Coiffure</span>
-              </label>
-              <label className="flex items-center gap-2 mb-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm">Manucure</span>
-              </label>
-              <label className="flex items-center gap-2 mb-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm">Pédicure</span>
-              </label>
-              <label className="flex items-center gap-2 mb-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm">Massage</span>
-              </label>
+              {availableCategories.map((category) => (
+                <label key={category} className="flex items-center gap-2 mb-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded text-amber-600 focus:ring-amber-500"
+                    checked={selectedCategories.includes(category)}
+                    onChange={() => toggleCategory(category)}
+                  />
+                  <span className="text-sm">{category}</span>
+                </label>
+              ))}
             </div>
           </div>
         </aside>
@@ -316,21 +349,7 @@ function LoadingFallback() {
 export default function SearchPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 max-w-6xl">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold text-amber-700">
-              LetsForBook
-            </Link>
-            <nav className="flex items-center gap-6">
-              <Link href="/login" className="text-gray-600 hover:text-amber-700">
-                Connexion
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <Suspense fallback={<LoadingFallback />}>
         <SearchContent />

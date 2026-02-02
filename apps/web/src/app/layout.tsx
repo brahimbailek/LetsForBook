@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { TRPCProvider } from '@/lib/trpc/Provider';
+import { CookieBanner } from '@/components/ui';
 import '../styles/globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -28,7 +29,10 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={inter.variable}>
-        <TRPCProvider>{children}</TRPCProvider>
+        <TRPCProvider>
+          {children}
+          <CookieBanner />
+        </TRPCProvider>
       </body>
     </html>
   );

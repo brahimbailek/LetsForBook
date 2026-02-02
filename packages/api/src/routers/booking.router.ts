@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure, protectedProcedure, professionalProcedure } from '../trpc';
 import { bookingService } from '../services/booking.service';
 import { availabilityService } from '../services/availability.service';
+import { notificationService } from '../services/notification.service';
 import {
   createBookingSchema,
   getAvailableSlotsSchema,
@@ -39,6 +40,11 @@ export const bookingRouter = router({
       const appointment = await bookingService.createBooking(ctx.prisma, {
         userId: ctx.user.id,
         ...input,
+      });
+
+      // Send booking confirmation notification (async, don't block)
+      notificationService.sendBookingConfirmation(ctx.prisma, appointment.id).catch((error) => {
+        console.error('Failed to send booking confirmation:', error);
       });
 
       return appointment;
@@ -109,6 +115,11 @@ export const bookingRouter = router({
         reason
       );
 
+      // Send cancellation notification (async, don't block)
+      notificationService.sendCancellationNotification(ctx.prisma, id, 'CLIENT').catch((error) => {
+        console.error('Failed to send cancellation notification:', error);
+      });
+
       return updatedAppointment;
     }),
 
@@ -168,6 +179,11 @@ export const bookingRouter = router({
         ctx.user.id
       );
 
+      // Send confirmation notification when booking is accepted (async, don't block)
+      notificationService.sendBookingConfirmation(ctx.prisma, input.id).catch((error) => {
+        console.error('Failed to send booking confirmation:', error);
+      });
+
       return updatedAppointment;
     }),
 
@@ -191,6 +207,11 @@ export const bookingRouter = router({
         ctx.user.id,
         reason
       );
+
+      // Send cancellation notification to client (async, don't block)
+      notificationService.sendCancellationNotification(ctx.prisma, id, 'SALON').catch((error) => {
+        console.error('Failed to send cancellation notification:', error);
+      });
 
       return updatedAppointment;
     }),

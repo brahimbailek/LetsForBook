@@ -8,6 +8,12 @@ import {
   createProfessionalProfileSchema,
 } from '@letsforbook/validation';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { getResend } from '../lib/resend';
+
+const APP_NAME = 'LetsForBook';
+const APP_URL = process.env['NEXT_PUBLIC_APP_URL'] || 'https://letsforbook.com';
+const FROM_EMAIL = process.env['RESEND_FROM_EMAIL'] || 'notifications@letsforbook.com';
 
 export const authRouter = router({
   /**
@@ -366,5 +372,167 @@ export const authRouter = router({
       }
 
       return user;
+    }),
+
+  /**
+   * Request password reset
+   * PUBLIC - Sends email with reset link
+   */
+  requestPasswordReset: publicProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ ctx, input }) => {
+      const { email } = input;
+
+      // Find user
+      const user = await ctx.prisma.user.findUnique({
+        where: { email },
+      });
+
+      // Always return success to prevent email enumeration
+      if (!user) {
+        return { success: true };
+      }
+
+      // Generate token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      // Delete any existing tokens for this email
+      await ctx.prisma.verificationToken.deleteMany({
+        where: { identifier: email },
+      });
+
+      // Create new token
+      await ctx.prisma.verificationToken.create({
+        data: {
+          identifier: email,
+          token,
+          expires,
+        },
+      });
+
+      // Send email
+      const resetUrl = `${APP_URL}/reset-password?token=${token}`;
+
+      try {
+        const resend = getResend();
+        await resend.emails.send({
+          from: `${APP_NAME} <${FROM_EMAIL}>`,
+          to: email,
+          subject: 'Réinitialisation de votre mot de passe',
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f5f3ef; }
+                .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+                .header { background: linear-gradient(135deg, #6b8e6b 0%, #4a6b4a 100%); padding: 30px; text-align: center; }
+                .header h1 { color: #ffffff; margin: 0; font-size: 24px; }
+                .content { padding: 30px; }
+                .button { display: inline-block; background-color: #6b8e6b; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+                .footer { background-color: #f5f3ef; padding: 20px; text-align: center; color: #6b5b4d; font-size: 12px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>${APP_NAME}</h1>
+                </div>
+                <div class="content">
+                  <p style="color: #4a3728; font-size: 16px;">Bonjour <strong>${user.firstName}</strong>,</p>
+                  <p style="color: #4a3728; font-size: 16px;">Vous avez demandé à réinitialiser votre mot de passe.</p>
+                  <p style="color: #4a3728; font-size: 16px;">Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe :</p>
+                  <div style="text-align: center;">
+                    <a href="${resetUrl}" class="button">Réinitialiser mon mot de passe</a>
+                  </div>
+                  <p style="color: #6b5b4d; font-size: 14px;">Ce lien est valide pendant 1 heure.</p>
+                  <p style="color: #6b5b4d; font-size: 14px;">Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email.</p>
+                </div>
+                <div class="footer">
+                  <p>${APP_NAME} - Votre plateforme de réservation beauté</p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `,
+        });
+      } catch (error) {
+        console.error('Failed to send password reset email:', error);
+        // Don't throw error to user
+      }
+
+      return { success: true };
+    }),
+
+  /**
+   * Reset password with token
+   * PUBLIC
+   */
+  resetPassword: publicProcedure
+    .input(
+      z.object({
+        token: z.string().min(1),
+        newPassword: z.string().min(8).max(100),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { token, newPassword } = input;
+
+      // Find token
+      const verificationToken = await ctx.prisma.verificationToken.findUnique({
+        where: { token },
+      });
+
+      if (!verificationToken) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Lien invalide ou expiré',
+        });
+      }
+
+      // Check if expired
+      if (verificationToken.expires < new Date()) {
+        // Delete expired token
+        await ctx.prisma.verificationToken.delete({
+          where: { token },
+        });
+
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Ce lien a expiré. Veuillez demander un nouveau lien.',
+        });
+      }
+
+      // Find user
+      const user = await ctx.prisma.user.findUnique({
+        where: { email: verificationToken.identifier },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Utilisateur non trouvé',
+        });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      // Update password
+      await ctx.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      // Delete used token
+      await ctx.prisma.verificationToken.delete({
+        where: { token },
+      });
+
+      return { success: true };
     }),
 });

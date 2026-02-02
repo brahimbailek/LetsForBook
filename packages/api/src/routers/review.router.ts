@@ -356,6 +356,65 @@ export const reviewRouter = router({
     }),
 
   /**
+   * Get appointments that can be reviewed (completed, no review yet)
+   * PROTECTED
+   */
+  getReviewableAppointments: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).optional().default(10),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { limit } = input;
+
+      // Get client profile
+      const clientProfile = await ctx.prisma.clientProfile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+
+      if (!clientProfile) {
+        return [];
+      }
+
+      // Get completed appointments without reviews
+      const appointments = await ctx.prisma.appointment.findMany({
+        where: {
+          clientId: clientProfile.id,
+          status: 'COMPLETED',
+          review: null, // No review yet
+        },
+        take: limit,
+        orderBy: {
+          startTime: 'desc',
+        },
+        include: {
+          salon: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+              logo: true,
+            },
+          },
+          professional: {
+            include: {
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+          services: true,
+        },
+      });
+
+      return appointments;
+    }),
+
+  /**
    * Get my reviews (client side)
    * PROTECTED
    */

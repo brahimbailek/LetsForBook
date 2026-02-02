@@ -2,19 +2,69 @@
 
 import { trpc } from '@/lib/trpc/client';
 import Link from 'next/link';
-import { useState } from 'react';
-import { Button, Card, Header } from '@/components/ui';
+import { useState, useEffect } from 'react';
+import { Button, Card, Header, Modal } from '@/components/ui';
+import { ReviewForm } from '@/components/reviews';
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<'bookings' | 'favorites' | 'settings'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'reviews' | 'favorites' | 'settings'>('bookings');
+  const [reviewingAppointment, setReviewingAppointment] = useState<{
+    id: string;
+    salonName: string;
+    salonLogo?: string | null;
+    serviceName: string;
+    date: Date;
+  } | null>(null);
+
+  // Profile form state
+  const [profileForm, setProfileForm] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+  });
+  const [profileSuccess, setProfileSuccess] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const { data: user, isLoading: isLoadingUser } = trpc.auth.me.useQuery();
+
+  // Initialize form when user data loads
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phone: user.phone || '',
+      });
+    }
+  }, [user]);
+
+  const utils = trpc.useUtils();
+  const updateProfileMutation = trpc.auth.updateProfile.useMutation({
+    onSuccess: () => {
+      setProfileSuccess(true);
+      setProfileError(null);
+      utils.auth.me.invalidate();
+      setTimeout(() => setProfileSuccess(false), 3000);
+    },
+    onError: (error) => {
+      setProfileError(error.message);
+      setProfileSuccess(false);
+    },
+  });
   const { data: bookings, isLoading: isLoadingBookings } = trpc.booking.getMyBookings.useQuery(
     { status: 'all' },
     { enabled: !!user }
   );
   const { data: favorites, isLoading: isLoadingFavorites } = trpc.salon.getFavorites.useQuery(
     undefined,
+    { enabled: !!user }
+  );
+  const { data: reviewableAppointments } = trpc.review.getReviewableAppointments.useQuery(
+    { limit: 10 },
+    { enabled: !!user }
+  );
+  const { data: myReviews, isLoading: isLoadingMyReviews } = trpc.review.getMyReviews.useQuery(
+    { limit: 20 },
     { enabled: !!user }
   );
 
@@ -93,9 +143,10 @@ export default function ProfilePage() {
         </Card>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           {[
             { id: 'bookings', label: 'Mes rendez-vous', count: upcomingBookings.length },
+            { id: 'reviews', label: 'Mes avis', count: reviewableAppointments?.length || 0 },
             { id: 'favorites', label: 'Favoris', count: favorites?.length || 0 },
             { id: 'settings', label: 'Paramètres' },
           ].map((tab) => (
@@ -254,6 +305,141 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {activeTab === 'reviews' && (
+          <div className="space-y-6">
+            {/* Reviewable Appointments */}
+            {reviewableAppointments && reviewableAppointments.length > 0 && (
+              <Card>
+                <h2 className="text-xl font-semibold text-coffee-800 mb-4">
+                  En attente de votre avis
+                </h2>
+                <p className="text-coffee-600 text-sm mb-4">
+                  Partagez votre expérience pour aider les autres clients !
+                </p>
+                <div className="space-y-4">
+                  {reviewableAppointments.map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="p-4 bg-sage-50 rounded-xl border border-sage-100"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-sage-200 flex items-center justify-center">
+                            {appointment.salon.logo ? (
+                              <img
+                                src={appointment.salon.logo}
+                                alt={appointment.salon.name}
+                                className="w-full h-full rounded-xl object-cover"
+                              />
+                            ) : (
+                              <span className="text-lg font-bold text-sage-700">
+                                {appointment.salon.name.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-coffee-800">
+                              {appointment.salon.name}
+                            </h3>
+                            <p className="text-sm text-coffee-600">
+                              {appointment.services.map(s => s.serviceName).join(', ')}
+                            </p>
+                            <p className="text-xs text-coffee-500">
+                              {new Date(appointment.startTime).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => setReviewingAppointment({
+                            id: appointment.id,
+                            salonName: appointment.salon.name,
+                            salonLogo: appointment.salon.logo,
+                            serviceName: appointment.services.map(s => s.serviceName).join(', '),
+                            date: new Date(appointment.startTime),
+                          })}
+                        >
+                          Donner mon avis
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* My Reviews */}
+            <Card>
+              <h2 className="text-xl font-semibold text-coffee-800 mb-4">
+                Mes avis publiés
+              </h2>
+              {isLoadingMyReviews ? (
+                <div className="space-y-4">
+                  {[1, 2].map(i => (
+                    <div key={i} className="h-24 bg-sand-100 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : myReviews?.items && myReviews.items.length > 0 ? (
+                <div className="space-y-4">
+                  {myReviews.items.map((review) => (
+                    <div key={review.id} className="p-4 bg-sand-50 rounded-xl">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="font-semibold text-coffee-800">
+                            {review.salon.name}
+                          </h3>
+                          <p className="text-xs text-coffee-500">
+                            {new Date(review.createdAt).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg
+                              key={star}
+                              className={`w-5 h-5 ${star <= review.rating ? 'text-yellow-400' : 'text-sand-300'}`}
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-coffee-600 text-sm mb-3">
+                          {review.comment}
+                        </p>
+                      )}
+                      {review.response && (
+                        <div className="mt-3 p-3 bg-white rounded-lg border border-sand-200">
+                          <p className="text-xs font-medium text-coffee-700 mb-1">
+                            Réponse du salon :
+                          </p>
+                          <p className="text-sm text-coffee-600">
+                            {review.response}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-coffee-500 text-center py-8">
+                  Vous n'avez pas encore publié d'avis.
+                </p>
+              )}
+            </Card>
+          </div>
+        )}
+
         {activeTab === 'favorites' && (
           <Card>
             <h2 className="text-xl font-semibold text-coffee-800 mb-4">
@@ -308,14 +494,32 @@ export default function ProfilePage() {
             <h2 className="text-xl font-semibold text-coffee-800 mb-6">
               Paramètres du compte
             </h2>
-            <div className="space-y-6">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateProfileMutation.mutate(profileForm);
+              }}
+              className="space-y-6"
+            >
+              {profileSuccess && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-green-700">
+                  Profil mis à jour avec succès !
+                </div>
+              )}
+              {profileError && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                  {profileError}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-coffee-700 mb-2">
                   Prénom
                 </label>
                 <input
                   type="text"
-                  defaultValue={user.firstName || ''}
+                  value={profileForm.firstName}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
                   className="w-full px-4 py-3 rounded-xl border border-sand-200 focus:outline-none focus:ring-2 focus:ring-cream-500"
                 />
               </div>
@@ -325,7 +529,8 @@ export default function ProfilePage() {
                 </label>
                 <input
                   type="text"
-                  defaultValue={user.lastName || ''}
+                  value={profileForm.lastName}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
                   className="w-full px-4 py-3 rounded-xl border border-sand-200 focus:outline-none focus:ring-2 focus:ring-cream-500"
                 />
               </div>
@@ -335,10 +540,11 @@ export default function ProfilePage() {
                 </label>
                 <input
                   type="email"
-                  defaultValue={user.email}
+                  value={user.email}
                   disabled
                   className="w-full px-4 py-3 rounded-xl border border-sand-200 bg-sand-50 text-coffee-500"
                 />
+                <p className="text-xs text-coffee-400 mt-1">L'email ne peut pas être modifié</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-coffee-700 mb-2">
@@ -346,13 +552,20 @@ export default function ProfilePage() {
                 </label>
                 <input
                   type="tel"
-                  defaultValue={user.phone || ''}
+                  value={profileForm.phone}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+33 6 12 34 56 78"
                   className="w-full px-4 py-3 rounded-xl border border-sand-200 focus:outline-none focus:ring-2 focus:ring-cream-500"
                 />
               </div>
 
               <div className="pt-4">
-                <Button>Enregistrer les modifications</Button>
+                <Button
+                  type="submit"
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {updateProfileMutation.isPending ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                </Button>
               </div>
 
               <div className="pt-6 border-t border-sand-200">
@@ -361,10 +574,29 @@ export default function ProfilePage() {
                   Supprimer mon compte
                 </Button>
               </div>
-            </div>
+            </form>
           </Card>
         )}
       </div>
+
+      {/* Review Modal */}
+      {reviewingAppointment && (
+        <Modal
+          isOpen={!!reviewingAppointment}
+          onClose={() => setReviewingAppointment(null)}
+          title="Donner votre avis"
+        >
+          <ReviewForm
+            appointmentId={reviewingAppointment.id}
+            salonName={reviewingAppointment.salonName}
+            salonLogo={reviewingAppointment.salonLogo}
+            serviceName={reviewingAppointment.serviceName}
+            appointmentDate={reviewingAppointment.date}
+            onSuccess={() => setReviewingAppointment(null)}
+            onCancel={() => setReviewingAppointment(null)}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

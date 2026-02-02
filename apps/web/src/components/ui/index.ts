@@ -10,3 +10,5 @@ export { Avatar } from './Avatar';
 export { Spinner, LoadingOverlay } from './Spinner';
 export { Alert } from './Alert';
 export { Textarea } from './Textarea';
+export { Footer } from './Footer';
+export { CookieBanner } from './CookieBanner';
