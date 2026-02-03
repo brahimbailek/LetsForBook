@@ -21,7 +21,20 @@ export const authRouter = router({
    * PUBLIC
    */
   register: publicProcedure.input(registerSchema).mutation(async ({ ctx, input }) => {
-    const { email, password, firstName, lastName, phone } = input;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      role = 'CLIENT',
+      salonCode,
+      salonName,
+      salonAddress,
+      salonCity,
+      salonPostalCode,
+      siret,
+    } = input;
 
     // Check if user already exists
     const existingUser = await ctx.prisma.user.findUnique({
@@ -38,7 +51,15 @@ export const authRouter = router({
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // For SALON_OWNER: validate required salon fields
+    if (role === 'SALON_OWNER' && !salonName) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Le nom de l\'établissement est requis',
+      });
+    }
+
+    // Create user with role
     const user = await ctx.prisma.user.create({
       data: {
         email,
@@ -46,18 +67,63 @@ export const authRouter = router({
         firstName,
         lastName,
         phone,
-        role: 'CLIENT',
-        emailVerified: null, // Will be set after email verification
+        role,
+        emailVerified: null,
       },
     });
 
     // Create corresponding profile based on role
-    if (user.role === 'CLIENT') {
+    if (role === 'CLIENT') {
       await ctx.prisma.clientProfile.create({
         data: {
           userId: user.id,
+          preferredLanguage: 'fr',
         },
       });
+    } else if (role === 'SALON_OWNER' && salonName) {
+      // Create salon for owner
+      const slug = salonName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+        + '-' + Date.now().toString(36);
+
+      const salon = await ctx.prisma.salon.create({
+        data: {
+          name: salonName,
+          slug,
+          email,
+          phone: phone || '',
+          address: salonAddress || '',
+          city: salonCity || '',
+          postalCode: salonPostalCode || '',
+          country: 'FR',
+          ownerId: user.id,
+          registrationNumber: siret,
+          verified: false,
+          active: true,
+        },
+      });
+
+      // Also create professional profile for owner
+      await ctx.prisma.professionalProfile.create({
+        data: {
+          userId: user.id,
+          salonId: salon.id,
+          title: 'Propriétaire',
+          active: true,
+        },
+      });
+    } else if (role === 'PROFESSIONAL') {
+      // For now, just create user without salon link
+      // They can be linked to a salon later by the owner
+      // If salonCode provided, we could validate and link (future feature)
+      if (salonCode) {
+        // TODO: Implement salon invitation code system
+        // For now, store as pending professional
+      }
     }
 
     return {

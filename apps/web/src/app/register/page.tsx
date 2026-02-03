@@ -19,6 +19,14 @@ export default function RegisterPage() {
     phone: '',
     password: '',
     confirmPassword: '',
+    // Champs Pro
+    salonCode: '',
+    // Champs Propriétaire
+    salonName: '',
+    salonAddress: '',
+    salonCity: '',
+    salonPostalCode: '',
+    siret: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -70,6 +78,13 @@ export default function RegisterPage() {
 
     setIsLoading(true);
 
+    // Validation spécifique au type
+    if (userType === 'SALON_OWNER' && !formData.salonName) {
+      setError('Le nom de l\'établissement est requis');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await registerMutation.mutateAsync({
         firstName: formData.firstName,
@@ -77,6 +92,15 @@ export default function RegisterPage() {
         email: formData.email,
         phone: formData.phone || undefined,
         password: formData.password,
+        role: userType,
+        // Données pro
+        salonCode: userType === 'PROFESSIONAL' ? formData.salonCode || undefined : undefined,
+        // Données propriétaire
+        salonName: userType === 'SALON_OWNER' ? formData.salonName : undefined,
+        salonAddress: userType === 'SALON_OWNER' ? formData.salonAddress : undefined,
+        salonCity: userType === 'SALON_OWNER' ? formData.salonCity : undefined,
+        salonPostalCode: userType === 'SALON_OWNER' ? formData.salonPostalCode : undefined,
+        siret: userType === 'SALON_OWNER' ? formData.siret || undefined : undefined,
       });
     } finally {
       setIsLoading(false);
@@ -230,6 +254,117 @@ export default function RegisterPage() {
                 </svg>
               }
             />
+
+            {/* Champs spécifiques Professionnel */}
+            {userType === 'PROFESSIONAL' && (
+              <div className="space-y-4 p-4 bg-sage-50 rounded-xl border-2 border-sage-200">
+                <h3 className="font-semibold text-coffee-800 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-sage-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  Rejoindre un établissement
+                </h3>
+                <Input
+                  type="text"
+                  label="Code d'invitation du salon"
+                  placeholder="ABC123"
+                  value={formData.salonCode}
+                  onChange={handleInputChange('salonCode')}
+                  disabled={isLoading}
+                  helperText="Demandez ce code au propriétaire de l'établissement"
+                  icon={
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                  }
+                />
+                <p className="text-sm text-coffee-500">
+                  Vous n&apos;avez pas de code ? Contactez votre employeur ou{' '}
+                  <button
+                    type="button"
+                    onClick={() => setUserType('SALON_OWNER')}
+                    className="text-sage-600 hover:text-sage-700 underline"
+                  >
+                    créez votre propre établissement
+                  </button>
+                </p>
+              </div>
+            )}
+
+            {/* Champs spécifiques Propriétaire */}
+            {userType === 'SALON_OWNER' && (
+              <div className="space-y-4 p-4 bg-terracotta-50 rounded-xl border-2 border-terracotta-200">
+                <h3 className="font-semibold text-coffee-800 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-terracotta-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  Informations de l&apos;établissement
+                </h3>
+                <Input
+                  type="text"
+                  label="Nom de l'établissement"
+                  placeholder="Mon Salon de Beauté"
+                  value={formData.salonName}
+                  onChange={handleInputChange('salonName')}
+                  required
+                  disabled={isLoading}
+                  icon={
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  }
+                />
+                <Input
+                  type="text"
+                  label="Adresse"
+                  placeholder="123 Rue de la Beauté"
+                  value={formData.salonAddress}
+                  onChange={handleInputChange('salonAddress')}
+                  required
+                  disabled={isLoading}
+                  icon={
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  }
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    type="text"
+                    label="Ville"
+                    placeholder="Paris"
+                    value={formData.salonCity}
+                    onChange={handleInputChange('salonCity')}
+                    required
+                    disabled={isLoading}
+                  />
+                  <Input
+                    type="text"
+                    label="Code postal"
+                    placeholder="75001"
+                    value={formData.salonPostalCode}
+                    onChange={handleInputChange('salonPostalCode')}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <Input
+                  type="text"
+                  label="Numéro SIRET"
+                  placeholder="123 456 789 00012"
+                  value={formData.siret}
+                  onChange={handleInputChange('siret')}
+                  disabled={isLoading}
+                  helperText="Optionnel - Vous pourrez le renseigner plus tard"
+                  icon={
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  }
+                />
+              </div>
+            )}
 
             {/* Mot de passe */}
             <Input
