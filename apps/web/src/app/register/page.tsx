@@ -123,7 +123,7 @@ export default function RegisterPage() {
         {/* Logo et titre */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-coffee-800 mb-2">
-            Créer un compte
+            Créer votre compte
           </h1>
           <p className="text-coffee-600">
             Rejoignez LetsForBook et gérez vos rendez-vous facilement
