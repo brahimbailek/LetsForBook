@@ -115,7 +115,7 @@ model User {
 
   @@index([email])
   @@index([phone])
-  @@map("users")
+  @@map("auth_users")
 }
 
 model Account {
@@ -136,7 +136,7 @@ model Account {
 
   @@unique([provider, providerAccountId])
   @@index([userId])
-  @@map("accounts")
+  @@map("auth_accounts")
 }
 
 model Session {
@@ -147,7 +147,7 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map("sessions")
+  @@map("auth_sessions")
 }
 
 model VerificationToken {
@@ -156,7 +156,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-  @@map("verification_tokens")
+  @@map("auth_verification_tokens")
 }
 
 // =============================================
@@ -180,7 +180,7 @@ model ClientProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("client_profiles")
+  @@map("profile_clients")
 }
 
 // =============================================
@@ -247,7 +247,7 @@ model Salon {
   @@index([city])
   @@index([ownerId])
   @@index([active, verified])
-  @@map("salons")
+  @@map("salon_establishments")
 }
 
 model FavoriteSalon {
@@ -260,7 +260,7 @@ model FavoriteSalon {
   createdAt DateTime @default(now())
 
   @@unique([clientId, salonId])
-  @@map("favorite_salons")
+  @@map("salon_favorites")
 }
 
 // =============================================
@@ -297,7 +297,7 @@ model ProfessionalProfile {
 
   @@index([salonId])
   @@index([active])
-  @@map("professional_profiles")
+  @@map("profile_professionals")
 }
 
 // =============================================
@@ -337,7 +337,7 @@ model Service {
   @@index([salonId])
   @@index([category])
   @@index([active])
-  @@map("services")
+  @@map("salon_services")
 }
 
 // Join table: which professionals offer which services
@@ -360,7 +360,7 @@ model ProfessionalService {
   @@unique([professionalId, serviceId])
   @@index([professionalId])
   @@index([serviceId])
-  @@map("professional_services")
+  @@map("pro_services")
 }
 
 // =============================================
@@ -411,7 +411,7 @@ model Appointment {
   @@index([startTime])
   @@index([status])
   @@index([startTime, professionalId]) // For availability queries
-  @@map("appointments")
+  @@map("booking_appointments")
 }
 
 // Join table: services in an appointment
@@ -430,7 +430,7 @@ model AppointmentService {
   createdAt DateTime @default(now())
 
   @@index([appointmentId])
-  @@map("appointment_services")
+  @@map("booking_appointment_services")
 }
 
 // =============================================
@@ -478,7 +478,7 @@ model ProfessionalAvailability {
 
   @@unique([professionalId, dayOfWeek])
   @@index([professionalId])
-  @@map("professional_availability")
+  @@map("pro_availability")
 }
 
 // Availability exceptions (holidays, sick days, special hours)
@@ -501,7 +501,7 @@ model AvailabilityException {
 
   @@index([professionalId])
   @@index([date])
-  @@map("availability_exceptions")
+  @@map("pro_exceptions")
 }
 
 // =============================================
@@ -540,7 +540,7 @@ model Payment {
   @@index([appointmentId])
   @@index([status])
   @@index([stripePaymentIntentId])
-  @@map("payments")
+  @@map("booking_payments")
 }
 
 // =============================================
@@ -584,7 +584,7 @@ model Notification {
   @@index([appointmentId])
   @@index([sent])
   @@index([channel])
-  @@map("notifications")
+  @@map("booking_notifications")
 }
 
 // =============================================
@@ -622,5 +622,5 @@ model Review {
   @@index([salonId])
   @@index([rating])
   @@index([published])
-  @@map("reviews")
+  @@map("booking_reviews")
 }
