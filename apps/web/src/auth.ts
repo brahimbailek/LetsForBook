@@ -8,10 +8,13 @@ import type { UserRole } from '@letsforbook/database';
 import type { Adapter } from 'next-auth/adapters';
 import { authConfig } from './auth.config';
 
-const result = NextAuth({
-  ...authConfig,
-  adapter: PrismaAdapter(prisma) as Adapter,
-  providers: [
+// Build providers list conditionally
+import type { Provider } from 'next-auth/providers';
+const authProviders: Provider[] = [];
+
+// Only add Google if credentials are configured
+if (process.env['GOOGLE_CLIENT_ID'] && process.env['GOOGLE_CLIENT_SECRET']) {
+  authProviders.push(
     Google({
       clientId: process.env['GOOGLE_CLIENT_ID'],
       clientSecret: process.env['GOOGLE_CLIENT_SECRET'],
@@ -25,8 +28,12 @@ const result = NextAuth({
           role: 'CLIENT' as UserRole,
         };
       },
-    }),
-    Credentials({
+    })
+  );
+}
+
+authProviders.push(
+  Credentials({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -72,8 +79,13 @@ const result = NextAuth({
           image: user.avatar,
         };
       },
-    }),
-  ],
+    })
+);
+
+const result = NextAuth({
+  ...authConfig,
+  adapter: PrismaAdapter(prisma) as Adapter,
+  providers: authProviders,
   callbacks: {
     ...authConfig.callbacks,
     async signIn({ user, account }) {

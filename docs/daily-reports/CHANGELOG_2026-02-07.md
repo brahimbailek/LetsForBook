@@ -353,6 +353,37 @@ booking_appointments (1) ─── (0..N) booking_appointment_services
 
 ---
 
+## 8. Bugs Découverts et Corrigés en Session
+
+### Bug #1 : Redirection `0.0.0.0:8080/login?error=Configuration`
+
+**Signalé :** Lors de l'inscription d'un utilisateur, redirection vers `https://0.0.0.0:8080/login?error=Configuration` (page inaccessible).
+
+**Causes identifiées (2) :**
+
+| Cause | Détail |
+|-------|--------|
+| **Google Provider sans credentials** | Le provider Google OAuth était configuré avec `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET`, mais ces variables n'existaient pas dans les `.env`. NextAuth détectait un provider mal configuré et renvoyait `error=Configuration`. |
+| **Mauvaise URL de redirection** | `NEXTAUTH_URL` était à `http://localhost:3000`, mais Railway utilise `0.0.0.0:8080` en interne. NextAuth redirigeait donc vers l'adresse interne au lieu de l'URL publique. |
+
+**Corrections apportées :**
+
+| Fichier | Correction |
+|---------|------------|
+| `apps/web/src/auth.config.ts` | Google provider rendu **conditionnel** (ne s'active que si les env vars existent). Ajout de `trustHost: true` pour Railway. |
+| `apps/web/src/auth.ts` | Même logique conditionnelle pour le Google provider avec le `profile()` callback. |
+
+**Actions requises côté Railway :**
+
+| Variable | Valeur à définir |
+|----------|-----------------|
+| `NEXTAUTH_URL` | URL publique Railway (ex: `https://mon-app.up.railway.app`) |
+| `AUTH_TRUST_HOST` | `true` |
+
+**Statut :** Corrigé - En attente de commit/push et configuration Railway.
+
+---
+
 ## Glossaire Technique
 
 | Terme | Définition Simple |

@@ -30,8 +30,32 @@ declare module '@auth/core/jwt' {
   }
 }
 
+// Build providers list conditionally
+const providers: NextAuthConfig['providers'] = [];
+
+// Only add Google if credentials are configured
+if (process.env['GOOGLE_CLIENT_ID'] && process.env['GOOGLE_CLIENT_SECRET']) {
+  providers.push(
+    Google({
+      clientId: process.env['GOOGLE_CLIENT_ID'],
+      clientSecret: process.env['GOOGLE_CLIENT_SECRET'],
+    })
+  );
+}
+
+providers.push(
+  Credentials({
+    credentials: {
+      email: {},
+      password: {},
+    },
+    authorize: () => null, // Placeholder, real logic in auth.ts
+  })
+);
+
 // Edge-compatible config (no database/bcrypt)
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   session: {
     strategy: 'jwt',
   },
@@ -39,20 +63,7 @@ export const authConfig: NextAuthConfig = {
     signIn: '/login',
     error: '/login',
   },
-  providers: [
-    Google({
-      clientId: process.env['GOOGLE_CLIENT_ID'],
-      clientSecret: process.env['GOOGLE_CLIENT_SECRET'],
-    }),
-    // Credentials provider will be configured in auth.ts
-    Credentials({
-      credentials: {
-        email: {},
-        password: {},
-      },
-      authorize: () => null, // Placeholder, real logic in auth.ts
-    }),
-  ],
+  providers,
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
