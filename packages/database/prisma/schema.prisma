@@ -115,7 +115,7 @@ model User {
 
   @@index([email])
   @@index([phone])
-  @@map("auth_users")
+  @@map("authen_all_users")
 }
 
 model Account {
@@ -136,7 +136,7 @@ model Account {
 
   @@unique([provider, providerAccountId])
   @@index([userId])
-  @@map("auth_accounts")
+  @@map("account_oauth")
 }
 
 model Session {
@@ -147,7 +147,7 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map("auth_sessions")
+  @@map("account_sessions")
 }
 
 model VerificationToken {
@@ -156,7 +156,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-  @@map("auth_verification_tokens")
+  @@map("account_tokens")
 }
 
 // =============================================
@@ -180,7 +180,7 @@ model ClientProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("profile_clients")
+  @@map("account_clients")
 }
 
 // =============================================
@@ -247,7 +247,7 @@ model Salon {
   @@index([city])
   @@index([ownerId])
   @@index([active, verified])
-  @@map("salon_establishments")
+  @@map("account_entreprises")
 }
 
 model FavoriteSalon {
@@ -297,7 +297,7 @@ model ProfessionalProfile {
 
   @@index([salonId])
   @@index([active])
-  @@map("profile_professionals")
+  @@map("account_pro")
 }
 
 // =============================================
