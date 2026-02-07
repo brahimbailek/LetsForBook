@@ -384,6 +384,26 @@ booking_appointments (1) ─── (0..N) booking_appointment_services
 
 ---
 
+### Bug #2 : Erreur Prisma brute affichée lors de l'inscription avec un téléphone existant
+
+**Signalé :** Lors de la création d'un compte avec un numéro de téléphone déjà utilisé par un autre compte, l'erreur technique Prisma s'affichait directement à l'utilisateur :
+`Invalid prisma.user.create() invocation: Unique constraint failed on the fields: (phone)`
+
+**Cause :**
+
+Le code vérifiait si l'email existait déjà avant la création du user, mais **ne vérifiait pas le téléphone**. Prisma lançait donc une erreur de contrainte unique non interceptée.
+
+**Corrections apportées :**
+
+| Fichier | Correction |
+|---------|------------|
+| `packages/api/src/routers/auth.router.ts` | Ajout d'une vérification `prisma.user.findUnique({ where: { phone } })` avant la création. Message français : "Un compte avec ce numéro de téléphone existe déjà". |
+| `apps/web/src/app/register/page.tsx` | Simplification du `onError` pour afficher directement le message du serveur (déjà en français) au lieu de tester "already exists" en anglais. |
+
+**Statut :** Corrigé - En attente de commit/push.
+
+---
+
 ## Glossaire Technique
 
 | Terme | Définition Simple |

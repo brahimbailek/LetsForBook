@@ -37,7 +37,7 @@ export const authRouter = router({
       siret,
     } = input;
 
-    // Check if user already exists
+    // Check if user already exists (email)
     const existingUser = await ctx.prisma.user.findUnique({
       where: { email },
     });
@@ -47,6 +47,20 @@ export const authRouter = router({
         code: 'CONFLICT',
         message: 'Un compte avec cet email existe déjà',
       });
+    }
+
+    // Check if phone number already exists
+    if (phone) {
+      const existingPhone = await ctx.prisma.user.findUnique({
+        where: { phone },
+      });
+
+      if (existingPhone) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'Un compte avec ce numéro de téléphone existe déjà',
+        });
+      }
     }
 
     // Hash password

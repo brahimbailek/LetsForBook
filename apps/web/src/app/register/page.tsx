@@ -49,11 +49,7 @@ export default function RegisterPage() {
       }
     },
     onError: (err) => {
-      if (err.message.includes('already exists')) {
-        setError('Un compte avec cet email existe déjà');
-      } else {
-        setError(err.message || 'Une erreur est survenue lors de l\'inscription');
-      }
+      setError(err.message || 'Une erreur est survenue lors de l\'inscription');
     },
   });
 
