@@ -136,7 +136,7 @@ model Account {
 
   @@unique([provider, providerAccountId])
   @@index([userId])
-  @@map("account_oauth")
+  @@map("authen_oauth")
 }
 
 model Session {
@@ -147,7 +147,7 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map("account_sessions")
+  @@map("authen_sessions")
 }
 
 model VerificationToken {
@@ -156,7 +156,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-  @@map("account_tokens")
+  @@map("authen_tokens")
 }
 
 // =============================================
