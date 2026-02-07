@@ -373,14 +373,15 @@ booking_appointments (1) ─── (0..N) booking_appointment_services
 | `apps/web/src/auth.config.ts` | Google provider rendu **conditionnel** (ne s'active que si les env vars existent). Ajout de `trustHost: true` pour Railway. |
 | `apps/web/src/auth.ts` | Même logique conditionnelle pour le Google provider avec le `profile()` callback. |
 
-**Actions requises côté Railway :**
+**Configuration Railway ajoutée :**
 
-| Variable | Valeur à définir |
-|----------|-----------------|
-| `NEXTAUTH_URL` | URL publique Railway (ex: `https://mon-app.up.railway.app`) |
+| Variable | Valeur |
+|----------|--------|
+| `NEXTAUTH_URL` | `https://mindful-nature-production-a520.up.railway.app` |
 | `AUTH_TRUST_HOST` | `true` |
+| `NEXTAUTH_SECRET` | Clé secrète générée (32 bytes base64) pour signer les JWT et chiffrer les cookies de session |
 
-**Statut :** Corrigé - En attente de commit/push et configuration Railway.
+**Statut :** Corrigé et déployé.
 
 ---
 
@@ -400,7 +401,7 @@ Le code vérifiait si l'email existait déjà avant la création du user, mais *
 | `packages/api/src/routers/auth.router.ts` | Ajout d'une vérification `prisma.user.findUnique({ where: { phone } })` avant la création. Message français : "Un compte avec ce numéro de téléphone existe déjà". |
 | `apps/web/src/app/register/page.tsx` | Simplification du `onError` pour afficher directement le message du serveur (déjà en français) au lieu de tester "already exists" en anglais. |
 
-**Statut :** Corrigé - En attente de commit/push.
+**Statut :** Corrigé et déployé.
 
 ---
 
@@ -421,7 +422,7 @@ Le code vérifiait si l'email existait déjà avant la création du user, mais *
 ---
 
 **Rapport généré le:** 07/02/2026
-**Statut final:** BUG INSCRIPTION CORRIGÉ - BDD RÉORGANISÉE - FAVICON AJOUTÉ
+**Statut final:** BUGS CORRIGÉS - CONFIG RAILWAY OK - BDD RÉORGANISÉE - FAVICON AJOUTÉ
 
 ---
 
