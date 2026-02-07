@@ -45,7 +45,8 @@
       "Bash(npm run test:run:*)",
       "Bash(npx tsc:*)",
       "Bash(npx turbo build)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(npx turbo build:*)"
     ]
   }
 }
