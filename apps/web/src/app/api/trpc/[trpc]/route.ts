@@ -3,7 +3,13 @@ import { appRouter, createContext } from '@letsforbook/api';
 import { auth } from '@/auth';
 
 const handler = async (req: Request) => {
-  const session = await auth();
+  let session: Awaited<ReturnType<typeof auth>> = null;
+
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error('Auth session error:', error);
+  }
 
   return fetchRequestHandler({
     endpoint: '/api/trpc',
@@ -11,7 +17,7 @@ const handler = async (req: Request) => {
     router: appRouter,
     createContext: () =>
       createContext({
-        session: session
+        session: session?.user?.id
           ? {
               user: {
                 id: session.user.id,

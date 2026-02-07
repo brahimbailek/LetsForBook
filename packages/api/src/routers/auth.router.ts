@@ -10,6 +10,7 @@ import {
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getResend } from '../lib/resend';
+import { UserRole } from '@prisma/client';
 
 const APP_NAME = 'LetsForBook';
 const APP_URL = process.env['NEXT_PUBLIC_APP_URL'] || 'https://letsforbook.com';
@@ -28,7 +29,7 @@ export const authRouter = router({
       lastName,
       phone,
       role = 'CLIENT',
-      salonCode,
+      // salonCode, // TODO: Implement invitation system
       salonName,
       salonAddress,
       salonCity,
@@ -44,7 +45,7 @@ export const authRouter = router({
     if (existingUser) {
       throw new TRPCError({
         code: 'CONFLICT',
-        message: 'User with this email already exists',
+        message: 'Un compte avec cet email existe déjà',
       });
     }
 
@@ -59,6 +60,11 @@ export const authRouter = router({
       });
     }
 
+    // Determine the correct role
+    const userRole: UserRole = (role === 'PROFESSIONAL' || role === 'SALON_OWNER')
+      ? role as UserRole
+      : 'CLIENT';
+
     // Create user with role
     const user = await ctx.prisma.user.create({
       data: {
@@ -66,21 +72,28 @@ export const authRouter = router({
         password: hashedPassword,
         firstName,
         lastName,
-        phone,
-        role,
+        phone: phone || null,
+        role: userRole,
         emailVerified: null,
       },
     });
 
+    if (!user || !user.id) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Erreur lors de la création du compte',
+      });
+    }
+
     // Create corresponding profile based on role
-    if (role === 'CLIENT') {
+    if (userRole === 'CLIENT') {
       await ctx.prisma.clientProfile.create({
         data: {
           userId: user.id,
           preferredLanguage: 'fr',
         },
       });
-    } else if (role === 'SALON_OWNER' && salonName) {
+    } else if (userRole === 'SALON_OWNER' && salonName) {
       // Create salon for owner
       const slug = salonName
         .toLowerCase()
@@ -101,7 +114,7 @@ export const authRouter = router({
           postalCode: salonPostalCode || '',
           country: 'FR',
           ownerId: user.id,
-          registrationNumber: siret,
+          registrationNumber: siret || null,
           verified: false,
           active: true,
         },
@@ -116,15 +129,8 @@ export const authRouter = router({
           active: true,
         },
       });
-    } else if (role === 'PROFESSIONAL') {
-      // For now, just create user without salon link
-      // They can be linked to a salon later by the owner
-      // If salonCode provided, we could validate and link (future feature)
-      if (salonCode) {
-        // TODO: Implement salon invitation code system
-        // For now, store as pending professional
-      }
     }
+    // Note: PROFESSIONAL role without salon will be handled later via invitation system
 
     return {
       id: user.id,

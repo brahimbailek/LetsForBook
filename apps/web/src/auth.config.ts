@@ -113,7 +113,7 @@ export const authConfig: NextAuthConfig = {
       return token;
     },
     session({ session, token }) {
-      if (token) {
+      if (token && session?.user) {
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.name = token.name || '';
