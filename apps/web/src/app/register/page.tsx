@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
@@ -9,10 +9,7 @@ import { trpc } from '@/lib/trpc/client';
 
 type UserType = 'CLIENT' | 'PROFESSIONAL' | 'SALON_OWNER';
 
-// Force dynamic rendering for this page (required for useSearchParams in Next.js 15)
-export const dynamic = 'force-dynamic';
-
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isPro = searchParams.get('type') === 'pro';
@@ -491,5 +488,13 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Chargement...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
