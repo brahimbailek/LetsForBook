@@ -248,7 +248,7 @@ export default function HowItWorksPage() {
           </div>
 
           <div className="text-center mt-12">
-            <Link href="/register">
+            <Link href="/pricing">
               <Button variant="secondary" size="lg">
                 Devenir partenaire
               </Button>
@@ -349,7 +349,7 @@ export default function HowItWorksPage() {
               </Button>
             </Link>
             <Link href="/register">
-              <Button size="lg" className="bg-white text-cream-700 hover:bg-sand-100">
+              <Button size="lg" variant="secondary">
                 Créer un compte
               </Button>
             </Link>
@@ -372,7 +372,7 @@ export default function HowItWorksPage() {
               <ul className="space-y-2 text-sm">
                 <li><Link href="/search" className="hover:text-white">Rechercher</Link></li>
                 <li><Link href="/how-it-works" className="hover:text-white">Comment ça marche</Link></li>
-                <li><Link href="/register" className="hover:text-white">Devenir partenaire</Link></li>
+                <li><Link href="/pricing" className="hover:text-white">Devenir partenaire</Link></li>
               </ul>
             </div>
             <div>
