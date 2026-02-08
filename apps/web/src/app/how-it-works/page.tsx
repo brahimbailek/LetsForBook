@@ -143,12 +143,12 @@ export default function HowItWorksPage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-sage-600 to-sage-700 text-white py-20">
+      <section className="bg-gradient-to-br from-cream-600 to-cream-700 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
             Comment ça marche ?
           </h1>
-          <p className="text-xl text-sage-100 max-w-3xl mx-auto">
+          <p className="text-xl text-cream-100 max-w-3xl mx-auto">
             LetsForBook simplifie la réservation pour les clients et la gestion pour les professionnels.
             Découvrez comment en quelques étapes simples.
           </p>
@@ -159,7 +159,7 @@ export default function HowItWorksPage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-2 bg-sage-100 text-sage-700 rounded-full text-sm font-medium mb-4">
+            <span className="inline-block px-4 py-2 bg-cream-100 text-cream-700 rounded-full text-sm font-medium mb-4">
               Pour les clients
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-coffee-800 mb-4">
@@ -172,16 +172,16 @@ export default function HowItWorksPage() {
 
           <div className="relative">
             {/* Connection Line */}
-            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-sage-200 -translate-y-1/2" />
+            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-cream-200 -translate-y-1/2" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
               {clientSteps.map((step, index) => (
                 <div key={index} className="relative">
                   <Card className="text-center p-6 h-full bg-white relative z-10">
-                    <div className="w-16 h-16 bg-sage-100 rounded-full flex items-center justify-center mx-auto mb-4 text-sage-600">
+                    <div className="w-16 h-16 bg-cream-100 rounded-full flex items-center justify-center mx-auto mb-4 text-cream-600">
                       {step.icon}
                     </div>
-                    <div className="w-8 h-8 bg-sage-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-sm font-bold">
+                    <div className="w-8 h-8 bg-cream-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-sm font-bold">
                       {step.number}
                     </div>
                     <h3 className="text-lg font-semibold text-coffee-800 mb-2">
@@ -334,12 +334,12 @@ export default function HowItWorksPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-gradient-to-br from-sage-600 to-sage-700 text-white">
+      <section className="py-20 bg-gradient-to-br from-cream-600 to-cream-700 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Prêt à commencer ?
           </h2>
-          <p className="text-xl text-sage-100 mb-8">
+          <p className="text-xl text-cream-100 mb-8">
             Rejoignez des milliers d'utilisateurs qui font confiance à LetsForBook.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -349,7 +349,7 @@ export default function HowItWorksPage() {
               </Button>
             </Link>
             <Link href="/register">
-              <Button size="lg" className="bg-white text-sage-700 hover:bg-sand-100">
+              <Button size="lg" className="bg-white text-cream-700 hover:bg-sand-100">
                 Créer un compte
               </Button>
             </Link>

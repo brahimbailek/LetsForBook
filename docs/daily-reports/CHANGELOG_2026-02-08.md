@@ -14,7 +14,9 @@
 2. [Fix des Recherches Populaires](#2-fix-des-recherches-populaires)
 3. [Redirection Inscription Pro Sans Option Client](#3-redirection-inscription-pro-sans-option-client)
 4. [Bug Build - Import Non Utilisé](#4-bug-build---import-non-utilisé)
-5. [Résumé des Fichiers](#5-résumé-des-fichiers)
+5. [Bug Build - useSearchParams Sans Suspense](#5-bug-build---usesearchparams-sans-suspense)
+6. [Uniformisation de la Charte Graphique](#6-uniformisation-de-la-charte-graphique)
+7. [Résumé des Fichiers](#7-résumé-des-fichiers)
 
 ---
 
@@ -30,15 +32,17 @@ Amélioration de l'expérience utilisateur sur la page d'accueil et le parcours 
 
 | Métrique | Valeur |
 |----------|--------|
-| Bugs corrigés | 3 (1 UX + 2 Build) |
+| Bugs corrigés | 4 (1 UX + 3 Build) |
 | Nouvelles fonctionnalités | 1 |
-| Fichiers modifiés | 3 |
-| Commits | 4 |
+| Améliorations UX/UI | 2 (uniformisation couleurs) |
+| Fichiers modifiés | 5 |
+| Commits | 7+ |
 
 ### Ce Que Ça Signifie Pour l'Application
 
 1. **Recherche améliorée** - Les utilisateurs peuvent maintenant choisir leur ville avant de lancer une recherche depuis les boutons populaires
 2. **Parcours pro optimisé** - Les professionnels venant de la page dédiée ont un formulaire d'inscription simplifié sans l'option "Client"
+3. **Charte graphique cohérente** - Toutes les pages utilisent maintenant la palette cream/sand, abandonnant les anciennes couleurs sage/vert
 
 ---
 
@@ -224,23 +228,169 @@ Cela permet de détecter ce type d'erreur TypeScript stricte **avant** le déplo
 
 ---
 
-## 5. Résumé des Fichiers
+## 5. Bug Build - useSearchParams Sans Suspense
 
-### Fichiers Modifiés (3)
+### Le Problème
+
+Après le déploiement de la correction précédente, un nouveau build error est apparu sur Railway :
+
+```
+Error: useSearchParams() should be wrapped in a suspense boundary at page "/register"
+```
+
+**Impact :** Déploiement bloqué à nouveau sur Railway.
+
+### Cause Racine
+
+Next.js 15 impose une règle stricte : **tout composant utilisant `useSearchParams()` doit être enveloppé dans un `<Suspense>` boundary**. Cette règle existe car `useSearchParams()` nécessite un rendu côté client pour accéder aux paramètres d'URL, et Next.js doit pouvoir afficher un fallback pendant le chargement initial.
+
+### Solution Implémentée
+
+Restructuration du fichier `apps/web/src/app/register/page.tsx` :
+
+#### Avant (code cassé) :
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+export default function RegisterPage() {
+  const searchParams = useSearchParams();  // ❌ Pas de Suspense
+  const isPro = searchParams.get('type') === 'pro';
+  // ... reste du composant
+}
+```
+
+#### Après (code corrigé) :
+```tsx
+'use client';
+
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+function RegisterForm() {
+  const searchParams = useSearchParams();  // ✓ Dans Suspense via wrapper
+  const isPro = searchParams.get('type') === 'pro';
+  // ... logique du formulaire
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Chargement...</div>}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+```
+
+### Architecture Résultante
+
+| Composant | Rôle | Utilise useSearchParams |
+|-----------|------|------------------------|
+| `RegisterPage` | Wrapper avec Suspense | Non |
+| `RegisterForm` | Logique du formulaire | Oui ✓ |
+
+### Tentative Initiale (Échec)
+
+Une première tentative a été faite avec :
+```tsx
+export const dynamic = 'force-dynamic';
+```
+
+**Résultat :** Cette approche n'a PAS fonctionné. Le build Railway continuait à échouer avec la même erreur. La seule solution valide pour Next.js 15 est l'utilisation de `<Suspense>`.
+
+---
+
+## 6. Uniformisation de la Charte Graphique
+
+### Le Problème
+
+L'application utilisait deux palettes de couleurs différentes :
+- **Page d'accueil et "Pour les professionnels"** : Palette cream/sand (cohérente)
+- **Page d'inscription** : Palette sage/vert (incohérente)
+- **Page "Comment ça marche"** : Palette sage/vert (incohérente)
+
+Cette incohérence créait une expérience visuelle fragmentée et peu professionnelle.
+
+### Solution Implémentée
+
+Migration complète vers la palette cream/sand sur toutes les pages.
+
+### Modifications Techniques
+
+#### 1. Fichier: `apps/web/src/app/register/page.tsx`
+
+**Changements de couleurs (12 modifications) :**
+
+| Élément | Ancienne couleur (sage) | Nouvelle couleur (cream) |
+|---------|-------------------------|--------------------------|
+| Bouton border sélectionné | `border-sage-500` | `border-cream-600` |
+| Bouton background sélectionné | `bg-sage-50` | `bg-cream-100` |
+| Bouton border hover | `hover:border-sage-300` | `hover:border-cream-400` |
+| Icônes | `text-sage-600` | `text-cream-700` |
+| Liens | `text-sage-600 hover:text-sage-700` | `text-cream-700 hover:text-cream-800` |
+| Info box background | `bg-sage-50` | `bg-cream-50` |
+| Info box border | `border-sage-200` | `border-cream-200` |
+| Checkbox | `text-sage-600` | `text-cream-700` |
+| Checkbox focus ring | `focus:ring-sage-500` | `focus:ring-cream-600` |
+| Background gradient | `to-sage-50` supprimé | `to-white` |
+
+#### 2. Fichier: `apps/web/src/app/how-it-works/page.tsx`
+
+**Changements de couleurs (9 modifications) :**
+
+| Section | Élément | Ancienne couleur (sage) | Nouvelle couleur (cream) |
+|---------|---------|-------------------------|--------------------------|
+| **Hero** | Background gradient | `from-sage-600 to-sage-700` | `from-cream-600 to-cream-700` |
+| **Hero** | Texte descriptif | `text-sage-100` | `text-cream-100` |
+| **Clients** | Badge catégorie | `bg-sage-100 text-sage-700` | `bg-cream-100 text-cream-700` |
+| **Clients** | Ligne de connexion | `bg-sage-200` | `bg-cream-200` |
+| **Clients** | Background icône | `bg-sage-100` | `bg-cream-100` |
+| **Clients** | Couleur icône | `text-sage-600` | `text-cream-600` |
+| **Clients** | Badge numéro | `bg-sage-600` | `bg-cream-600` |
+| **CTA** | Background gradient | `from-sage-600 to-sage-700` | `from-cream-600 to-cream-700` |
+| **CTA** | Texte descriptif | `text-sage-100` | `text-cream-100` |
+| **CTA** | Bouton texte | `text-sage-700` | `text-cream-700` |
+
+### Résultat Visuel
+
+| Page | Avant | Après |
+|------|-------|-------|
+| Accueil | ✅ Cream/Sand | ✅ Cream/Sand |
+| Pour les pros | ✅ Cream/Sand | ✅ Cream/Sand |
+| Inscription | ❌ Sage/Vert | ✅ Cream/Sand |
+| Comment ça marche | ❌ Sage/Vert | ✅ Cream/Sand |
+
+**Toutes les pages utilisent maintenant une palette cohérente**, offrant une expérience visuelle professionnelle et harmonieuse.
+
+---
+
+## 7. Résumé des Fichiers
+
+### Fichiers Modifiés (5)
 
 | Fichier | Modification |
 |---------|--------------|
 | `apps/web/src/app/page.tsx` | Suppression de `handleSearch()` dans les boutons de recherche populaire |
 | `apps/web/src/app/for-professionals/page.tsx` | Ajout du paramètre `?type=pro` aux 2 liens d'inscription |
-| `apps/web/src/app/register/page.tsx` | Lecture du paramètre `?type=pro`, masquage conditionnel de l'option Client |
+| `apps/web/src/app/register/page.tsx` | (1) Lecture paramètre `?type=pro`, (2) Ajout Suspense boundary, (3) Migration sage→cream |
+| `apps/web/src/app/how-it-works/page.tsx` | Migration complète sage/vert → cream/sand (hero, badges, icônes, CTA) |
+| `docs/daily-reports/CHANGELOG_2026-02-08.md` | Documentation complète de toutes les modifications |
 
-### Commits du Jour (3)
+### Commits du Jour (7+)
 
 | Hash | Message | Description |
 |------|---------|-------------|
+| `87b99f9` | Modif impossibilité de se co | (Description manquante) |
+| `ab74029` | Modif impossibilité de se co | (Description manquante) |
+| `3d5c01b` | Modif impossibilité de se co | (Description manquante) |
+| `a226707` | Modif impossibilité de se co | (Description manquante) |
 | `4fac387` | Fix recherches populaires pour permettre choix ville | Suppression de l'appel `handleSearch()` immédiat |
 | `88aad19` | Redirect inscription pro sans option client | Ajout paramètre `?type=pro` et logique conditionnelle |
 | `3472ed2` | Fix erreur build - suppression import useEffect inutilisé | Correction TypeScript production |
+| `c1b9b4f` | Fix erreur build - ajout Suspense pour useSearchParams | Wrapping RegisterForm dans Suspense |
+| *(en attente)* | Uniformisation charte graphique - migration sage→cream | Changement couleurs pages inscription et comment-ça-marche |
 
 ---
 
@@ -255,8 +405,8 @@ Cela permet de détecter ce type d'erreur TypeScript stricte **avant** le déplo
 
 ---
 
-**Rapport généré le:** 08/02/2026
-**Statut final:** BUGS UX CORRIGÉS - PARCOURS PRO OPTIMISÉ
+**Rapport généré le:** 08/02/2026 à 14:30
+**Statut final:** BUGS UX CORRIGÉS - PARCOURS PRO OPTIMISÉ - CHARTE GRAPHIQUE UNIFIÉE
 
 ---
 
