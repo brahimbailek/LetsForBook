@@ -108,7 +108,7 @@ export default function ForProfessionalsPage() {
                 et attirer de nouveaux clients.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/register">
+                <Link href="/register?type=pro">
                   <Button size="lg">
                     Créer mon compte gratuit
                   </Button>
@@ -227,7 +227,7 @@ export default function ForProfessionalsPage() {
               Rejoignez des centaines de professionnels qui utilisent déjà Planity pour gérer leur salon.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register">
+              <Link href="/register?type=pro">
                 <Button variant="secondary" size="lg">
                   Démarrer mon essai gratuit
                 </Button>

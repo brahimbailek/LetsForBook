@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { Button, Input, Card } from '@/components/ui';
@@ -11,7 +11,9 @@ type UserType = 'CLIENT' | 'PROFESSIONAL' | 'SALON_OWNER';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [userType, setUserType] = useState<UserType>('CLIENT');
+  const searchParams = useSearchParams();
+  const isPro = searchParams.get('type') === 'pro';
+  const [userType, setUserType] = useState<UserType>(isPro ? 'SALON_OWNER' : 'CLIENT');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -127,28 +129,30 @@ export default function RegisterPage() {
         </div>
 
         {/* Sélection du type d'utilisateur */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <button
-            type="button"
-            onClick={() => setUserType('CLIENT')}
-            className={`
-              p-6 rounded-2xl border-2 transition-all duration-200
-              ${userType === 'CLIENT'
-                ? 'border-sage-500 bg-sage-50 shadow-soft'
-                : 'border-sand-200 hover:border-sage-300 bg-white'
-              }
-            `}
-          >
-            <div className="flex flex-col items-center gap-3">
-              <svg className="w-8 h-8 text-sage-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <div className="text-center">
-                <p className="font-semibold text-coffee-800">Client</p>
-                <p className="text-sm text-coffee-600">Prendre RDV</p>
+        <div className={`grid ${isPro ? 'grid-cols-2' : 'grid-cols-3'} gap-4 mb-8`}>
+          {!isPro && (
+            <button
+              type="button"
+              onClick={() => setUserType('CLIENT')}
+              className={`
+                p-6 rounded-2xl border-2 transition-all duration-200
+                ${userType === 'CLIENT'
+                  ? 'border-sage-500 bg-sage-50 shadow-soft'
+                  : 'border-sand-200 hover:border-sage-300 bg-white'
+                }
+              `}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <svg className="w-8 h-8 text-sage-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <div className="text-center">
+                  <p className="font-semibold text-coffee-800">Client</p>
+                  <p className="text-sm text-coffee-600">Prendre RDV</p>
+                </div>
               </div>
-            </div>
-          </button>
+            </button>
+          )}
 
           <button
             type="button"
