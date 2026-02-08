@@ -9,6 +9,9 @@ import { trpc } from '@/lib/trpc/client';
 
 type UserType = 'CLIENT' | 'PROFESSIONAL' | 'SALON_OWNER';
 
+// Force dynamic rendering for this page (required for useSearchParams in Next.js 15)
+export const dynamic = 'force-dynamic';
+
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

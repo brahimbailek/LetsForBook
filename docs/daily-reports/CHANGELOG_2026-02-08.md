@@ -30,10 +30,10 @@ Amélioration de l'expérience utilisateur sur la page d'accueil et le parcours 
 
 | Métrique | Valeur |
 |----------|--------|
-| Bugs corrigés | 2 (1 UX + 1 Build) |
+| Bugs corrigés | 3 (1 UX + 2 Build) |
 | Nouvelles fonctionnalités | 1 |
 | Fichiers modifiés | 3 |
-| Commits | 3 |
+| Commits | 4 |
 
 ### Ce Que Ça Signifie Pour l'Application
 
