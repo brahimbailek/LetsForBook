@@ -258,7 +258,7 @@ export default function PricingPage() {
             <p className="text-cream-100 mb-8">
               30 jours d&apos;essai gratuit • Sans engagement • Sans carte bancaire
             </p>
-            <Link href="/register">
+            <Link href="/register?type=pro">
               <Button variant="secondary" size="lg">
                 Créer mon compte gratuit
               </Button>
