@@ -405,6 +405,39 @@ Le code vérifiait si l'email existait déjà avant la création du user, mais *
 
 ---
 
+### Bug #3 : Aucun message de bienvenue après inscription
+
+**Signalé :** Après inscription réussie, l'utilisateur est redirigé vers la page d'accueil (`/`) sans aucun message de confirmation. Aucune indication que le compte a bien été créé.
+
+**Correction :**
+
+| Fichier | Correction |
+|---------|------------|
+| `apps/web/src/app/welcome/page.tsx` | **Nouvelle page** de bienvenue affichant le prénom de l'utilisateur, un message de confirmation adapté au rôle (client, pro, propriétaire), et des boutons d'action (rechercher / tableau de bord). |
+| `apps/web/src/app/register/page.tsx` | Redirection vers `/welcome` au lieu de `/` après inscription. |
+
+**Statut :** Corrigé.
+
+---
+
+### Bug #4 : Boutons "Se connecter" / "S'inscrire" non fonctionnels quand l'utilisateur est connecté
+
+**Signalé :** Après inscription et connexion automatique, les boutons "Se connecter" et "S'inscrire" dans le header restent visibles. Cliquer dessus ne fonctionne pas : le middleware redirige les utilisateurs connectés vers `/` quand ils tentent d'accéder à `/login` ou `/register`.
+
+**Cause :**
+
+Le composant `Header` était statique et n'utilisait pas la session NextAuth. Il affichait toujours les boutons d'authentification, même pour les utilisateurs connectés.
+
+**Correction :**
+
+| Fichier | Correction |
+|---------|------------|
+| `apps/web/src/components/ui/Header.tsx` | Header rendu **dynamique** avec `useSession()`. Quand l'utilisateur est connecté : affiche son avatar (initiale), son prénom, et un menu déroulant (profil, tableau de bord, déconnexion). Quand déconnecté : affiche les boutons classiques. |
+
+**Statut :** Corrigé.
+
+---
+
 ## Glossaire Technique
 
 | Terme | Définition Simple |

@@ -1,9 +1,34 @@
 'use client';
 
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from './Button';
 
 export function Header() {
+  const { data: session, status } = useSession();
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const isLoggedIn = status === 'authenticated' && !!session?.user;
+  const firstName = session?.user?.name?.split(' ')[0] || '';
+  const userRole = session?.user?.role;
+
+  const handleSignOut = async () => {
+    setShowMenu(false);
+    await signOut({ callbackUrl: '/' });
+  };
+
   return (
     <header className="bg-white border-b border-sand-200 sticky top-0 z-50">
       <div className="container mx-auto px-4 max-w-7xl">
@@ -42,16 +67,75 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">
-                Se connecter
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button variant="primary" size="sm">
-                S'inscrire
-              </Button>
-            </Link>
+            {status === 'loading' ? (
+              <div className="w-24 h-9 bg-sand-200 rounded-lg animate-pulse" />
+            ) : isLoggedIn ? (
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-sand-100 transition-colors"
+                >
+                  <div className="w-9 h-9 bg-gradient-to-br from-cream-600 to-cream-700 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {firstName.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="hidden md:block text-coffee-800 font-medium">
+                    {firstName}
+                  </span>
+                  <svg className={`w-4 h-4 text-coffee-500 transition-transform ${showMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {showMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-sand-200 rounded-xl shadow-lg py-2">
+                    <div className="px-4 py-2 border-b border-sand-100">
+                      <p className="text-sm font-medium text-coffee-800">{session.user?.name}</p>
+                      <p className="text-xs text-coffee-500">{session.user?.email}</p>
+                    </div>
+
+                    {(userRole === 'SALON_OWNER' || userRole === 'PROFESSIONAL') && (
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setShowMenu(false)}
+                        className="block px-4 py-2.5 text-sm text-coffee-700 hover:bg-sand-50 transition-colors"
+                      >
+                        Tableau de bord
+                      </Link>
+                    )}
+
+                    <Link
+                      href="/profile"
+                      onClick={() => setShowMenu(false)}
+                      className="block px-4 py-2.5 text-sm text-coffee-700 hover:bg-sand-50 transition-colors"
+                    >
+                      Mon profil
+                    </Link>
+
+                    <div className="border-t border-sand-100 mt-1 pt-1">
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        Se déconnecter
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" size="sm">
+                    Se connecter
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="primary" size="sm">
+                    S&apos;inscrire
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

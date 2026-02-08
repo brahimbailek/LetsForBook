@@ -44,7 +44,7 @@ export default function RegisterPage() {
         setError('Compte créé mais erreur de connexion. Veuillez vous connecter manuellement.');
         router.push('/login');
       } else {
-        router.push('/');
+        router.push('/welcome');
         router.refresh();
       }
     },
