@@ -16,7 +16,9 @@
 4. [Bug Build - Import Non Utilisé](#4-bug-build---import-non-utilisé)
 5. [Bug Build - useSearchParams Sans Suspense](#5-bug-build---usesearchparams-sans-suspense)
 6. [Uniformisation de la Charte Graphique](#6-uniformisation-de-la-charte-graphique)
-7. [Résumé des Fichiers](#7-résumé-des-fichiers)
+7. [Optimisation Navigation et Visibilité des CTA](#7-optimisation-navigation-et-visibilité-des-cta)
+8. [Simplification de l'Offre Tarifaire](#8-simplification-de-loffre-tarifaire)
+9. [Résumé des Fichiers](#9-résumé-des-fichiers)
 
 ---
 
@@ -34,15 +36,18 @@ Amélioration de l'expérience utilisateur sur la page d'accueil et le parcours 
 |----------|--------|
 | Bugs corrigés | 4 (1 UX + 3 Build) |
 | Nouvelles fonctionnalités | 1 |
-| Améliorations UX/UI | 2 (uniformisation couleurs) |
-| Fichiers modifiés | 5 |
-| Commits | 7+ |
+| Améliorations UX/UI | 5 (couleurs + navigation + tarifs) |
+| Fichiers modifiés | 6 |
+| Commits | 10+ |
 
 ### Ce Que Ça Signifie Pour l'Application
 
 1. **Recherche améliorée** - Les utilisateurs peuvent maintenant choisir leur ville avant de lancer une recherche depuis les boutons populaires
 2. **Parcours pro optimisé** - Les professionnels venant de la page dédiée ont un formulaire d'inscription simplifié sans l'option "Client"
 3. **Charte graphique cohérente** - Toutes les pages utilisent maintenant la palette cream/sand, abandonnant les anciennes couleurs sage/vert
+4. **Navigation pro simplifiée** - Tous les liens "Devenir partenaire" redirigent vers la page pricing plutôt que directement vers l'inscription
+5. **Offre tarifaire épurée** - Suppression de l'offre Starter, focus sur Pro et Business uniquement
+6. **Conversion optimisée** - Tous les CTA de la page pricing redirigent vers l'inscription professionnelle
 
 ---
 
@@ -366,19 +371,177 @@ Migration complète vers la palette cream/sand sur toutes les pages.
 
 ---
 
-## 7. Résumé des Fichiers
+## 7. Optimisation Navigation et Visibilité des CTA
 
-### Fichiers Modifiés (5)
+### Le Problème
+
+Plusieurs problèmes de navigation et de visibilité ont été identifiés sur la page "Comment ça marche" :
+
+1. **Bouton "Créer un compte" invisible** - Le bouton utilisait un style custom avec faible contraste (texte cream-700 sur fond blanc)
+2. **Redirection confuse** - Le bouton "Devenir partenaire" redigeait directement vers l'inscription au lieu de passer par la page pricing
+3. **Footer incohérent** - Le lien "Devenir partenaire" dans le footer pointait aussi vers /register
+
+**Impact UX :** Les utilisateurs ne voyaient pas le bouton d'inscription et n'avaient pas accès aux informations tarifaires avant de s'inscrire.
+
+### Solution Implémentée
+
+Uniformisation des styles et optimisation du parcours de conversion.
+
+### Modifications Techniques
+
+#### Fichier: `apps/web/src/app/how-it-works/page.tsx`
+
+**1. Visibilité du bouton CTA (ligne 352)**
+
+**Avant :**
+```tsx
+<Button size="lg" className="bg-white text-cream-700 hover:bg-sand-100">
+  Créer un compte
+</Button>
+```
+
+**Après :**
+```tsx
+<Button size="lg" variant="secondary">
+  Créer un compte
+</Button>
+```
+
+| Changement | Bénéfice |
+|------------|----------|
+| Utilisation de `variant="secondary"` | Style cohérent avec "Trouver un salon" |
+| Suppression de className custom | Meilleur contraste et visibilité |
+
+**2. Redirection "Devenir partenaire" (ligne 251)**
+
+**Avant :** `<Link href="/register">`
+**Après :** `<Link href="/pricing">`
+
+**Parcours utilisateur amélioré :**
+1. Utilisateur clique sur "Devenir partenaire"
+2. → Redirigé vers `/pricing` (découverte des offres)
+3. → Choix de l'offre adaptée
+4. → Redirection vers `/register?type=pro`
+
+**3. Footer cohérent (ligne 375)**
+
+**Avant :** `<Link href="/register">`
+**Après :** `<Link href="/pricing">`
+
+Tous les liens "Devenir partenaire" suivent maintenant le même parcours.
+
+### Résultat
+
+| Élément | Avant | Après |
+|---------|-------|-------|
+| Bouton "Créer un compte" | Invisible (faible contraste) | ✅ Visible (variant secondary) |
+| Parcours pro | Inscription directe | ✅ Pricing → Inscription |
+| Cohérence navigation | Liens incohérents | ✅ Tous vers /pricing |
+
+---
+
+## 8. Simplification de l'Offre Tarifaire
+
+### Le Problème
+
+La page pricing proposait 3 offres : Starter, Pro et Business.
+
+**Problèmes identifiés :**
+1. **Offre Starter peu pertinente** - Fonctionnalités trop limitées, peu d'intérêt pour les professionnels
+2. **Bouton "Nous contacter" confus** - L'offre Business avait un CTA différent des autres
+3. **Redirections incohérentes** - Certains boutons allaient vers /register, d'autres vers /contact
+4. **Mise en page déséquilibrée** - 3 colonnes avec des largeurs inégales
+
+**Impact commercial :** L'offre Starter créait de la confusion et diluait l'attention sur les offres Pro et Business plus rentables.
+
+### Solution Implémentée
+
+Simplification de l'offre avec focus sur Pro et Business uniquement.
+
+### Modifications Techniques
+
+#### Fichier: `apps/web/src/app/pricing/page.tsx`
+
+**1. Suppression de l'offre Starter (lignes 10-31)**
+
+L'objet complet de l'offre Starter a été retiré de l'array `plans`.
+
+**2. Mise à jour de l'offre Pro (lignes 16-27)**
+
+Les fonctionnalités de base ont été ajoutées explicitement :
+
+```tsx
+features: [
+  'Jusqu\'à 5 professionnels',
+  'Agenda en ligne',              // ← Ajouté
+  'Réservations illimitées',      // ← Ajouté
+  'Rappels SMS (200/mois)',
+  'Page salon personnalisée',     // ← Ajouté
+  'Paiement en ligne',
+  'Acomptes & cautions',
+  'Statistiques détaillées',
+  'Widget de réservation',
+  'Support prioritaire',
+]
+```
+
+**3. Uniformisation du CTA Business (ligne 69)**
+
+**Avant :** `cta: 'Nous contacter'`
+**Après :** `cta: 'Commencer'`
+
+**4. Redirections cohérentes (lignes 176, 280)**
+
+**Avant :**
+```tsx
+<Link href={plan.cta === 'Nous contacter' ? '/contact' : '/register'}>
+```
+
+**Après :**
+```tsx
+<Link href="/register?type=pro">
+```
+
+Tous les boutons (Commencer × 2 + Créer mon compte gratuit) redirigent maintenant vers `/register?type=pro`.
+
+**5. Grille ajustée (ligne 143)**
+
+**Avant :** `grid grid-cols-1 md:grid-cols-3 gap-6`
+**Après :** `grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto`
+
+| Changement | Bénéfice |
+|------------|----------|
+| 3 → 2 colonnes | Meilleure mise en page sans Starter |
+| Ajout `max-w-4xl mx-auto` | Centrage des offres pour un meilleur équilibre visuel |
+
+### Résultat
+
+| Aspect | Avant | Après |
+|--------|-------|-------|
+| Nombre d'offres | 3 (Starter, Pro, Business) | 2 (Pro, Business) |
+| CTA Business | "Nous contacter" → /contact | "Commencer" → /register?type=pro |
+| Redirections | Mixte (register + contact) | ✅ Toutes vers /register?type=pro |
+| Mise en page | 3 colonnes déséquilibrées | ✅ 2 colonnes centrées |
+| Clarté de l'offre | Confuse avec 3 options | ✅ Claire avec 2 options ciblées |
+
+**Impact commercial :** Les professionnels ont maintenant un choix clair entre deux offres pertinentes, sans distraction par une offre starter sous-dimensionnée.
+
+---
+
+## 9. Résumé des Fichiers
+
+### Fichiers Modifiés (6)
 
 | Fichier | Modification |
 |---------|--------------|
 | `apps/web/src/app/page.tsx` | Suppression de `handleSearch()` dans les boutons de recherche populaire |
 | `apps/web/src/app/for-professionals/page.tsx` | Ajout du paramètre `?type=pro` aux 2 liens d'inscription |
 | `apps/web/src/app/register/page.tsx` | (1) Lecture paramètre `?type=pro`, (2) Ajout Suspense boundary, (3) Migration sage→cream |
-| `apps/web/src/app/how-it-works/page.tsx` | Migration complète sage/vert → cream/sand (hero, badges, icônes, CTA) |
+| `apps/web/src/app/how-it-works/page.tsx` | (1) Migration sage→cream, (2) Visibilité CTA "Créer un compte", (3) Redirections vers /pricing, (4) Footer cohérent |
+| `apps/web/src/app/pricing/page.tsx` | (1) Suppression offre Starter, (2) Uniformisation CTA Business, (3) Grille 2 colonnes, (4) Redirections vers /register?type=pro |
 | `docs/daily-reports/CHANGELOG_2026-02-08.md` | Documentation complète de toutes les modifications |
 
-### Commits du Jour (7+)
+### Commits du Jour (10+)
 
 | Hash | Message | Description |
 |------|---------|-------------|
@@ -390,7 +553,9 @@ Migration complète vers la palette cream/sand sur toutes les pages.
 | `88aad19` | Redirect inscription pro sans option client | Ajout paramètre `?type=pro` et logique conditionnelle |
 | `3472ed2` | Fix erreur build - suppression import useEffect inutilisé | Correction TypeScript production |
 | `c1b9b4f` | Fix erreur build - ajout Suspense pour useSearchParams | Wrapping RegisterForm dans Suspense |
-| *(en attente)* | Uniformisation charte graphique - migration sage→cream | Changement couleurs pages inscription et comment-ça-marche |
+| *(en attente)* | Uniformisation charte graphique - pages inscription et comment-ça-marche | Migration complète sage→cream |
+| *(en attente)* | Optimisation navigation - redirections vers pricing | Boutons "Devenir partenaire" et visibilité CTA |
+| *(en attente)* | Simplification offre tarifaire - suppression Starter | Focus sur Pro et Business uniquement |
 
 ---
 
@@ -405,8 +570,8 @@ Migration complète vers la palette cream/sand sur toutes les pages.
 
 ---
 
-**Rapport généré le:** 08/02/2026 à 14:30
-**Statut final:** BUGS UX CORRIGÉS - PARCOURS PRO OPTIMISÉ - CHARTE GRAPHIQUE UNIFIÉE
+**Rapport généré le:** 08/02/2026 à 16:45
+**Statut final:** BUGS UX CORRIGÉS - PARCOURS PRO OPTIMISÉ - CHARTE GRAPHIQUE UNIFIÉE - OFFRE TARIFAIRE SIMPLIFIÉE
 
 ---
 
