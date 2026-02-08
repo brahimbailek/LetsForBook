@@ -9,35 +9,16 @@ export default function PricingPage() {
 
   const plans = [
     {
-      name: 'Starter',
-      description: 'Idéal pour débuter',
-      monthlyPrice: 29,
-      yearlyPrice: 24,
-      features: [
-        '1 professionnel',
-        'Agenda en ligne',
-        'Réservations illimitées',
-        'Rappels SMS (50/mois)',
-        'Page salon personnalisée',
-        'Support email',
-      ],
-      notIncluded: [
-        'Paiement en ligne',
-        'Statistiques avancées',
-        'Multi-établissements',
-      ],
-      cta: 'Commencer',
-      popular: false,
-    },
-    {
       name: 'Pro',
       description: 'Le plus populaire',
       monthlyPrice: 59,
       yearlyPrice: 49,
       features: [
         'Jusqu&apos;à 5 professionnels',
-        'Tout Starter +',
+        'Agenda en ligne',
+        'Réservations illimitées',
         'Rappels SMS (200/mois)',
+        'Page salon personnalisée',
         'Paiement en ligne',
         'Acomptes & cautions',
         'Statistiques détaillées',
@@ -66,7 +47,7 @@ export default function PricingPage() {
         'SLA garanti',
       ],
       notIncluded: [],
-      cta: 'Nous contacter',
+      cta: 'Commencer',
       popular: false,
     },
   ];
@@ -140,7 +121,7 @@ export default function PricingPage() {
       {/* Plans */}
       <section className="pb-16 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {plans.map((plan) => (
               <Card
                 key={plan.name}
@@ -173,7 +154,7 @@ export default function PricingPage() {
                   )}
                 </div>
 
-                <Link href={plan.cta === 'Nous contacter' ? '/contact' : '/register'}>
+                <Link href="/register?type=pro">
                   <Button
                     fullWidth
                     variant={plan.popular ? 'primary' : 'outline'}
