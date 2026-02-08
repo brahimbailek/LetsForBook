@@ -13,7 +13,8 @@
 1. [Résumé Exécutif](#1-résumé-exécutif)
 2. [Fix des Recherches Populaires](#2-fix-des-recherches-populaires)
 3. [Redirection Inscription Pro Sans Option Client](#3-redirection-inscription-pro-sans-option-client)
-4. [Résumé des Fichiers](#4-résumé-des-fichiers)
+4. [Bug Build - Import Non Utilisé](#4-bug-build---import-non-utilisé)
+5. [Résumé des Fichiers](#5-résumé-des-fichiers)
 
 ---
 
@@ -29,10 +30,10 @@ Amélioration de l'expérience utilisateur sur la page d'accueil et le parcours 
 
 | Métrique | Valeur |
 |----------|--------|
-| Bugs corrigés | 1 (UX) |
+| Bugs corrigés | 2 (1 UX + 1 Build) |
 | Nouvelles fonctionnalités | 1 |
 | Fichiers modifiés | 3 |
-| Commits | 2 |
+| Commits | 3 |
 
 ### Ce Que Ça Signifie Pour l'Application
 
@@ -164,7 +165,66 @@ const [userType, setUserType] = useState<UserType>(isPro ? 'SALON_OWNER' : 'CLIE
 
 ---
 
-## 4. Résumé des Fichiers
+## 4. Bug Build - Import Non Utilisé
+
+### Le Problème
+
+Lors du déploiement sur Railway, le build a échoué avec l'erreur TypeScript suivante :
+
+```
+Type error: 'useEffect' is declared but its value is never read.
+
+  3 | import { useState, useEffect } from 'react';
+    |                    ^
+```
+
+**Impact :** Déploiement bloqué, application indisponible en production.
+
+### Cause Racine
+
+Lors de l'ajout du paramètre `?type=pro` dans `register/page.tsx`, l'import `useEffect` a été ajouté par erreur mais jamais utilisé dans le code. En mode développement local, cela ne pose pas de problème, mais **Next.js en mode production rejette les imports non utilisés** pour optimiser le bundle.
+
+### Différence Dev vs Production
+
+| Mode | Comportement | Raison |
+|------|--------------|--------|
+| **Développement** (`npm run dev`) | Accepte les imports inutilisés | Compilation rapide, pas d'optimisation |
+| **Production** (`npm run build`) | Rejette les imports inutilisés | Build strict, optimisation du bundle, lint activé |
+
+### Solution Implémentée
+
+#### Fichier: `apps/web/src/app/register/page.tsx` (ligne 3)
+
+**Avant (code cassé) :**
+```tsx
+import { useState, useEffect } from 'react';  // ← useEffect inutilisé
+import { useRouter, useSearchParams } from 'next/navigation';
+```
+
+**Après (code corrigé) :**
+```tsx
+import { useState } from 'react';  // ← Import nettoyé
+import { useRouter, useSearchParams } from 'next/navigation';
+```
+
+| Changement | Impact |
+|------------|--------|
+| Suppression de `useEffect` | Build passe en production |
+| Seuls les hooks utilisés sont importés | Bundle plus léger |
+
+### Leçon Apprise
+
+Toujours tester le build de production localement avant de pousser :
+
+```bash
+npm run build:web
+```
+
+Cela permet de détecter ce type d'erreur TypeScript stricte **avant** le déploiement Railway.
+
+---
+
+## 5. Résumé des Fichiers
 
 ### Fichiers Modifiés (3)
 
@@ -174,12 +234,13 @@ const [userType, setUserType] = useState<UserType>(isPro ? 'SALON_OWNER' : 'CLIE
 | `apps/web/src/app/for-professionals/page.tsx` | Ajout du paramètre `?type=pro` aux 2 liens d'inscription |
 | `apps/web/src/app/register/page.tsx` | Lecture du paramètre `?type=pro`, masquage conditionnel de l'option Client |
 
-### Commits du Jour (2)
+### Commits du Jour (3)
 
 | Hash | Message | Description |
 |------|---------|-------------|
 | `4fac387` | Fix recherches populaires pour permettre choix ville | Suppression de l'appel `handleSearch()` immédiat |
 | `88aad19` | Redirect inscription pro sans option client | Ajout paramètre `?type=pro` et logique conditionnelle |
+| `3472ed2` | Fix erreur build - suppression import useEffect inutilisé | Correction TypeScript production |
 
 ---
 
