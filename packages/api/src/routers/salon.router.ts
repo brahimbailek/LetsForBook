@@ -410,6 +410,17 @@ export const salonRouter = router({
           },
           services: {
             where: { active: true },
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  icon: true,
+                  color: true,
+                },
+              },
+            },
           },
           reviews: {
             take: 10,
