@@ -5,7 +5,7 @@ export const createServiceSchema = z.object({
   salonId: z.string().cuid('Invalid salon ID'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().max(1000, 'Description must be less than 1000 characters').optional(),
-  category: z.string().min(2, 'Category is required'),
+  categoryId: z.string().cuid('Invalid category ID'),
   price: z.number().min(0, 'Price must be positive').int('Price must be in cents'),
   currency: z.string().length(3, 'Currency must be 3 characters').default('EUR'),
   durationMinutes: z.number().min(15, 'Duration must be at least 15 minutes').max(480, 'Duration cannot exceed 8 hours'),

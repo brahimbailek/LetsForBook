@@ -22,9 +22,10 @@ export const serviceRouter = router({
         where: {
           salonId,
           active: true,
-          ...(category ? { category } : {}),
+          ...(category ? { categoryId: category } : {}),
         },
         include: {
+          category: true,
           professionals: {
             where: { active: true },
             include: {
@@ -43,7 +44,7 @@ export const serviceRouter = router({
             },
           },
         },
-        orderBy: [{ category: 'asc' }, { name: 'asc' }],
+        orderBy: [{ category: { name: 'asc' } }, { name: 'asc' }],
       });
 
       return services;
@@ -60,6 +61,7 @@ export const serviceRouter = router({
         where: { id: input.id },
         include: {
           salon: true,
+          category: true,
           professionals: {
             where: { active: true },
             include: {
@@ -103,9 +105,18 @@ export const serviceRouter = router({
           active: true,
         },
         select: {
-          category: true,
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              icon: true,
+              color: true,
+            },
+          },
         },
-        distinct: ['category'],
+        distinct: ['categoryId'],
       });
 
       return services.map((s) => s.category);
