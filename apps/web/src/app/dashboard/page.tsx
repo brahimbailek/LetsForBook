@@ -424,7 +424,7 @@ function SalonServicesCard({ salon, onAddService }: { salon: any; onAddService: 
               <div>
                 <p className="font-medium text-coffee-800">{service.name}</p>
                 <p className="text-sm text-coffee-500">
-                  {service.category} · {service.durationMinutes} min
+                  {service.category?.name} · {service.durationMinutes} min
                 </p>
               </div>
               <div className="flex items-center gap-4">
