@@ -14,23 +14,10 @@ interface ServiceFormProps {
     description: string | null;
     price: number;
     durationMinutes: number;
-    category: string;
+    categoryId: string;
   };
   onSuccess: () => void;
 }
-
-const CATEGORIES = [
-  { value: 'Coiffure', label: 'Coiffure' },
-  { value: 'Coloration', label: 'Coloration' },
-  { value: 'Soins', label: 'Soins' },
-  { value: 'Barbe', label: 'Barbe' },
-  { value: 'Manucure', label: 'Manucure' },
-  { value: 'Pédicure', label: 'Pédicure' },
-  { value: 'Épilation', label: 'Épilation' },
-  { value: 'Massage', label: 'Massage' },
-  { value: 'Maquillage', label: 'Maquillage' },
-  { value: 'Autre', label: 'Autre' },
-];
 
 const DURATIONS = [
   { value: '15', label: '15 min' },
@@ -45,12 +32,15 @@ const DURATIONS = [
 export function ServiceForm({ isOpen, onClose, salonId, service, onSuccess }: ServiceFormProps) {
   const isEditing = !!service;
 
+  // Load categories from database
+  const { data: categories, isLoading: categoriesLoading } = trpc.category.getAll.useQuery();
+
   const [formData, setFormData] = useState({
     name: service?.name || '',
     description: service?.description || '',
     price: service ? (service.price / 100).toString() : '',
     durationMinutes: service?.durationMinutes.toString() || '60',
-    category: service?.category || 'Coiffure',
+    categoryId: service?.categoryId || '',
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +72,7 @@ export function ServiceForm({ isOpen, onClose, salonId, service, onSuccess }: Se
       description: '',
       price: '',
       durationMinutes: '60',
-      category: 'Coiffure',
+      categoryId: categories?.[0]?.id || '',
     });
     setError(null);
   };
@@ -98,12 +88,17 @@ export function ServiceForm({ isOpen, onClose, salonId, service, onSuccess }: Se
       return;
     }
 
+    if (!formData.categoryId) {
+      setError('Veuillez sélectionner une catégorie');
+      return;
+    }
+
     const data = {
       name: formData.name,
       description: formData.description || undefined,
       price: priceInCents,
       durationMinutes: parseInt(formData.durationMinutes),
-      category: formData.category,
+      categoryId: formData.categoryId,
     };
 
     if (isEditing && service) {
@@ -114,6 +109,12 @@ export function ServiceForm({ isOpen, onClose, salonId, service, onSuccess }: Se
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  // Prepare category options for select
+  const categoryOptions = categories?.map((cat) => ({
+    value: cat.id,
+    label: `${cat.icon || ''} ${cat.name}`.trim(),
+  })) || [];
 
   return (
     <Modal
@@ -147,9 +148,10 @@ export function ServiceForm({ isOpen, onClose, salonId, service, onSuccess }: Se
 
         <Select
           label="Catégorie *"
-          value={formData.category}
-          onChange={(value) => setFormData({ ...formData, category: value })}
-          options={CATEGORIES}
+          value={formData.categoryId}
+          onChange={(value) => setFormData({ ...formData, categoryId: value })}
+          options={categoryOptions}
+          disabled={categoriesLoading}
         />
 
         <div className="grid grid-cols-2 gap-4">
@@ -176,7 +178,7 @@ export function ServiceForm({ isOpen, onClose, salonId, service, onSuccess }: Se
           <Button type="button" variant="outline" onClick={onClose} fullWidth>
             Annuler
           </Button>
-          <Button type="submit" fullWidth disabled={isPending}>
+          <Button type="submit" fullWidth disabled={isPending || categoriesLoading}>
             {isPending ? 'Enregistrement...' : isEditing ? 'Enregistrer' : 'Créer'}
           </Button>
         </div>
