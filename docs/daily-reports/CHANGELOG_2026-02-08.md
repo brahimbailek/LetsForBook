@@ -19,7 +19,10 @@
 7. [Optimisation Navigation et Visibilité des CTA](#7-optimisation-navigation-et-visibilité-des-cta)
 8. [Simplification de l'Offre Tarifaire](#8-simplification-de-loffre-tarifaire)
 9. [Ajout Logo Cliquable Pages Auth](#9-ajout-logo-cliquable-pages-auth)
-10. [Résumé des Fichiers](#10-résumé-des-fichiers)
+10. [Système de Catégories et Services Automobile](#10-système-de-catégories-et-services-automobile)
+11. [Comptes Tests et Démo](#11-comptes-tests-et-démo)
+12. [Favicon Couleur Crème](#12-favicon-couleur-crème)
+13. [Résumé des Fichiers](#13-résumé-des-fichiers)
 
 ---
 
@@ -36,10 +39,12 @@ Amélioration de l'expérience utilisateur sur la page d'accueil et le parcours 
 | Métrique | Valeur |
 |----------|--------|
 | Bugs corrigés | 4 (1 UX + 3 Build) |
-| Nouvelles fonctionnalités | 1 |
-| Améliorations UX/UI | 6 (couleurs + navigation + tarifs + logo) |
-| Fichiers modifiés | 8 |
-| Commits | 11+ |
+| Nouvelles fonctionnalités | 3 (Catégories + Services Auto + Comptes test) |
+| Améliorations UX/UI | 7 (couleurs + navigation + tarifs + logo + favicon) |
+| Fichiers modifiés | 11 |
+| Commits | 15+ |
+| Services ajoutés | 14 (10 auto + 4 test) |
+| Catégories créées | 7 |
 
 ### Ce Que Ça Signifie Pour l'Application
 
@@ -50,6 +55,10 @@ Amélioration de l'expérience utilisateur sur la page d'accueil et le parcours 
 5. **Offre tarifaire épurée** - Suppression de l'offre Starter, focus sur Pro et Business uniquement
 6. **Conversion optimisée** - Tous les CTA de la page pricing redirigent vers l'inscription professionnelle
 7. **Retour accueil facilité** - Logo cliquable sur les pages de connexion et d'inscription pour retour intuitif à l'accueil
+8. **Système de catégories** - Architecture de données structurée pour supporter 7 catégories de services (Beauté, Coiffure, Barbier, Spa, Sport, Tatouage, Automobile)
+9. **Services automobile** - Extension de la plateforme aux garages avec 10 services (vidange, révision, diagnostic, freins, pneus, etc.)
+10. **Comptes de test** - 1 SALON_OWNER avec 3 PROFESSIONAL pour tester tous les scénarios utilisateur
+11. **Favicon cohérent** - Icône de l'onglet navigateur en couleur crème, alignée avec la charte graphique
 
 ---
 
@@ -530,9 +539,341 @@ Tous les boutons (Commencer × 2 + Créer mon compte gratuit) redirigent mainten
 
 ---
 
-## 10. Résumé des Fichiers
+## 10. Système de Catégories et Services Automobile
 
-### Fichiers Modifiés (8)
+### Le Contexte
+
+L'application était limitée aux salons de beauté et services de bien-être. Pour étendre la plateforme à d'autres secteurs (garages, centres sportifs, etc.), il fallait :
+1. **Structurer les services par catégories** - Remplacer les catégories en String par un modèle relationnel
+2. **Ajouter le secteur Automobile** - Permettre la réservation de services auto (vidange, révision, etc.)
+3. **Préparer la scalabilité** - Faciliter l'ajout de nouvelles catégories à l'avenir
+
+### Solution Implémentée
+
+Migration du modèle de données vers un système de catégories relationnel avec Prisma.
+
+### Modifications Techniques
+
+#### 1. Fichier: `packages/database/prisma/schema.prisma` (lignes 303-343)
+
+**Ajout du modèle Category :**
+
+```prisma
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique // "Beauté", "Automobile", etc.
+  slug        String  @unique // "beaute", "automobile"
+  description String? @db.Text
+  icon        String? // Emoji ou nom d'icône
+  color       String? // Couleur hexa pour l'UI
+
+  order       Int     @default(0) // Pour le tri
+  active      Boolean @default(true)
+
+  services    Service[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([active])
+  @@index([order])
+  @@map("salon_categories")
+}
+```
+
+**Modification du modèle Service :**
+
+**Avant :**
+```prisma
+model Service {
+  id       String @id @default(cuid())
+  category String  // ❌ String simple
+  // ...
+}
+```
+
+**Après :**
+```prisma
+model Service {
+  id         String   @id @default(cuid())
+  categoryId String   // ✅ Foreign key
+  category   Category @relation(fields: [categoryId], references: [id])
+  // ...
+  @@index([categoryId])
+}
+```
+
+#### 2. Fichier: `packages/database/prisma/seed.ts` (refonte complète)
+
+**Catégories créées (7) :**
+
+| Catégorie | Slug | Icône | Couleur | Description |
+|-----------|------|-------|---------|-------------|
+| Beauté | beaute | 💄 | #E91E63 | Instituts de beauté, soins du visage et du corps |
+| Coiffure | coiffure | ✂️ | #9C27B0 | Salons de coiffure pour hommes et femmes |
+| Barbier | barbier | 💈 | #3F51B5 | Barbershops, coupes homme et taille de barbe |
+| Bien-être & Spa | bien-etre-spa | 🧘 | #00BCD4 | Massages, spa, hammam, soins relaxants |
+| Sport & Fitness | sport-fitness | 💪 | #4CAF50 | Coaching sportif, yoga, pilates, musculation |
+| Tatouage & Piercing | tatouage-piercing | 🎨 | #FF5722 | Studios de tatouage et piercing professionnels |
+| Automobile | automobile | 🚗 | #607D8B | Garages, mécanique, entretien et réparation automobile |
+
+**Services Automobile ajoutés (10) :**
+
+| Service | Prix | Durée | Salons |
+|---------|------|-------|--------|
+| Vidange + Filtre | 75€ | 60min | 3 garages |
+| Révision Complète | 150€ | 120min | 3 garages |
+| Diagnostic Électronique | 60€ | 45min | 3 garages |
+| Changement Plaquettes Freins | 120€ | 90min | 3 garages |
+| Changement Pneumatiques (4 pneus) | 300€ | 120min | 3 garages |
+| Géométrie + Équilibrage | 80€ | 60min | 3 garages |
+| Recharge Climatisation | 90€ | 60min | 3 garages |
+| Contrôle Technique | 70€ | 45min | 3 garages |
+| Changement Courroie Distribution | 450€ | 240min | 3 garages |
+| Réparation Carrosserie Légère | 250€ | 180min | 2 garages |
+
+**Garages ajoutés (3) :**
+
+| Ville | Nom | Description |
+|-------|-----|-------------|
+| Paris | Garage Expert Paris | Garage automobile multimarques. Entretien, réparation, révision, diagnostic. |
+| Lyon | Auto Service Lyon | Centre auto complet. Pneumatiques, vidange, freinage, climatisation. |
+| Toulouse | Garage Toulouse Auto | Mécanique générale toutes marques. Contrôle technique, entretien, carrosserie. |
+
+**Professionnels mécaniciens ajoutés (2) :**
+
+- Kevin Martin - Mécanicien expert (12 ans d'expérience) - Garage Expert Paris
+- David Bernard - Spécialiste pneumatiques (8 ans d'expérience) - Auto Service Lyon
+
+### Architecture de Données
+
+**Relations Prisma :**
+
+```
+Category (1) ----< (N) Service
+                      ↓
+                   (N) ProfessionalService
+                      ↓
+               ProfessionalProfile
+```
+
+**Avantages de cette architecture :**
+
+| Avantage | Bénéfice |
+|----------|----------|
+| **Typage fort** | Impossible de créer un service avec une catégorie invalide |
+| **Scalabilité** | Ajouter une nouvelle catégorie = 1 seul INSERT |
+| **Requêtes optimisées** | Index sur categoryId pour filtrage rapide |
+| **UI dynamique** | Couleurs et icônes stockées pour affichage cohérent |
+| **Tri personnalisé** | Champ `order` pour organiser l'affichage |
+
+### Résultat
+
+**Nouveau total de services :** 60+ services répartis sur 7 catégories
+
+**Distribution par catégorie :**
+
+| Catégorie | Nombre de services | Salons concernés |
+|-----------|-------------------|------------------|
+| Coiffure | ~8 | 5 salons |
+| Barbier | 4 | 3 salons |
+| Beauté | ~8 | 3 salons |
+| Bien-être & Spa | 8 | 5 salons |
+| Sport & Fitness | 6 | 4 salons |
+| Tatouage & Piercing | 9 | 4 salons |
+| Automobile | 10 | 3 garages |
+
+---
+
+## 11. Comptes Tests et Démo
+
+### Le Besoin
+
+Pour tester l'application en conditions réelles, il était nécessaire de créer :
+- **1 compte SALON_OWNER (Business)** - Pour tester la gestion d'un salon avec plusieurs employés
+- **3 comptes PROFESSIONAL** - Pour tester le point de vue des employés
+- **1 salon dédié** - Avec des services variés
+
+Ces comptes permettent de tester :
+- La création de rendez-vous
+- La gestion des professionnels par le propriétaire
+- Les refus de rendez-vous par les pros (visible par l'owner)
+- Les disponibilités et exceptions
+
+### Solution Implémentée
+
+Création d'un écosystème complet de test dans le seed.
+
+### Comptes Créés
+
+#### Fichier: `packages/database/prisma/seed.ts` (lignes 187-277)
+
+**1. SALON_OWNER (test-owner@letsforbook.fr)**
+
+```typescript
+const testOwner = await prisma.user.create({
+  data: {
+    email: 'test-owner@letsforbook.fr',
+    password: defaultPassword, // password123
+    firstName: 'Test',
+    lastName: 'Owner',
+    phone: '+33799999999',
+    role: UserRole.SALON_OWNER,
+    emailVerified: new Date(),
+  },
+});
+```
+
+**2. SALON TEST (Salon Test Paris)**
+
+- **Localisation :** 1 Rue de Test, 75001 Paris
+- **Email :** contact@salon-test.fr
+- **Politique :** Acompte 20%, annulation 24h, buffer 10min
+- **Statut :** Vérifié et actif
+
+**3. PROFESSIONNELS (3 comptes)**
+
+| Email | Prénom | Spécialités | Expérience |
+|-------|--------|-------------|------------|
+| test-pro1@letsforbook.fr | Sophie Test | Coupe femme, Coloration, Balayage | 8 ans |
+| test-pro2@letsforbook.fr | Marc Test | Soin visage, Manucure, Pédicure | 5 ans |
+| test-pro3@letsforbook.fr | Julie Test | Massage suédois, Pierres chaudes | 10 ans |
+
+**4. SERVICES TEST (4 services)**
+
+| Service | Catégorie | Prix | Durée |
+|---------|-----------|------|-------|
+| Coupe Femme Test | Coiffure | 45€ | 60min |
+| Coloration Test | Coiffure | 85€ | 120min |
+| Manucure Gel Test | Beauté | 55€ | 90min |
+| Massage Relaxant Test | Bien-être & Spa | 75€ | 60min |
+
+**5. DISPONIBILITÉS (18 créneaux)**
+
+- **Jours :** Lundi au Samedi
+- **Horaires :** 9h-19h (17h le samedi)
+- **Pause :** 12h30-14h
+- **3 professionnels × 6 jours = 18 créneaux**
+
+### Utilisation
+
+**Connexion SALON_OWNER :**
+```
+Email: test-owner@letsforbook.fr
+Password: password123
+```
+
+**Capacités du compte SALON_OWNER :**
+- ✅ Voir tous les rendez-vous du salon
+- ✅ Voir les rendez-vous refusés par les pros (status: CANCELLED_SALON)
+- ✅ Gérer les 3 professionnels
+- ✅ Créer/modifier les services et prix
+- ✅ Gérer les disponibilités
+
+**Connexion PROFESSIONAL (exemple) :**
+```
+Email: test-pro1@letsforbook.fr
+Password: password123
+```
+
+**Capacités du compte PROFESSIONAL :**
+- ✅ Voir ses propres rendez-vous
+- ✅ Accepter/refuser des demandes
+- ✅ Modifier ses disponibilités
+- ❌ Ne peut PAS modifier les services ni les prix
+
+### Résultat
+
+| Élément | Quantité |
+|---------|----------|
+| Compte SALON_OWNER | 1 |
+| Salon de test | 1 |
+| Professionnels | 3 |
+| Services test | 4 |
+| Disponibilités | 18 créneaux |
+
+**Impact pour le développement :** Ces comptes permettent de tester tous les scénarios utilisateur sans polluer les données de production.
+
+---
+
+## 12. Favicon Couleur Crème
+
+### Le Problème
+
+Le favicon (icône dans l'onglet du navigateur) utilisait un dégradé vert (`#5a8d60` → `#45734b`) qui ne correspondait plus à la nouvelle charte graphique cream/sand de l'application.
+
+**Incohérence visuelle :**
+- **Page web :** Palette cream/sand (#D4A574)
+- **Favicon :** Palette vert/sage
+
+Cette différence créait une confusion visuelle et nuisait à la cohérence de la marque.
+
+### Solution Implémentée
+
+Migration du favicon vers la couleur crème pour cohérence totale avec la charte graphique.
+
+### Modifications Techniques
+
+#### Fichier: `apps/web/src/app/icon.tsx` (ligne 15)
+
+**Avant :**
+```tsx
+style={{
+  fontSize: 20,
+  background: 'linear-gradient(135deg, #5a8d60, #45734b)', // ❌ Vert
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 8,
+}}
+```
+
+**Après :**
+```tsx
+style={{
+  fontSize: 20,
+  background: '#D4A574', // ✅ Cream (correspond à cream-600)
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 8,
+}}
+```
+
+### Architecture Next.js
+
+**Next.js App Router - Icon Generation :**
+
+- **Fichier :** `app/icon.tsx`
+- **Type :** ImageResponse (génération dynamique)
+- **Format :** PNG 32×32
+- **Technologie :** `next/og` (Open Graph)
+
+**Avantages de cette approche :**
+- ✅ Favicon généré dynamiquement au build
+- ✅ Pas besoin de fichier `.ico` statique
+- ✅ Support SVG dans le favicon
+- ✅ Cohérence avec les autres icônes (Apple, Android)
+
+### Résultat
+
+| Élément | Avant | Après |
+|---------|-------|-------|
+| Couleur favicon | Vert (#5a8d60) | ✅ Crème (#D4A574) |
+| Cohérence charte | ❌ Incohérent | ✅ 100% cohérent |
+| Icône calendrier | ✅ Blanc | ✅ Blanc (inchangé) |
+
+**Impact visuel :** Le favicon correspond maintenant parfaitement au logo affiché sur les pages login/register et à la palette globale de l'application.
+
+---
+
+## 13. Résumé des Fichiers
+
+### Fichiers Modifiés (11)
 
 | Fichier | Modification |
 |---------|--------------|
@@ -542,6 +883,9 @@ Tous les boutons (Commencer × 2 + Créer mon compte gratuit) redirigent mainten
 | `apps/web/src/app/login/page.tsx` | (1) Logo cliquable vers accueil, (2) Migration sage→cream (background + liens) |
 | `apps/web/src/app/how-it-works/page.tsx` | (1) Migration sage→cream, (2) Visibilité CTA "Créer un compte", (3) Redirections vers /pricing, (4) Footer cohérent |
 | `apps/web/src/app/pricing/page.tsx` | (1) Suppression offre Starter, (2) Uniformisation CTA Business, (3) Grille 2 colonnes, (4) Redirections vers /register?type=pro |
+| `apps/web/src/app/icon.tsx` | Migration couleur favicon : vert → crème (#D4A574) |
+| `packages/database/prisma/schema.prisma` | (1) Ajout modèle Category, (2) Modification Service avec relation categoryId |
+| `packages/database/prisma/seed.ts` | (1) Création 7 catégories, (2) Ajout 3 garages + 10 services auto, (3) Comptes test (1 owner + 3 pros), (4) Migration services vers categoryId |
 | `docs/daily-reports/CHANGELOG_2026-02-08.md` | Documentation complète de toutes les modifications |
 
 ### Commits du Jour (11+)
@@ -574,8 +918,8 @@ Tous les boutons (Commencer × 2 + Créer mon compte gratuit) redirigent mainten
 
 ---
 
-**Rapport généré le:** 08/02/2026 à 17:30
-**Statut final:** BUGS UX CORRIGÉS - PARCOURS PRO OPTIMISÉ - CHARTE GRAPHIQUE UNIFIÉE - OFFRE TARIFAIRE SIMPLIFIÉE - NAVIGATION AMÉLIORÉE
+**Rapport généré le:** 08/02/2026 à 21:45
+**Statut final:** BUGS UX CORRIGÉS - PARCOURS PRO OPTIMISÉ - CHARTE GRAPHIQUE UNIFIÉE - OFFRE TARIFAIRE SIMPLIFIÉE - NAVIGATION AMÉLIORÉE - SYSTÈME CATÉGORIES IMPLÉMENTÉ - SERVICES AUTOMOBILE AJOUTÉS - COMPTES TEST CRÉÉS
 
 ---
 

@@ -49,7 +49,9 @@
       "Bash(npx turbo build:*)",
       "Bash(npx prisma db push:*)",
       "Bash(npx prisma db pull:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npm run migrate:dev:*)"
     ]
   }
 }

@@ -21,6 +21,7 @@ async function main() {
   await prisma.clientProfile.deleteMany();
   await prisma.favoriteSalon.deleteMany();
   await prisma.salon.deleteMany();
+  await prisma.category.deleteMany();
   await prisma.user.deleteMany();
 
   console.log('✅ Base de données nettoyée');
@@ -28,7 +29,102 @@ async function main() {
   const defaultPassword = await bcrypt.hash('password123', 10);
 
   // ============================================
-  // 1. ADMIN (pour les devs)
+  // 1. CATÉGORIES
+  // ============================================
+  const categories = await Promise.all([
+    prisma.category.create({
+      data: {
+        name: 'Beauté',
+        slug: 'beaute',
+        description: 'Instituts de beauté, soins du visage et du corps, épilation',
+        icon: '💄',
+        color: '#E91E63',
+        order: 1,
+        active: true,
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: 'Coiffure',
+        slug: 'coiffure',
+        description: 'Salons de coiffure pour hommes et femmes',
+        icon: '✂️',
+        color: '#9C27B0',
+        order: 2,
+        active: true,
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: 'Barbier',
+        slug: 'barbier',
+        description: 'Barbershops, coupes homme et taille de barbe',
+        icon: '💈',
+        color: '#3F51B5',
+        order: 3,
+        active: true,
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: 'Bien-être & Spa',
+        slug: 'bien-etre-spa',
+        description: 'Massages, spa, hammam, soins relaxants',
+        icon: '🧘',
+        color: '#00BCD4',
+        order: 4,
+        active: true,
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: 'Sport & Fitness',
+        slug: 'sport-fitness',
+        description: 'Coaching sportif, yoga, pilates, musculation',
+        icon: '💪',
+        color: '#4CAF50',
+        order: 5,
+        active: true,
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: 'Tatouage & Piercing',
+        slug: 'tatouage-piercing',
+        description: 'Studios de tatouage et piercing professionnels',
+        icon: '🎨',
+        color: '#FF5722',
+        order: 6,
+        active: true,
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: 'Automobile',
+        slug: 'automobile',
+        description: 'Garages, mécanique, entretien et réparation automobile',
+        icon: '🚗',
+        color: '#607D8B',
+        order: 7,
+        active: true,
+      },
+    }),
+  ]);
+
+  const categoryMap = {
+    'Beauté': categories.find(c => c.slug === 'beaute')!.id,
+    'Coiffure': categories.find(c => c.slug === 'coiffure')!.id,
+    'Barbier': categories.find(c => c.slug === 'barbier')!.id,
+    'Bien-être & Spa': categories.find(c => c.slug === 'bien-etre-spa')!.id,
+    'Sport & Fitness': categories.find(c => c.slug === 'sport-fitness')!.id,
+    'Tatouage & Piercing': categories.find(c => c.slug === 'tatouage-piercing')!.id,
+    'Automobile': categories.find(c => c.slug === 'automobile')!.id,
+  };
+
+  console.log(`✅ ${categories.length} catégories créées`);
+
+  // ============================================
+  // 2. ADMIN (pour les devs)
   // ============================================
   await prisma.user.create({
     data: {
@@ -44,7 +140,7 @@ async function main() {
   console.log('✅ 1 Admin créé (admin@letsforbook.fr)');
 
   // ============================================
-  // 2. CLIENTS (15 utilisateurs)
+  // 3. CLIENTS (15 utilisateurs)
   // ============================================
   const clientsData = [
     { email: 'marie.dupont@gmail.com', firstName: 'Marie', lastName: 'Dupont', phone: '+33612345678' },
@@ -86,7 +182,102 @@ async function main() {
   console.log(`✅ ${clients.length} clients créés`);
 
   // ============================================
-  // 3. PROPRIÉTAIRES DE SALONS (8)
+  // 4. COMPTE TEST SALON_OWNER + 3 PROFESSIONNELS
+  // ============================================
+  const testOwner = await prisma.user.create({
+    data: {
+      email: 'test-owner@letsforbook.fr',
+      password: defaultPassword,
+      firstName: 'Test',
+      lastName: 'Owner',
+      phone: '+33799999999',
+      role: UserRole.SALON_OWNER,
+      emailVerified: new Date(),
+    },
+  });
+  console.log('✅ Compte test SALON_OWNER créé (test-owner@letsforbook.fr)');
+
+  // Créer le salon du test owner
+  const testSalon = await prisma.salon.create({
+    data: {
+      name: 'Salon Test Paris',
+      slug: 'salon-test-paris',
+      description: 'Salon de test pour démo et développement. Coiffure, beauté, manucure.',
+      address: '1 Rue de Test',
+      city: 'Paris',
+      postalCode: '75001',
+      latitude: 48.8566,
+      longitude: 2.3522,
+      phone: '+33199999999',
+      email: 'contact@salon-test.fr',
+      ownerId: testOwner.id,
+      depositRequired: true,
+      depositPercentage: 20,
+      cancellationPolicyHours: 24,
+      bookingBufferMinutes: 10,
+      verified: true,
+      active: true,
+    },
+  });
+
+  // Créer 3 professionnels test
+  const testProfessionalsData = [
+    {
+      email: 'test-pro1@letsforbook.fr',
+      firstName: 'Sophie',
+      lastName: 'Test',
+      bio: 'Coiffeuse test - Spécialiste coupes et colorations',
+      specialties: ['Coupe femme', 'Coloration', 'Balayage'],
+      experience: 8,
+    },
+    {
+      email: 'test-pro2@letsforbook.fr',
+      firstName: 'Marc',
+      lastName: 'Test',
+      bio: 'Esthéticien test - Expert soins visage et manucure',
+      specialties: ['Soin visage', 'Manucure', 'Pédicure'],
+      experience: 5,
+    },
+    {
+      email: 'test-pro3@letsforbook.fr',
+      firstName: 'Julie',
+      lastName: 'Test',
+      bio: 'Masseuse test - Massages relaxants et thérapeutiques',
+      specialties: ['Massage suédois', 'Massage aux pierres chaudes'],
+      experience: 10,
+    },
+  ];
+
+  const testProfessionals = await Promise.all(
+    testProfessionalsData.map((pro, index) =>
+      prisma.user.create({
+        data: {
+          email: pro.email,
+          password: defaultPassword,
+          firstName: pro.firstName,
+          lastName: pro.lastName,
+          phone: `+3379999999${index + 1}`,
+          role: UserRole.PROFESSIONAL,
+          emailVerified: new Date(),
+          avatar: `https://i.pravatar.cc/150?img=${index + 50}`,
+          professionalProfile: {
+            create: {
+              salonId: testSalon.id,
+              bio: pro.bio,
+              specialties: pro.specialties,
+              experience: pro.experience,
+              active: true,
+            },
+          },
+        },
+        include: { professionalProfile: true },
+      })
+    )
+  );
+  console.log(`✅ 3 professionnels test créés`);
+
+  // ============================================
+  // 5. PROPRIÉTAIRES DE SALONS (8)
   // ============================================
   const ownersData = [
     { email: 'owner1@letsforbook.fr', firstName: 'Pierre', lastName: 'Laurent', phone: '+33700000001' },
@@ -114,10 +305,10 @@ async function main() {
   console.log(`✅ ${owners.length} propriétaires créés`);
 
   // ============================================
-  // 4. SALONS (25+ établissements variés)
+  // 6. SALONS (28 établissements variés)
   // ============================================
   const salonsData = [
-    // PARIS (48.8566, 2.3522) - 6 salons
+    // PARIS (48.8566, 2.3522) - 7 salons
     {
       name: 'Beauté Éternelle',
       slug: 'beaute-eternelle-paris',
@@ -130,7 +321,6 @@ async function main() {
       phone: '+33142345678',
       email: 'contact@beaute-eternelle.fr',
       ownerId: owners[0]!.id,
-      category: 'Beauté',
     },
     {
       name: 'Le Studio Coiffure',
@@ -144,7 +334,6 @@ async function main() {
       phone: '+33145678901',
       email: 'contact@studio-coiffure.fr',
       ownerId: owners[0]!.id,
-      category: 'Coiffure',
     },
     {
       name: 'Ink Master Tattoo',
@@ -158,7 +347,6 @@ async function main() {
       phone: '+33156789012',
       email: 'contact@inkmaster.fr',
       ownerId: owners[1]!.id,
-      category: 'Tatouage',
     },
     {
       name: 'FitCoach Paris',
@@ -172,7 +360,6 @@ async function main() {
       phone: '+33167890123',
       email: 'contact@fitcoach-paris.fr',
       ownerId: owners[1]!.id,
-      category: 'Sport',
     },
     {
       name: 'Barber\'s Republic',
@@ -186,7 +373,6 @@ async function main() {
       phone: '+33178901234',
       email: 'contact@barbers-republic.fr',
       ownerId: owners[2]!.id,
-      category: 'Barbier',
     },
     {
       name: 'Zen Attitude Spa',
@@ -200,10 +386,22 @@ async function main() {
       phone: '+33189012345',
       email: 'contact@zenattitude.fr',
       ownerId: owners[2]!.id,
-      category: 'Spa',
+    },
+    {
+      name: 'Garage Expert Paris',
+      slug: 'garage-expert-paris',
+      description: 'Garage automobile multimarques. Entretien, réparation, révision, diagnostic.',
+      address: '78 Boulevard Périphérique',
+      city: 'Paris',
+      postalCode: '75018',
+      latitude: 48.8900,
+      longitude: 2.3400,
+      phone: '+33190123456',
+      email: 'contact@garage-expert-paris.fr',
+      ownerId: owners[3]!.id,
     },
 
-    // LYON (45.7640, 4.8357) - 4 salons
+    // LYON (45.7640, 4.8357) - 5 salons
     {
       name: 'Élégance Coiffure',
       slug: 'elegance-coiffure-lyon',
@@ -216,7 +414,6 @@ async function main() {
       phone: '+33478123456',
       email: 'hello@elegance-coiffure.fr',
       ownerId: owners[3]!.id,
-      category: 'Coiffure',
     },
     {
       name: 'Lyon Piercing Studio',
@@ -230,7 +427,6 @@ async function main() {
       phone: '+33478234567',
       email: 'contact@lyon-piercing.fr',
       ownerId: owners[3]!.id,
-      category: 'Piercing',
     },
     {
       name: 'Massage & Bien-être Lyon',
@@ -244,7 +440,6 @@ async function main() {
       phone: '+33478345678',
       email: 'contact@massage-lyon.fr',
       ownerId: owners[4]!.id,
-      category: 'Massage',
     },
     {
       name: 'Nails Factory Lyon',
@@ -258,7 +453,19 @@ async function main() {
       phone: '+33478456789',
       email: 'contact@nailsfactory-lyon.fr',
       ownerId: owners[4]!.id,
-      category: 'Manucure',
+    },
+    {
+      name: 'Auto Service Lyon',
+      slug: 'auto-service-lyon',
+      description: 'Centre auto complet. Pneumatiques, vidange, freinage, climatisation.',
+      address: '120 Avenue Berthelot',
+      city: 'Lyon',
+      postalCode: '69007',
+      latitude: 45.7450,
+      longitude: 4.8400,
+      phone: '+33478567890',
+      email: 'contact@autoservice-lyon.fr',
+      ownerId: owners[4]!.id,
     },
 
     // MARSEILLE (43.2965, 5.3698) - 4 salons
@@ -274,7 +481,6 @@ async function main() {
       phone: '+33491234567',
       email: 'info@zenitude-spa.fr',
       ownerId: owners[5]!.id,
-      category: 'Spa',
     },
     {
       name: 'Coiff\'Style Marseille',
@@ -288,7 +494,6 @@ async function main() {
       phone: '+33491345678',
       email: 'contact@coiffstyle-marseille.fr',
       ownerId: owners[5]!.id,
-      category: 'Coiffure',
     },
     {
       name: 'Marseille Tattoo Art',
@@ -302,7 +507,6 @@ async function main() {
       phone: '+33491456789',
       email: 'contact@marseille-tattoo.fr',
       ownerId: owners[6]!.id,
-      category: 'Tatouage',
     },
     {
       name: 'CrossFit Marseille',
@@ -316,10 +520,9 @@ async function main() {
       phone: '+33491567890',
       email: 'contact@crossfit-marseille.fr',
       ownerId: owners[6]!.id,
-      category: 'Sport',
     },
 
-    // TOULOUSE (43.6047, 1.4442) - 3 salons
+    // TOULOUSE (43.6047, 1.4442) - 4 salons
     {
       name: 'L\'Atelier du Sourcil Toulouse',
       slug: 'atelier-sourcil-toulouse',
@@ -332,7 +535,6 @@ async function main() {
       phone: '+33561876543',
       email: 'contact@atelier-sourcil.fr',
       ownerId: owners[7]!.id,
-      category: 'Beauté',
     },
     {
       name: 'Yoga Studio Toulouse',
@@ -346,7 +548,6 @@ async function main() {
       phone: '+33561987654',
       email: 'contact@yoga-toulouse.fr',
       ownerId: owners[7]!.id,
-      category: 'Sport',
     },
     {
       name: 'Barber Shop Toulouse',
@@ -360,7 +561,19 @@ async function main() {
       phone: '+33561098765',
       email: 'contact@barber-toulouse.fr',
       ownerId: owners[0]!.id,
-      category: 'Barbier',
+    },
+    {
+      name: 'Garage Toulouse Auto',
+      slug: 'garage-toulouse-auto',
+      description: 'Mécanique générale toutes marques. Contrôle technique, entretien, carrosserie.',
+      address: '56 Route de Narbonne',
+      city: 'Toulouse',
+      postalCode: '31400',
+      latitude: 43.5850,
+      longitude: 1.4500,
+      phone: '+33561109876',
+      email: 'contact@garage-toulouse.fr',
+      ownerId: owners[0]!.id,
     },
 
     // NICE (43.6951, 7.2658) - 3 salons
@@ -376,7 +589,6 @@ async function main() {
       phone: '+33493456789',
       email: 'hello@nailart-paradise.fr',
       ownerId: owners[1]!.id,
-      category: 'Manucure',
     },
     {
       name: 'Nice Coiffure Premium',
@@ -390,7 +602,6 @@ async function main() {
       phone: '+33493567890',
       email: 'contact@nice-coiffure.fr',
       ownerId: owners[2]!.id,
-      category: 'Coiffure',
     },
     {
       name: 'Riviera Massage',
@@ -404,7 +615,6 @@ async function main() {
       phone: '+33493678901',
       email: 'contact@riviera-massage.fr',
       ownerId: owners[3]!.id,
-      category: 'Massage',
     },
 
     // BORDEAUX (44.8378, -0.5792) - 3 salons
@@ -420,7 +630,6 @@ async function main() {
       phone: '+33556789012',
       email: 'contact@barbers-club.fr',
       ownerId: owners[4]!.id,
-      category: 'Barbier',
     },
     {
       name: 'Bordeaux Ink',
@@ -434,7 +643,6 @@ async function main() {
       phone: '+33556890123',
       email: 'contact@bordeaux-ink.fr',
       ownerId: owners[5]!.id,
-      category: 'Tatouage',
     },
     {
       name: 'Spa Vinothérapie Bordeaux',
@@ -448,7 +656,6 @@ async function main() {
       phone: '+33556901234',
       email: 'contact@spa-vino-bordeaux.fr',
       ownerId: owners[6]!.id,
-      category: 'Spa',
     },
 
     // NANTES (47.2184, -1.5536) - 2 salons
@@ -464,7 +671,6 @@ async function main() {
       phone: '+33240123456',
       email: 'contact@hairdesign-nantes.fr',
       ownerId: owners[7]!.id,
-      category: 'Coiffure',
     },
     {
       name: 'Pilates Studio Nantes',
@@ -478,7 +684,6 @@ async function main() {
       phone: '+33240234567',
       email: 'contact@pilates-nantes.fr',
       ownerId: owners[0]!.id,
-      category: 'Sport',
     },
   ];
 
@@ -510,7 +715,7 @@ async function main() {
   console.log(`✅ ${salons.length} salons créés`);
 
   // ============================================
-  // 5. PROFESSIONNELS (20+)
+  // 7. PROFESSIONNELS (20+)
   // ============================================
   const professionalsData = [
     { email: 'pro1@letsforbook.fr', firstName: 'Camille', lastName: 'Rousseau', salonIndex: 0, bio: 'Coiffeuse passionnée depuis 10 ans', specialties: ['Coupe femme', 'Coloration'], experience: 10 },
@@ -521,18 +726,20 @@ async function main() {
     { email: 'pro6@letsforbook.fr', firstName: 'Nathan', lastName: 'Thomas', salonIndex: 2, bio: 'Tatoueur réaliste', specialties: ['Réaliste', 'Portrait'], experience: 9 },
     { email: 'pro7@letsforbook.fr', firstName: 'Chloé', lastName: 'Robert', salonIndex: 2, bio: 'Tatoueuse old school', specialties: ['Old school', 'Japonais'], experience: 6 },
     { email: 'pro8@letsforbook.fr', firstName: 'Maxime', lastName: 'Lefevre', salonIndex: 3, bio: 'Coach sportif certifié', specialties: ['HIIT', 'Musculation'], experience: 5 },
-    { email: 'pro9@letsforbook.fr', firstName: 'Clara', lastName: 'Moreau', salonIndex: 6, bio: 'Coiffeuse coloriste', specialties: ['Coloration', 'Balayage'], experience: 11 },
-    { email: 'pro10@letsforbook.fr', firstName: 'Antoine', lastName: 'Simon', salonIndex: 7, bio: 'Perceur professionnel', specialties: ['Piercing', 'Bijoux'], experience: 7 },
-    { email: 'pro11@letsforbook.fr', firstName: 'Manon', lastName: 'Laurent', salonIndex: 8, bio: 'Masseuse thaï', specialties: ['Massage thaï', 'Réflexologie'], experience: 10 },
-    { email: 'pro12@letsforbook.fr', firstName: 'Théo', lastName: 'Michel', salonIndex: 9, bio: 'Prothésiste ongulaire', specialties: ['Gel', 'Nail art'], experience: 4 },
-    { email: 'pro13@letsforbook.fr', firstName: 'Jade', lastName: 'Garcia', salonIndex: 10, bio: 'Esthéticienne spa', specialties: ['Soins corps', 'Hammam'], experience: 8 },
-    { email: 'pro14@letsforbook.fr', firstName: 'Romain', lastName: 'Durand', salonIndex: 11, bio: 'Coiffeur homme/femme', specialties: ['Coupe', 'Brushing'], experience: 13 },
-    { email: 'pro15@letsforbook.fr', firstName: 'Sarah', lastName: 'Petit', salonIndex: 12, bio: 'Tatoueuse géométrique', specialties: ['Géométrique', 'Minimaliste'], experience: 5 },
-    { email: 'pro16@letsforbook.fr', firstName: 'Julien', lastName: 'Roux', salonIndex: 13, bio: 'Coach CrossFit', specialties: ['CrossFit', 'Haltérophilie'], experience: 6 },
-    { email: 'pro17@letsforbook.fr', firstName: 'Océane', lastName: 'Blanc', salonIndex: 14, bio: 'Experte microblading', specialties: ['Microblading', 'Sourcils'], experience: 4 },
-    { email: 'pro18@letsforbook.fr', firstName: 'Alexandre', lastName: 'Faure', salonIndex: 15, bio: 'Professeur de yoga', specialties: ['Hatha', 'Vinyasa'], experience: 9 },
-    { email: 'pro19@letsforbook.fr', firstName: 'Inès', lastName: 'Girard', salonIndex: 16, bio: 'Barbier traditionnel', specialties: ['Rasage', 'Taille barbe'], experience: 7 },
-    { email: 'pro20@letsforbook.fr', firstName: 'Paul', lastName: 'Bonnet', salonIndex: 17, bio: 'Styliste ongulaire', specialties: ['Nail art', 'Gel UV'], experience: 6 },
+    { email: 'pro9@letsforbook.fr', firstName: 'Clara', lastName: 'Moreau', salonIndex: 7, bio: 'Coiffeuse coloriste', specialties: ['Coloration', 'Balayage'], experience: 11 },
+    { email: 'pro10@letsforbook.fr', firstName: 'Antoine', lastName: 'Simon', salonIndex: 8, bio: 'Perceur professionnel', specialties: ['Piercing', 'Bijoux'], experience: 7 },
+    { email: 'pro11@letsforbook.fr', firstName: 'Manon', lastName: 'Laurent', salonIndex: 9, bio: 'Masseuse thaï', specialties: ['Massage thaï', 'Réflexologie'], experience: 10 },
+    { email: 'pro12@letsforbook.fr', firstName: 'Théo', lastName: 'Michel', salonIndex: 10, bio: 'Prothésiste ongulaire', specialties: ['Gel', 'Nail art'], experience: 4 },
+    { email: 'pro13@letsforbook.fr', firstName: 'Jade', lastName: 'Garcia', salonIndex: 11, bio: 'Esthéticienne spa', specialties: ['Soins corps', 'Hammam'], experience: 8 },
+    { email: 'pro14@letsforbook.fr', firstName: 'Romain', lastName: 'Durand', salonIndex: 12, bio: 'Coiffeur homme/femme', specialties: ['Coupe', 'Brushing'], experience: 13 },
+    { email: 'pro15@letsforbook.fr', firstName: 'Sarah', lastName: 'Petit', salonIndex: 13, bio: 'Tatoueuse géométrique', specialties: ['Géométrique', 'Minimaliste'], experience: 5 },
+    { email: 'pro16@letsforbook.fr', firstName: 'Julien', lastName: 'Roux', salonIndex: 14, bio: 'Coach CrossFit', specialties: ['CrossFit', 'Haltérophilie'], experience: 6 },
+    { email: 'pro17@letsforbook.fr', firstName: 'Océane', lastName: 'Blanc', salonIndex: 15, bio: 'Experte microblading', specialties: ['Microblading', 'Sourcils'], experience: 4 },
+    { email: 'pro18@letsforbook.fr', firstName: 'Alexandre', lastName: 'Faure', salonIndex: 16, bio: 'Professeur de yoga', specialties: ['Hatha', 'Vinyasa'], experience: 9 },
+    { email: 'pro19@letsforbook.fr', firstName: 'Inès', lastName: 'Girard', salonIndex: 17, bio: 'Barbier traditionnel', specialties: ['Rasage', 'Taille barbe'], experience: 7 },
+    { email: 'pro20@letsforbook.fr', firstName: 'Paul', lastName: 'Bonnet', salonIndex: 18, bio: 'Styliste ongulaire', specialties: ['Nail art', 'Gel UV'], experience: 6 },
+    { email: 'pro21@letsforbook.fr', firstName: 'Kevin', lastName: 'Martin', salonIndex: 6, bio: 'Mécanicien expert', specialties: ['Diagnostic', 'Réparation'], experience: 12 },
+    { email: 'pro22@letsforbook.fr', firstName: 'David', lastName: 'Bernard', salonIndex: 11, bio: 'Spécialiste pneumatiques', specialties: ['Pneus', 'Géométrie'], experience: 8 },
   ];
 
   const professionals = await Promise.all(
@@ -564,68 +771,78 @@ async function main() {
   console.log(`✅ ${professionals.length} professionnels créés`);
 
   // ============================================
-  // 6. SERVICES (50+)
+  // 8. SERVICES (60+)
   // ============================================
   const servicesData = [
     // Coiffure
-    { name: 'Coupe Femme', category: 'Coiffure', price: 45, duration: 60, salonIndices: [0, 1, 6, 11, 18] },
-    { name: 'Coupe Homme', category: 'Coiffure', price: 28, duration: 45, salonIndices: [0, 1, 6, 11, 18] },
-    { name: 'Coupe Enfant', category: 'Coiffure', price: 18, duration: 30, salonIndices: [0, 1, 6, 11] },
-    { name: 'Coloration Complète', category: 'Coiffure', price: 85, duration: 120, salonIndices: [0, 1, 6, 11, 18] },
-    { name: 'Balayage', category: 'Coiffure', price: 95, duration: 150, salonIndices: [0, 1, 6, 18] },
-    { name: 'Mèches', category: 'Coiffure', price: 75, duration: 90, salonIndices: [0, 1, 6, 11] },
-    { name: 'Brushing', category: 'Coiffure', price: 25, duration: 30, salonIndices: [0, 1, 6, 11, 18] },
-    { name: 'Lissage Brésilien', category: 'Coiffure', price: 200, duration: 180, salonIndices: [1, 6, 18] },
+    { name: 'Coupe Femme', category: 'Coiffure', price: 4500, duration: 60, salonIndices: [0, 1, 7, 12, 19] },
+    { name: 'Coupe Homme', category: 'Coiffure', price: 2800, duration: 45, salonIndices: [0, 1, 7, 12, 19] },
+    { name: 'Coupe Enfant', category: 'Coiffure', price: 1800, duration: 30, salonIndices: [0, 1, 7, 12] },
+    { name: 'Coloration Complète', category: 'Coiffure', price: 8500, duration: 120, salonIndices: [0, 1, 7, 12, 19] },
+    { name: 'Balayage', category: 'Coiffure', price: 9500, duration: 150, salonIndices: [0, 1, 7, 19] },
+    { name: 'Mèches', category: 'Coiffure', price: 7500, duration: 90, salonIndices: [0, 1, 7, 12] },
+    { name: 'Brushing', category: 'Coiffure', price: 2500, duration: 30, salonIndices: [0, 1, 7, 12, 19] },
+    { name: 'Lissage Brésilien', category: 'Coiffure', price: 20000, duration: 180, salonIndices: [1, 7, 19] },
 
     // Barbier
-    { name: 'Coupe + Barbe', category: 'Barbier', price: 38, duration: 60, salonIndices: [4, 16, 20] },
-    { name: 'Taille de Barbe', category: 'Barbier', price: 18, duration: 30, salonIndices: [4, 16, 20] },
-    { name: 'Rasage Traditionnel', category: 'Barbier', price: 25, duration: 45, salonIndices: [4, 16, 20] },
-    { name: 'Soin Barbe', category: 'Barbier', price: 15, duration: 20, salonIndices: [4, 16, 20] },
+    { name: 'Coupe + Barbe', category: 'Barbier', price: 3800, duration: 60, salonIndices: [4, 17, 21] },
+    { name: 'Taille de Barbe', category: 'Barbier', price: 1800, duration: 30, salonIndices: [4, 17, 21] },
+    { name: 'Rasage Traditionnel', category: 'Barbier', price: 2500, duration: 45, salonIndices: [4, 17, 21] },
+    { name: 'Soin Barbe', category: 'Barbier', price: 1500, duration: 20, salonIndices: [4, 17, 21] },
 
-    // Manucure
-    { name: 'Manucure Simple', category: 'Manucure', price: 25, duration: 45, salonIndices: [0, 9, 17] },
-    { name: 'Pose Gel', category: 'Manucure', price: 55, duration: 90, salonIndices: [9, 17] },
-    { name: 'Semi-Permanent', category: 'Manucure', price: 35, duration: 60, salonIndices: [0, 9, 17] },
-    { name: 'Nail Art', category: 'Manucure', price: 45, duration: 75, salonIndices: [9, 17] },
-    { name: 'Pédicure', category: 'Manucure', price: 35, duration: 60, salonIndices: [0, 9, 17] },
+    // Manucure/Beauté
+    { name: 'Manucure Simple', category: 'Beauté', price: 2500, duration: 45, salonIndices: [0, 10, 18] },
+    { name: 'Pose Gel', category: 'Beauté', price: 5500, duration: 90, salonIndices: [10, 18] },
+    { name: 'Semi-Permanent', category: 'Beauté', price: 3500, duration: 60, salonIndices: [0, 10, 18] },
+    { name: 'Nail Art', category: 'Beauté', price: 4500, duration: 75, salonIndices: [10, 18] },
+    { name: 'Pédicure', category: 'Beauté', price: 3500, duration: 60, salonIndices: [0, 10, 18] },
 
-    // Massage/Spa
-    { name: 'Massage Suédois 60min', category: 'Massage', price: 75, duration: 60, salonIndices: [5, 8, 10, 19, 22] },
-    { name: 'Massage Deep Tissue', category: 'Massage', price: 85, duration: 75, salonIndices: [5, 8, 10, 19] },
-    { name: 'Massage aux Pierres Chaudes', category: 'Massage', price: 95, duration: 90, salonIndices: [5, 10, 19, 22] },
-    { name: 'Massage Californien', category: 'Massage', price: 80, duration: 60, salonIndices: [5, 8, 19] },
-    { name: 'Réflexologie Plantaire', category: 'Massage', price: 55, duration: 45, salonIndices: [5, 8, 10] },
-    { name: 'Hammam + Gommage', category: 'Spa', price: 55, duration: 90, salonIndices: [5, 10, 22] },
-    { name: 'Soin Visage Hydratant', category: 'Spa', price: 65, duration: 75, salonIndices: [0, 5, 10, 22] },
-    { name: 'Enveloppement Corps', category: 'Spa', price: 70, duration: 60, salonIndices: [5, 10, 22] },
+    // Bien-être & Spa
+    { name: 'Massage Suédois 60min', category: 'Bien-être & Spa', price: 7500, duration: 60, salonIndices: [5, 9, 11, 20, 23] },
+    { name: 'Massage Deep Tissue', category: 'Bien-être & Spa', price: 8500, duration: 75, salonIndices: [5, 9, 11, 20] },
+    { name: 'Massage aux Pierres Chaudes', category: 'Bien-être & Spa', price: 9500, duration: 90, salonIndices: [5, 11, 20, 23] },
+    { name: 'Massage Californien', category: 'Bien-être & Spa', price: 8000, duration: 60, salonIndices: [5, 9, 20] },
+    { name: 'Réflexologie Plantaire', category: 'Bien-être & Spa', price: 5500, duration: 45, salonIndices: [5, 9, 11] },
+    { name: 'Hammam + Gommage', category: 'Bien-être & Spa', price: 5500, duration: 90, salonIndices: [5, 11, 23] },
+    { name: 'Soin Visage Hydratant', category: 'Bien-être & Spa', price: 6500, duration: 75, salonIndices: [0, 5, 11, 23] },
+    { name: 'Enveloppement Corps', category: 'Bien-être & Spa', price: 7000, duration: 60, salonIndices: [5, 11, 23] },
 
-    // Tatouage
-    { name: 'Tatouage Petit (< 5cm)', category: 'Tatouage', price: 80, duration: 60, salonIndices: [2, 12, 21] },
-    { name: 'Tatouage Moyen (5-15cm)', category: 'Tatouage', price: 200, duration: 120, salonIndices: [2, 12, 21] },
-    { name: 'Tatouage Grand (> 15cm)', category: 'Tatouage', price: 400, duration: 240, salonIndices: [2, 12, 21] },
-    { name: 'Consultation Projet', category: 'Tatouage', price: 0, duration: 30, salonIndices: [2, 12, 21] },
-    { name: 'Retouche', category: 'Tatouage', price: 50, duration: 45, salonIndices: [2, 12, 21] },
+    // Tatouage & Piercing
+    { name: 'Tatouage Petit (< 5cm)', category: 'Tatouage & Piercing', price: 8000, duration: 60, salonIndices: [2, 13, 22] },
+    { name: 'Tatouage Moyen (5-15cm)', category: 'Tatouage & Piercing', price: 20000, duration: 120, salonIndices: [2, 13, 22] },
+    { name: 'Tatouage Grand (> 15cm)', category: 'Tatouage & Piercing', price: 40000, duration: 240, salonIndices: [2, 13, 22] },
+    { name: 'Consultation Projet', category: 'Tatouage & Piercing', price: 0, duration: 30, salonIndices: [2, 13, 22] },
+    { name: 'Retouche', category: 'Tatouage & Piercing', price: 5000, duration: 45, salonIndices: [2, 13, 22] },
+    { name: 'Piercing Lobe', category: 'Tatouage & Piercing', price: 3500, duration: 30, salonIndices: [8] },
+    { name: 'Piercing Hélix', category: 'Tatouage & Piercing', price: 4500, duration: 30, salonIndices: [8] },
+    { name: 'Piercing Nez', category: 'Tatouage & Piercing', price: 4500, duration: 30, salonIndices: [8] },
+    { name: 'Piercing Septum', category: 'Tatouage & Piercing', price: 5500, duration: 30, salonIndices: [8] },
 
-    // Piercing
-    { name: 'Piercing Lobe', category: 'Piercing', price: 35, duration: 30, salonIndices: [7] },
-    { name: 'Piercing Hélix', category: 'Piercing', price: 45, duration: 30, salonIndices: [7] },
-    { name: 'Piercing Nez', category: 'Piercing', price: 45, duration: 30, salonIndices: [7] },
-    { name: 'Piercing Septum', category: 'Piercing', price: 55, duration: 30, salonIndices: [7] },
+    // Sport & Fitness
+    { name: 'Personal Training 1h', category: 'Sport & Fitness', price: 6000, duration: 60, salonIndices: [3, 14] },
+    { name: 'Coaching Duo', category: 'Sport & Fitness', price: 4500, duration: 60, salonIndices: [3, 14] },
+    { name: 'Programme Remise en Forme', category: 'Sport & Fitness', price: 5000, duration: 75, salonIndices: [3, 14] },
+    { name: 'Cours Yoga', category: 'Sport & Fitness', price: 2500, duration: 60, salonIndices: [16] },
+    { name: 'Cours Pilates', category: 'Sport & Fitness', price: 3000, duration: 60, salonIndices: [24] },
+    { name: 'WOD CrossFit', category: 'Sport & Fitness', price: 2000, duration: 60, salonIndices: [14] },
 
-    // Sport/Fitness
-    { name: 'Personal Training 1h', category: 'Sport', price: 60, duration: 60, salonIndices: [3, 13] },
-    { name: 'Coaching Duo', category: 'Sport', price: 45, duration: 60, salonIndices: [3, 13] },
-    { name: 'Programme Remise en Forme', category: 'Sport', price: 50, duration: 75, salonIndices: [3, 13] },
-    { name: 'Cours Yoga', category: 'Sport', price: 25, duration: 60, salonIndices: [15] },
-    { name: 'Cours Pilates', category: 'Sport', price: 30, duration: 60, salonIndices: [23] },
-    { name: 'WOD CrossFit', category: 'Sport', price: 20, duration: 60, salonIndices: [13] },
+    // Beauté (regard/sourcils)
+    { name: 'Microblading Sourcils', category: 'Beauté', price: 35000, duration: 120, salonIndices: [15] },
+    { name: 'Extension Cils', category: 'Beauté', price: 8000, duration: 90, salonIndices: [15] },
+    { name: 'Rehaussement Cils', category: 'Beauté', price: 5500, duration: 60, salonIndices: [15] },
+    { name: 'Épilation Sourcils', category: 'Beauté', price: 1200, duration: 15, salonIndices: [0, 15] },
 
-    // Beauté/Regard
-    { name: 'Microblading Sourcils', category: 'Beauté', price: 350, duration: 120, salonIndices: [14] },
-    { name: 'Extension Cils', category: 'Beauté', price: 80, duration: 90, salonIndices: [14] },
-    { name: 'Rehaussement Cils', category: 'Beauté', price: 55, duration: 60, salonIndices: [14] },
-    { name: 'Épilation Sourcils', category: 'Beauté', price: 12, duration: 15, salonIndices: [0, 14] },
+    // Automobile
+    { name: 'Vidange + Filtre', category: 'Automobile', price: 7500, duration: 60, salonIndices: [6, 11, 19] },
+    { name: 'Révision Complète', category: 'Automobile', price: 15000, duration: 120, salonIndices: [6, 11, 19] },
+    { name: 'Diagnostic Électronique', category: 'Automobile', price: 6000, duration: 45, salonIndices: [6, 11, 19] },
+    { name: 'Changement Plaquettes Freins', category: 'Automobile', price: 12000, duration: 90, salonIndices: [6, 11, 19] },
+    { name: 'Changement Pneumatiques (4 pneus)', category: 'Automobile', price: 30000, duration: 120, salonIndices: [6, 11, 19] },
+    { name: 'Géométrie + Équilibrage', category: 'Automobile', price: 8000, duration: 60, salonIndices: [6, 11, 19] },
+    { name: 'Recharge Climatisation', category: 'Automobile', price: 9000, duration: 60, salonIndices: [6, 11, 19] },
+    { name: 'Contrôle Technique', category: 'Automobile', price: 7000, duration: 45, salonIndices: [6, 11, 19] },
+    { name: 'Changement Courroie Distribution', category: 'Automobile', price: 45000, duration: 240, salonIndices: [6, 11, 19] },
+    { name: 'Réparation Carrosserie Légère', category: 'Automobile', price: 25000, duration: 180, salonIndices: [6, 19] },
   ];
 
   const services = [];
@@ -636,7 +853,7 @@ async function main() {
           data: {
             salonId: salons[salonIndex]!.id,
             name: serviceData.name,
-            category: serviceData.category,
+            categoryId: categoryMap[serviceData.category as keyof typeof categoryMap],
             price: serviceData.price,
             durationMinutes: serviceData.duration,
             active: true,
@@ -646,21 +863,67 @@ async function main() {
       }
     }
   }
-  console.log(`✅ ${services.length} services créés`);
+
+  // Services pour le salon test
+  const testServices = await Promise.all([
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Coupe Femme Test',
+        categoryId: categoryMap['Coiffure'],
+        price: 4500,
+        durationMinutes: 60,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Coloration Test',
+        categoryId: categoryMap['Coiffure'],
+        price: 8500,
+        durationMinutes: 120,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Manucure Gel Test',
+        categoryId: categoryMap['Beauté'],
+        price: 5500,
+        durationMinutes: 90,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Massage Relaxant Test',
+        categoryId: categoryMap['Bien-être & Spa'],
+        price: 7500,
+        durationMinutes: 60,
+        active: true,
+      },
+    }),
+  ]);
+
+  services.push(...testServices);
+  console.log(`✅ ${services.length} services créés (dont ${testServices.length} pour le salon test)`);
 
   // ============================================
-  // 7. LIER SERVICES AUX PROFESSIONNELS
+  // 9. LIER SERVICES AUX PROFESSIONNELS
   // ============================================
   let professionalServicesCount = 0;
+
+  // Professionnels normaux
   for (const pro of professionals) {
     if (!pro.professionalProfile) continue;
 
-    // Trouver les services du salon du professionnel
     const salonServices = services.filter(
       (s) => s.salonId === pro.professionalProfile!.salonId
     );
 
-    // Assigner 2-4 services aléatoires
     const numServices = Math.min(salonServices.length, Math.floor(Math.random() * 3) + 2);
     const shuffled = salonServices.sort(() => 0.5 - Math.random());
 
@@ -675,10 +938,29 @@ async function main() {
       professionalServicesCount++;
     }
   }
+
+  // Professionnels test
+  for (const testPro of testProfessionals) {
+    if (!testPro.professionalProfile) continue;
+
+    const testSalonServices = testServices;
+
+    for (const service of testSalonServices) {
+      await prisma.professionalService.create({
+        data: {
+          professionalId: testPro.professionalProfile!.id,
+          serviceId: service.id,
+          active: true,
+        },
+      });
+      professionalServicesCount++;
+    }
+  }
+
   console.log(`✅ ${professionalServicesCount} services professionnels liés`);
 
   // ============================================
-  // 8. DISPONIBILITÉS
+  // 10. DISPONIBILITÉS
   // ============================================
   const days: DayOfWeek[] = [
     DayOfWeek.MONDAY,
@@ -690,6 +972,8 @@ async function main() {
   ];
 
   let availabilitiesCount = 0;
+
+  // Professionnels normaux
   for (const pro of professionals) {
     if (!pro.professionalProfile) continue;
 
@@ -708,10 +992,31 @@ async function main() {
       availabilitiesCount++;
     }
   }
+
+  // Professionnels test
+  for (const testPro of testProfessionals) {
+    if (!testPro.professionalProfile) continue;
+
+    for (const day of days) {
+      await prisma.professionalAvailability.create({
+        data: {
+          professionalId: testPro.professionalProfile!.id,
+          dayOfWeek: day,
+          startTime: '09:00',
+          endTime: day === DayOfWeek.SATURDAY ? '17:00' : '19:00',
+          breakStartTime: '12:30',
+          breakEndTime: '14:00',
+          isAvailable: true,
+        },
+      });
+      availabilitiesCount++;
+    }
+  }
+
   console.log(`✅ ${availabilitiesCount} disponibilités créées`);
 
   // ============================================
-  // 9. FAVORIS
+  // 11. FAVORIS
   // ============================================
   for (let i = 0; i < Math.min(10, clients.length); i++) {
     const numFavs = Math.floor(Math.random() * 3) + 1;
@@ -742,27 +1047,42 @@ async function main() {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👤 1 Admin
 👥 ${clients.length} Clients
-🏢 ${owners.length} Propriétaires de salons
-🏪 ${salons.length} Salons
-💼 ${professionals.length} Professionnels
-🛠️ ${services.length} Services
+🏢 ${owners.length + 1} Propriétaires de salons (dont 1 test)
+🏪 ${salons.length + 1} Salons (dont 1 test)
+💼 ${professionals.length + testProfessionals.length} Professionnels (dont ${testProfessionals.length} test)
+🛠️  ${services.length} Services
+📂 ${categories.length} Catégories
 📅 ${availabilitiesCount} Créneaux de disponibilité
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🔐 COMPTES DE TEST:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ADMIN:      admin@letsforbook.fr / password123
-CLIENT:     marie.dupont@gmail.com / password123
-OWNER:      owner1@letsforbook.fr / password123
-PRO:        pro1@letsforbook.fr / password123
+ADMIN:         admin@letsforbook.fr / password123
+CLIENT:        marie.dupont@gmail.com / password123
+OWNER (TEST):  test-owner@letsforbook.fr / password123
+  └─ Salon:    Salon Test Paris
+  └─ Pros:     test-pro1@letsforbook.fr (Sophie Test - Coiffure)
+              test-pro2@letsforbook.fr (Marc Test - Esthétique)
+              test-pro3@letsforbook.fr (Julie Test - Massage)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📂 CATÉGORIES DISPONIBLES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💄 Beauté
+✂️  Coiffure
+💈 Barbier
+🧘 Bien-être & Spa
+💪 Sport & Fitness
+🎨 Tatouage & Piercing
+🚗 Automobile
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🏪 SALONS PAR VILLE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Paris: 6 salons (Beauté, Coiffure, Tattoo, Sport, Barbier, Spa)
-Lyon: 4 salons (Coiffure, Piercing, Massage, Manucure)
+Paris: 7 salons (Beauté, Coiffure, Tattoo, Sport, Barbier, Spa, Garage)
+Lyon: 5 salons (Coiffure, Piercing, Massage, Manucure, Garage)
 Marseille: 4 salons (Spa, Coiffure, Tattoo, CrossFit)
-Toulouse: 3 salons (Beauté, Yoga, Barbier)
+Toulouse: 4 salons (Beauté, Yoga, Barbier, Garage)
 Nice: 3 salons (Manucure, Coiffure, Massage)
 Bordeaux: 3 salons (Barbier, Tattoo, Spa)
 Nantes: 2 salons (Coiffure, Pilates)
