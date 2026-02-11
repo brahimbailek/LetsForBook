@@ -18,7 +18,8 @@
 6. [Uniformisation de la Charte Graphique](#6-uniformisation-de-la-charte-graphique)
 7. [Optimisation Navigation et Visibilité des CTA](#7-optimisation-navigation-et-visibilité-des-cta)
 8. [Simplification de l'Offre Tarifaire](#8-simplification-de-loffre-tarifaire)
-9. [Résumé des Fichiers](#9-résumé-des-fichiers)
+9. [Ajout Logo Cliquable Pages Auth](#9-ajout-logo-cliquable-pages-auth)
+10. [Résumé des Fichiers](#10-résumé-des-fichiers)
 
 ---
 
@@ -36,9 +37,9 @@ Amélioration de l'expérience utilisateur sur la page d'accueil et le parcours 
 |----------|--------|
 | Bugs corrigés | 4 (1 UX + 3 Build) |
 | Nouvelles fonctionnalités | 1 |
-| Améliorations UX/UI | 5 (couleurs + navigation + tarifs) |
-| Fichiers modifiés | 6 |
-| Commits | 10+ |
+| Améliorations UX/UI | 6 (couleurs + navigation + tarifs + logo) |
+| Fichiers modifiés | 8 |
+| Commits | 11+ |
 
 ### Ce Que Ça Signifie Pour l'Application
 
@@ -48,6 +49,7 @@ Amélioration de l'expérience utilisateur sur la page d'accueil et le parcours 
 4. **Navigation pro simplifiée** - Tous les liens "Devenir partenaire" redirigent vers la page pricing plutôt que directement vers l'inscription
 5. **Offre tarifaire épurée** - Suppression de l'offre Starter, focus sur Pro et Business uniquement
 6. **Conversion optimisée** - Tous les CTA de la page pricing redirigent vers l'inscription professionnelle
+7. **Retour accueil facilité** - Logo cliquable sur les pages de connexion et d'inscription pour retour intuitif à l'accueil
 
 ---
 
@@ -528,20 +530,21 @@ Tous les boutons (Commencer × 2 + Créer mon compte gratuit) redirigent mainten
 
 ---
 
-## 9. Résumé des Fichiers
+## 10. Résumé des Fichiers
 
-### Fichiers Modifiés (6)
+### Fichiers Modifiés (8)
 
 | Fichier | Modification |
 |---------|--------------|
 | `apps/web/src/app/page.tsx` | Suppression de `handleSearch()` dans les boutons de recherche populaire |
 | `apps/web/src/app/for-professionals/page.tsx` | Ajout du paramètre `?type=pro` aux 2 liens d'inscription |
-| `apps/web/src/app/register/page.tsx` | (1) Lecture paramètre `?type=pro`, (2) Ajout Suspense boundary, (3) Migration sage→cream |
+| `apps/web/src/app/register/page.tsx` | (1) Lecture paramètre `?type=pro`, (2) Ajout Suspense boundary, (3) Migration sage→cream, (4) Logo cliquable |
+| `apps/web/src/app/login/page.tsx` | (1) Logo cliquable vers accueil, (2) Migration sage→cream (background + liens) |
 | `apps/web/src/app/how-it-works/page.tsx` | (1) Migration sage→cream, (2) Visibilité CTA "Créer un compte", (3) Redirections vers /pricing, (4) Footer cohérent |
 | `apps/web/src/app/pricing/page.tsx` | (1) Suppression offre Starter, (2) Uniformisation CTA Business, (3) Grille 2 colonnes, (4) Redirections vers /register?type=pro |
 | `docs/daily-reports/CHANGELOG_2026-02-08.md` | Documentation complète de toutes les modifications |
 
-### Commits du Jour (10+)
+### Commits du Jour (11+)
 
 | Hash | Message | Description |
 |------|---------|-------------|
@@ -556,6 +559,7 @@ Tous les boutons (Commencer × 2 + Créer mon compte gratuit) redirigent mainten
 | *(en attente)* | Uniformisation charte graphique - pages inscription et comment-ça-marche | Migration complète sage→cream |
 | *(en attente)* | Optimisation navigation - redirections vers pricing | Boutons "Devenir partenaire" et visibilité CTA |
 | *(en attente)* | Simplification offre tarifaire - suppression Starter | Focus sur Pro et Business uniquement |
+| *(en attente)* | Ajout logo cliquable pages auth - retour accueil | Logo cliquable sur login et register |
 
 ---
 
@@ -570,9 +574,82 @@ Tous les boutons (Commencer × 2 + Créer mon compte gratuit) redirigent mainten
 
 ---
 
-**Rapport généré le:** 08/02/2026 à 16:45
-**Statut final:** BUGS UX CORRIGÉS - PARCOURS PRO OPTIMISÉ - CHARTE GRAPHIQUE UNIFIÉE - OFFRE TARIFAIRE SIMPLIFIÉE
+**Rapport généré le:** 08/02/2026 à 17:30
+**Statut final:** BUGS UX CORRIGÉS - PARCOURS PRO OPTIMISÉ - CHARTE GRAPHIQUE UNIFIÉE - OFFRE TARIFAIRE SIMPLIFIÉE - NAVIGATION AMÉLIORÉE
 
 ---
 
 *Document généré par Claude (Sonnet 4.5) - Assistant IA Anthropic*
+
+---
+
+## 9. Ajout Logo Cliquable Pages Auth
+
+### Le Problème
+
+Les pages de connexion et d'inscription ne permettaient pas de retourner facilement à la page d'accueil.
+
+**Scénario problématique :**
+1. Utilisateur arrive sur `/register` ou `/login`
+2. Veut retourner à l'accueil
+3. Doit utiliser le bouton "retour" du navigateur ou taper l'URL manuellement
+4. **Pas de navigation intuitive**
+
+**Impact UX :** Frustration des utilisateurs qui se retrouvent "bloqués" sur les pages d'authentification sans moyen évident de retourner au site.
+
+### Solution Implémentée
+
+Ajout d'un logo "LetsForBook" cliquable en haut des pages qui redirige vers la page d'accueil.
+
+### Modifications Techniques
+
+#### 1. Fichier: `apps/web/src/app/register/page.tsx` (lignes 122-128)
+
+**Ajout d'un logo cliquable :**
+```tsx
+{/* Logo cliquable */}
+<div className="flex justify-center mb-8">
+  <Link href="/" className="inline-block">
+    <div className="text-3xl font-bold text-cream-700 hover:text-cream-800 transition-colors">
+      LetsForBook
+    </div>
+  </Link>
+</div>
+```
+
+#### 2. Fichier: `apps/web/src/app/login/page.tsx` (lignes 183-190)
+
+**Transformation du titre en lien cliquable :**
+
+**Avant :**
+```tsx
+<h1 className="text-4xl font-bold text-coffee-800 mb-2">
+  LetsForBook
+</h1>
+```
+
+**Après :**
+```tsx
+<Link href="/" className="inline-block mb-2">
+  <h1 className="text-4xl font-bold text-cream-700 hover:text-cream-800 transition-colors">
+    LetsForBook
+  </h1>
+</Link>
+```
+
+**Changements supplémentaires :**
+- Background : `to-sage-50` → `to-white` (cohérence charte graphique)
+- Lien "Créer un compte" : `text-sage-600` → `text-cream-700` (cohérence couleurs)
+
+### Résultat
+
+| Page | Avant | Après |
+|------|-------|-------|
+| Login | ❌ Texte non cliquable | ✅ Logo cliquable vers `/` |
+| Register | ❌ Pas de logo | ✅ Logo cliquable vers `/` |
+| Couleurs | ❌ Sage/vert | ✅ Cream (cohérent) |
+
+**UX améliorée :** Les utilisateurs peuvent maintenant retourner instinctivement à l'accueil en cliquant sur le logo, suivant la convention web standard.
+
+---
+

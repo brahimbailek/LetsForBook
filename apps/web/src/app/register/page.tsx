@@ -118,7 +118,16 @@ function RegisterForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white py-12 px-4">
       <div className="w-full max-w-2xl mx-auto">
-        {/* Logo et titre */}
+        {/* Logo cliquable */}
+        <div className="flex justify-center mb-8">
+          <Link href="/" className="inline-block">
+            <div className="text-3xl font-bold text-cream-700 hover:text-cream-800 transition-colors">
+              LetsForBook
+            </div>
+          </Link>
+        </div>
+
+        {/* Titre */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-coffee-800 mb-2">
             Créer votre compte

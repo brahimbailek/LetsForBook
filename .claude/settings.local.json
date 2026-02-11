@@ -48,7 +48,8 @@
       "Bash(npx tsx:*)",
       "Bash(npx turbo build:*)",
       "Bash(npx prisma db push:*)",
-      "Bash(npx prisma db pull:*)"
+      "Bash(npx prisma db pull:*)",
+      "Bash(echo:*)"
     ]
   }
 }

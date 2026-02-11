@@ -178,12 +178,14 @@ function LoginFormFallback() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-sage-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-coffee-800 mb-2">
-            LetsForBook
-          </h1>
+          <Link href="/" className="inline-block mb-2">
+            <h1 className="text-4xl font-bold text-cream-700 hover:text-cream-800 transition-colors">
+              LetsForBook
+            </h1>
+          </Link>
           <p className="text-coffee-600">
             Connectez-vous pour gérer vos rendez-vous
           </p>
@@ -197,7 +199,7 @@ export default function LoginPage() {
           Pas encore de compte ?{' '}
           <Link
             href="/register"
-            className="text-sage-600 hover:text-sage-700 font-medium transition-colors"
+            className="text-cream-700 hover:text-cream-800 font-medium transition-colors"
           >
             Créer un compte
           </Link>
