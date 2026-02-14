@@ -2,21 +2,46 @@
 
 import { trpc } from '@/lib/trpc/client';
 import Link from 'next/link';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button, Card, Badge, Spinner } from '@/components/ui';
 import { AppointmentsList, SalonForm, ServiceForm } from '@/components/dashboard';
 
+type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'my-agenda' | 'my-services' | 'my-availability';
+
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'appointments' | 'salons' | 'services' | 'team'>('overview');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [showSalonForm, setShowSalonForm] = useState(false);
   const [editingSalon, setEditingSalon] = useState<any>(null);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [selectedSalonForService, setSelectedSalonForService] = useState<string | null>(null);
 
   const { data: user, isLoading: isLoadingUser } = trpc.auth.me.useQuery();
+
+  // Derived role flags
+  const isSalonOwner = user?.role === 'SALON_OWNER' || user?.role === 'ADMIN';
+  const isProfessional = user?.role === 'PROFESSIONAL';
+
+  // SALON_OWNER data
   const { data: mySalons, isLoading: isLoadingSalons, refetch: refetchSalons } = trpc.salon.getMySalons.useQuery(
     undefined,
-    { enabled: !!user }
+    { enabled: !!user && isSalonOwner }
+  );
+
+  // PROFESSIONAL data - services assigned to them (read-only)
+  const { data: myServices, isLoading: isLoadingMyServices } = trpc.service.getByProfessionalId.useQuery(
+    { professionalId: user?.professionalProfile?.id ?? '' },
+    { enabled: !!user && !!user.professionalProfile?.id }
+  );
+
+  // Availability data (both roles)
+  const { data: myAvailability, isLoading: isLoadingAvailability, refetch: refetchAvailability } = trpc.availability.getMyAvailability.useQuery(
+    undefined,
+    { enabled: !!user && !!user.professionalProfile }
+  );
+
+  const { data: myExceptions, refetch: refetchExceptions } = trpc.availability.getMyExceptions.useQuery(
+    { startDate: new Date(), endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) },
+    { enabled: !!user && !!user.professionalProfile }
   );
 
   if (isLoadingUser) {
@@ -31,18 +56,19 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-3xl font-bold text-coffee-800 mb-4">Accès refusé</h1>
+          <h1 className="text-3xl font-bold text-coffee-800 mb-4">Acces refuse</h1>
           <p className="text-coffee-600 mb-8">
-            Cette page est réservée aux professionnels et administrateurs.
+            Cette page est reservee aux professionnels et administrateurs.
           </p>
           <Link href="/">
-            <Button>Retour à l'accueil</Button>
+            <Button>Retour a l'accueil</Button>
           </Link>
         </div>
       </div>
     );
   }
 
+  // SALON_OWNER stats
   const totalAppointments = mySalons?.reduce((sum, s) => sum + (s._count?.appointments || 0), 0) || 0;
   const totalServices = mySalons?.reduce((sum, s) => sum + (s._count?.services || 0), 0) || 0;
   const totalReviews = mySalons?.reduce((sum, s) => sum + (s._count?.reviews || 0), 0) || 0;
@@ -62,9 +88,28 @@ export default function DashboardPage() {
     setShowServiceForm(true);
   };
 
+  // Sidebar tabs based on role
+  const sidebarTabs: { id: TabId; label: string; icon: string; separator?: boolean }[] = isProfessional
+    ? [
+        { id: 'overview', label: 'Vue d\'ensemble', icon: '📊' },
+        { id: 'my-agenda', label: 'Mon agenda', icon: '📅' },
+        { id: 'my-services', label: 'Mes prestations', icon: '✂️' },
+        { id: 'my-availability', label: 'Mes disponibilités', icon: '🕐' },
+      ]
+    : [
+        { id: 'overview', label: 'Vue d\'ensemble', icon: '📊' },
+        { id: 'appointments', label: 'Rendez-vous', icon: '📅' },
+        { id: 'salons', label: 'Mes établissements', icon: '🏪' },
+        { id: 'services', label: 'Prestations', icon: '✂️' },
+        { id: 'team', label: 'Équipe', icon: '👥' },
+        { id: 'my-agenda', label: 'Mon agenda', icon: '📅', separator: true },
+        { id: 'my-availability', label: 'Mes disponibilités', icon: '🕐' },
+      ];
+
+  const roleLabel = isSalonOwner ? 'Propriétaire' : 'Professionnel';
+
   return (
     <div className="min-h-screen bg-sand-50">
-      {/* Sidebar + Main Layout */}
       <div className="flex">
         {/* Sidebar */}
         <aside className="w-64 bg-coffee-800 min-h-screen fixed left-0 top-0">
@@ -80,25 +125,26 @@ export default function DashboardPage() {
           </div>
 
           <nav className="mt-6">
-            {[
-              { id: 'overview', label: 'Vue d\'ensemble', icon: '📊' },
-              { id: 'appointments', label: 'Rendez-vous', icon: '📅' },
-              { id: 'salons', label: 'Mes établissements', icon: '🏪' },
-              { id: 'services', label: 'Prestations', icon: '✂️' },
-              { id: 'team', label: 'Équipe', icon: '👥' },
-            ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id as typeof activeTab)}
-                className={`w-full flex items-center gap-3 px-6 py-3 text-left transition ${
-                  activeTab === item.id
-                    ? 'bg-coffee-700 text-white border-l-4 border-cream-500'
-                    : 'text-coffee-300 hover:bg-coffee-700 hover:text-white'
-                }`}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
+            {sidebarTabs.map((item) => (
+              <React.Fragment key={item.id}>
+                {item.separator && (
+                  <div className="px-6 py-2">
+                    <div className="border-t border-coffee-700" />
+                    <p className="text-xs text-coffee-500 mt-2 mb-1">Espace personnel</p>
+                  </div>
+                )}
+                <button
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-6 py-3 text-left transition ${
+                    activeTab === item.id
+                      ? 'bg-coffee-700 text-white border-l-4 border-cream-500'
+                      : 'text-coffee-300 hover:bg-coffee-700 hover:text-white'
+                  }`}
+                >
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              </React.Fragment>
             ))}
           </nav>
 
@@ -111,7 +157,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-white font-medium">{user.firstName}</p>
-                <p className="text-xs">{user.role}</p>
+                <p className="text-xs">{roleLabel}</p>
               </div>
             </div>
           </div>
@@ -119,14 +165,16 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <main className="flex-1 ml-64 p-8">
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
+
+          {/* ===================== */}
+          {/* OVERVIEW - SALON_OWNER */}
+          {/* ===================== */}
+          {activeTab === 'overview' && isSalonOwner && (
             <div>
               <h1 className="text-3xl font-bold text-coffee-800 mb-8">
                 Bonjour, {user.firstName} 👋
               </h1>
 
-              {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <Card className="bg-gradient-to-br from-cream-500 to-cream-600 text-white">
                   <div className="flex items-center justify-between">
@@ -169,7 +217,6 @@ export default function DashboardPage() {
                 </Card>
               </div>
 
-              {/* Quick Actions */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                   <h2 className="text-xl font-semibold text-coffee-800 mb-4">Actions rapides</h2>
@@ -221,16 +268,108 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Appointments Tab */}
-          {activeTab === 'appointments' && (
+          {/* ======================= */}
+          {/* OVERVIEW - PROFESSIONAL */}
+          {/* ======================= */}
+          {activeTab === 'overview' && isProfessional && (
+            <div>
+              <h1 className="text-3xl font-bold text-coffee-800 mb-8">
+                Bonjour, {user.firstName} 👋
+              </h1>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <Card className="bg-gradient-to-br from-sage-500 to-sage-600 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sage-100">Mes rendez-vous</p>
+                      <p className="text-3xl font-bold">-</p>
+                    </div>
+                    <div className="text-4xl opacity-50">📅</div>
+                  </div>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-sand-500 to-sand-600 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sand-100">Mes prestations</p>
+                      <p className="text-3xl font-bold">{myServices?.length || 0}</p>
+                    </div>
+                    <div className="text-4xl opacity-50">✂️</div>
+                  </div>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-cream-500 to-cream-600 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-cream-100">Mon établissement</p>
+                      <p className="text-xl font-bold truncate">
+                        {user.professionalProfile?.salon?.name || '-'}
+                      </p>
+                    </div>
+                    <div className="text-4xl opacity-50">🏪</div>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <h2 className="text-xl font-semibold text-coffee-800 mb-4">Actions rapides</h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button variant="outline" fullWidth onClick={() => setActiveTab('my-agenda')}>
+                      Voir mon agenda
+                    </Button>
+                    <Button variant="outline" fullWidth onClick={() => setActiveTab('my-availability')}>
+                      Gérer mes disponibilités
+                    </Button>
+                    <Button variant="outline" fullWidth onClick={() => setActiveTab('my-services')}>
+                      Voir mes prestations
+                    </Button>
+                  </div>
+                </Card>
+
+                <Card>
+                  <h2 className="text-xl font-semibold text-coffee-800 mb-4">Mon établissement</h2>
+                  {user.professionalProfile?.salon ? (
+                    <div className="p-3 bg-sand-50 rounded-lg">
+                      <p className="font-medium text-coffee-800">{user.professionalProfile.salon.name}</p>
+                      <p className="text-sm text-coffee-500">
+                        {(user.professionalProfile.salon as any).city || ''}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-coffee-500 text-center py-4">
+                      Vous n'êtes rattaché à aucun établissement.
+                    </p>
+                  )}
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {/* ========================== */}
+          {/* APPOINTMENTS - SALON_OWNER */}
+          {/* ========================== */}
+          {activeTab === 'appointments' && isSalonOwner && (
             <div>
               <h1 className="text-3xl font-bold text-coffee-800 mb-8">Rendez-vous</h1>
               <AppointmentsList />
             </div>
           )}
 
-          {/* Salons Tab */}
-          {activeTab === 'salons' && (
+          {/* ======================== */}
+          {/* MON AGENDA - Both roles */}
+          {/* ======================== */}
+          {activeTab === 'my-agenda' && (
+            <div>
+              <h1 className="text-3xl font-bold text-coffee-800 mb-8">Mon agenda</h1>
+              <AppointmentsList />
+            </div>
+          )}
+
+          {/* ====================== */}
+          {/* SALONS - SALON_OWNER */}
+          {/* ====================== */}
+          {activeTab === 'salons' && isSalonOwner && (
             <div>
               <div className="flex items-center justify-between mb-8">
                 <h1 className="text-3xl font-bold text-coffee-800">Mes établissements</h1>
@@ -260,7 +399,6 @@ export default function DashboardPage() {
                             </Badge>
                           </div>
 
-                          {/* Deposit info */}
                           <div className="mt-2">
                             {salon.depositRequired ? (
                               <Badge variant="info" size="sm">
@@ -309,8 +447,10 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Services Tab */}
-          {activeTab === 'services' && (
+          {/* ========================= */}
+          {/* SERVICES - SALON_OWNER */}
+          {/* ========================= */}
+          {activeTab === 'services' && isSalonOwner && (
             <div>
               <div className="flex items-center justify-between mb-8">
                 <h1 className="text-3xl font-bold text-coffee-800">Prestations</h1>
@@ -341,8 +481,53 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Team Tab */}
-          {activeTab === 'team' && (
+          {/* =========================================== */}
+          {/* MES PRESTATIONS - PROFESSIONAL (read-only) */}
+          {/* =========================================== */}
+          {activeTab === 'my-services' && isProfessional && (
+            <div>
+              <h1 className="text-3xl font-bold text-coffee-800 mb-8">Mes prestations</h1>
+
+              {isLoadingMyServices ? (
+                <div className="flex justify-center py-12">
+                  <Spinner size="lg" />
+                </div>
+              ) : myServices && myServices.length > 0 ? (
+                <div className="space-y-3">
+                  {myServices.map((service) => (
+                    <Card key={service.id}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-coffee-800">{service.name}</p>
+                          <p className="text-sm text-coffee-500">
+                            {service.customDurationMinutes || service.durationMinutes} min
+                          </p>
+                        </div>
+                        <span className="font-semibold text-coffee-800">
+                          {((service.customPrice ?? service.price) / 100).toFixed(2)} €
+                        </span>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="text-center py-12">
+                  <div className="text-6xl mb-4">✂️</div>
+                  <h3 className="text-xl font-semibold text-coffee-800 mb-2">
+                    Aucune prestation assignée
+                  </h3>
+                  <p className="text-coffee-600">
+                    Votre responsable n'a pas encore assigné de prestations à votre profil.
+                  </p>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* ===================== */}
+          {/* TEAM - SALON_OWNER */}
+          {/* ===================== */}
+          {activeTab === 'team' && isSalonOwner && (
             <div>
               <div className="flex items-center justify-between mb-8">
                 <h1 className="text-3xl font-bold text-coffee-800">Équipe</h1>
@@ -376,27 +561,48 @@ export default function DashboardPage() {
               )}
             </div>
           )}
+
+          {/* ================================ */}
+          {/* MES DISPONIBILITÉS - Both roles */}
+          {/* ================================ */}
+          {activeTab === 'my-availability' && (
+            <div>
+              <h1 className="text-3xl font-bold text-coffee-800 mb-8">Mes disponibilités</h1>
+              <AvailabilityManager
+                availability={myAvailability}
+                exceptions={myExceptions}
+                isLoading={isLoadingAvailability}
+                onRefreshAvailability={refetchAvailability}
+                onRefreshExceptions={refetchExceptions}
+              />
+            </div>
+          )}
+
         </main>
       </div>
 
-      {/* Modals */}
-      <SalonForm
-        isOpen={showSalonForm}
-        onClose={handleCloseSalonForm}
-        salon={editingSalon}
-        onSuccess={() => refetchSalons()}
-      />
+      {/* Modals - SALON_OWNER only */}
+      {isSalonOwner && (
+        <>
+          <SalonForm
+            isOpen={showSalonForm}
+            onClose={handleCloseSalonForm}
+            salon={editingSalon}
+            onSuccess={() => refetchSalons()}
+          />
 
-      {selectedSalonForService && (
-        <ServiceForm
-          isOpen={showServiceForm}
-          onClose={() => {
-            setShowServiceForm(false);
-            setSelectedSalonForService(null);
-          }}
-          salonId={selectedSalonForService}
-          onSuccess={() => refetchSalons()}
-        />
+          {selectedSalonForService && (
+            <ServiceForm
+              isOpen={showServiceForm}
+              onClose={() => {
+                setShowServiceForm(false);
+                setSelectedSalonForService(null);
+              }}
+              salonId={selectedSalonForService}
+              onSuccess={() => refetchSalons()}
+            />
+          )}
+        </>
       )}
     </div>
   );
@@ -442,5 +648,329 @@ function SalonServicesCard({ salon, onAddService }: { salon: any; onAddService: 
         </p>
       )}
     </Card>
+  );
+}
+
+// Sous-composant pour gérer les disponibilités
+function AvailabilityManager({
+  availability,
+  exceptions,
+  isLoading,
+  onRefreshAvailability,
+  onRefreshExceptions,
+}: {
+  availability: any[] | undefined;
+  exceptions: any[] | undefined;
+  isLoading: boolean;
+  onRefreshAvailability: () => void;
+  onRefreshExceptions: () => void;
+}) {
+  const [editingDay, setEditingDay] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ startTime: '', endTime: '', breakStartTime: '', breakEndTime: '', isAvailable: true });
+  const [showExceptionForm, setShowExceptionForm] = useState(false);
+  const [exceptionForm, setExceptionForm] = useState({ date: '', type: 'UNAVAILABLE' as 'UNAVAILABLE' | 'CUSTOM', reason: '', startTime: '', endTime: '' });
+
+  const updateMutation = trpc.availability.updateAvailability.useMutation({
+    onSuccess: () => {
+      onRefreshAvailability();
+      setEditingDay(null);
+    },
+  });
+
+  const createExceptionMutation = trpc.availability.createException.useMutation({
+    onSuccess: () => {
+      onRefreshExceptions();
+      setShowExceptionForm(false);
+      setExceptionForm({ date: '', type: 'UNAVAILABLE', reason: '', startTime: '', endTime: '' });
+    },
+  });
+
+  const deleteExceptionMutation = trpc.availability.deleteException.useMutation({
+    onSuccess: () => onRefreshExceptions(),
+  });
+
+  const DAYS_FR: Record<string, string> = {
+    MONDAY: 'Lundi',
+    TUESDAY: 'Mardi',
+    WEDNESDAY: 'Mercredi',
+    THURSDAY: 'Jeudi',
+    FRIDAY: 'Vendredi',
+    SATURDAY: 'Samedi',
+    SUNDAY: 'Dimanche',
+  };
+
+  const ALL_DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+  const handleEditDay = (day: string) => {
+    const dayAvail = availability?.find((a) => a.dayOfWeek === day);
+    setEditForm({
+      startTime: dayAvail?.startTime || '09:00',
+      endTime: dayAvail?.endTime || '18:00',
+      breakStartTime: dayAvail?.breakStartTime || '',
+      breakEndTime: dayAvail?.breakEndTime || '',
+      isAvailable: dayAvail?.isAvailable ?? true,
+    });
+    setEditingDay(day);
+  };
+
+  const handleSaveDay = () => {
+    if (!editingDay) return;
+    updateMutation.mutate({
+      dayOfWeek: editingDay,
+      startTime: editForm.startTime,
+      endTime: editForm.endTime,
+      breakStartTime: editForm.breakStartTime || undefined,
+      breakEndTime: editForm.breakEndTime || undefined,
+      isAvailable: editForm.isAvailable,
+    });
+  };
+
+  const handleCreateException = () => {
+    if (!exceptionForm.date) return;
+    createExceptionMutation.mutate({
+      date: new Date(exceptionForm.date),
+      type: exceptionForm.type,
+      reason: exceptionForm.reason || undefined,
+      startTime: exceptionForm.type === 'CUSTOM' ? exceptionForm.startTime : undefined,
+      endTime: exceptionForm.type === 'CUSTOM' ? exceptionForm.endTime : undefined,
+    });
+  };
+
+  const formatExceptionDate = (date: Date) => {
+    return new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(date));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Weekly Schedule */}
+      <Card>
+        <h2 className="text-xl font-semibold text-coffee-800 mb-4">Horaires hebdomadaires</h2>
+        <div className="space-y-3">
+          {ALL_DAYS.map((day) => {
+            const dayAvail = availability?.find((a) => a.dayOfWeek === day);
+            const isEditing = editingDay === day;
+
+            return (
+              <div key={day}>
+                <div className="flex items-center justify-between p-3 bg-sand-50 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <span className="font-medium text-coffee-800 w-24">{DAYS_FR[day]}</span>
+                    {dayAvail?.isAvailable ? (
+                      <span className="text-coffee-600">
+                        {dayAvail.startTime} - {dayAvail.endTime}
+                        {dayAvail.breakStartTime && (
+                          <span className="text-coffee-400 ml-2">
+                            (pause : {dayAvail.breakStartTime} - {dayAvail.breakEndTime})
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-coffee-400 italic">
+                        {dayAvail ? 'Repos' : 'Non configuré'}
+                      </span>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => handleEditDay(day)}>
+                    Modifier
+                  </Button>
+                </div>
+
+                {isEditing && (
+                  <div className="mt-2 p-4 bg-white border border-sand-200 rounded-lg space-y-4">
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={editForm.isAvailable}
+                          onChange={(e) => setEditForm({ ...editForm, isAvailable: e.target.checked })}
+                          className="rounded border-coffee-300"
+                        />
+                        <span className="text-sm text-coffee-700">Disponible</span>
+                      </label>
+                    </div>
+
+                    {editForm.isAvailable && (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm text-coffee-600 mb-1">Début</label>
+                            <input
+                              type="time"
+                              value={editForm.startTime}
+                              onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm text-coffee-600 mb-1">Fin</label>
+                            <input
+                              type="time"
+                              value={editForm.endTime}
+                              onChange={(e) => setEditForm({ ...editForm, endTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm text-coffee-600 mb-1">Début pause</label>
+                            <input
+                              type="time"
+                              value={editForm.breakStartTime}
+                              onChange={(e) => setEditForm({ ...editForm, breakStartTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm text-coffee-600 mb-1">Fin pause</label>
+                            <input
+                              type="time"
+                              value={editForm.breakEndTime}
+                              onChange={(e) => setEditForm({ ...editForm, breakEndTime: e.target.value })}
+                              className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleSaveDay} disabled={updateMutation.isPending}>
+                        {updateMutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingDay(null)}>
+                        Annuler
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Exceptions */}
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-coffee-800">Exceptions & congés</h2>
+          <Button size="sm" onClick={() => setShowExceptionForm(true)}>+ Ajouter</Button>
+        </div>
+
+        {showExceptionForm && (
+          <div className="mb-6 p-4 bg-sand-50 rounded-lg space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-coffee-600 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={exceptionForm.date}
+                  onChange={(e) => setExceptionForm({ ...exceptionForm, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-coffee-600 mb-1">Type</label>
+                <select
+                  value={exceptionForm.type}
+                  onChange={(e) => setExceptionForm({ ...exceptionForm, type: e.target.value as 'UNAVAILABLE' | 'CUSTOM' })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm"
+                >
+                  <option value="UNAVAILABLE">Indisponible (journée entière)</option>
+                  <option value="CUSTOM">Horaires personnalisés</option>
+                </select>
+              </div>
+            </div>
+
+            {exceptionForm.type === 'CUSTOM' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-coffee-600 mb-1">Début</label>
+                  <input
+                    type="time"
+                    value={exceptionForm.startTime}
+                    onChange={(e) => setExceptionForm({ ...exceptionForm, startTime: e.target.value })}
+                    className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-coffee-600 mb-1">Fin</label>
+                  <input
+                    type="time"
+                    value={exceptionForm.endTime}
+                    onChange={(e) => setExceptionForm({ ...exceptionForm, endTime: e.target.value })}
+                    className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm text-coffee-600 mb-1">Motif (optionnel)</label>
+              <input
+                type="text"
+                value={exceptionForm.reason}
+                onChange={(e) => setExceptionForm({ ...exceptionForm, reason: e.target.value })}
+                placeholder="Ex: Congé, Formation, RDV médical..."
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleCreateException} disabled={createExceptionMutation.isPending}>
+                {createExceptionMutation.isPending ? 'Ajout...' : 'Ajouter'}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowExceptionForm(false)}>
+                Annuler
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {exceptions && exceptions.length > 0 ? (
+          <div className="space-y-3">
+            {exceptions.map((exception) => (
+              <div key={exception.id} className="flex items-center justify-between p-3 bg-sand-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-coffee-800">
+                    {formatExceptionDate(exception.date)}
+                  </p>
+                  <p className="text-sm text-coffee-500">
+                    {exception.type === 'UNAVAILABLE' ? 'Indisponible' : `${exception.startTime} - ${exception.endTime}`}
+                    {exception.reason && ` · ${exception.reason}`}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteExceptionMutation.mutate({ id: exception.id })}
+                  disabled={deleteExceptionMutation.isPending}
+                >
+                  Supprimer
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-coffee-500 text-center py-4">
+            Aucune exception programmée
+          </p>
+        )}
+      </Card>
+    </div>
   );
 }
