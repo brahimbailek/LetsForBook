@@ -27,7 +27,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user || (user.role !== 'PROFESSIONAL' && user.role !== 'ADMIN')) {
+  if (!user || (user.role !== 'PROFESSIONAL' && user.role !== 'ADMIN' && user.role !== 'SALON_OWNER')) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white">
         <div className="container mx-auto px-4 py-16 text-center">
