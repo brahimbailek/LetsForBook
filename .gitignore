@@ -65,3 +65,6 @@ prisma/migrations/**/migration.sql
 
 # OS
 Thumbs.db
+
+# Mémoire Claude
+memoire.md
