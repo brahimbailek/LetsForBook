@@ -2,6 +2,7 @@ import { router } from '../trpc';
 import { authRouter } from './auth.router';
 import { salonRouter } from './salon.router';
 import { serviceRouter } from './service.router';
+import { categoryRouter } from './category.router';
 import { bookingRouter } from './booking.router';
 import { availabilityRouter } from './availability.router';
 import { paymentRouter } from './payment.router';
@@ -16,6 +17,7 @@ export const appRouter = router({
   auth: authRouter,
   salon: salonRouter,
   service: serviceRouter,
+  category: categoryRouter,
   booking: bookingRouter,
   availability: availabilityRouter,
   payment: paymentRouter,

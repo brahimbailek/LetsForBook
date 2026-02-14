@@ -73,7 +73,7 @@ export default function SalonDetailPage() {
 
   // Group services by category
   const servicesByCategory = salon.services?.reduce((acc: Record<string, typeof salon.services>, service) => {
-    const category = service.category || 'Autres';
+    const category = service.category?.name || 'Autres';
     if (!acc[category]) {
       acc[category] = [];
     }

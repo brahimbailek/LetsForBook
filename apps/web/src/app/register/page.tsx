@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { Button, Input, Card } from '@/components/ui';
@@ -9,9 +9,11 @@ import { trpc } from '@/lib/trpc/client';
 
 type UserType = 'CLIENT' | 'PROFESSIONAL' | 'SALON_OWNER';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
-  const [userType, setUserType] = useState<UserType>('CLIENT');
+  const searchParams = useSearchParams();
+  const isPro = searchParams.get('type') === 'pro';
+  const [userType, setUserType] = useState<UserType>(isPro ? 'SALON_OWNER' : 'CLIENT');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -114,9 +116,21 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-sage-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white py-12 px-4">
       <div className="w-full max-w-2xl mx-auto">
-        {/* Logo et titre */}
+        {/* Logo cliquable */}
+        <div className="flex justify-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-12 h-12 bg-cream-600 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span className="text-3xl font-bold text-coffee-800">LetsForBook</span>
+          </Link>
+        </div>
+
+        {/* Titre */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-coffee-800 mb-2">
             Créer votre compte
@@ -127,28 +141,30 @@ export default function RegisterPage() {
         </div>
 
         {/* Sélection du type d'utilisateur */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <button
-            type="button"
-            onClick={() => setUserType('CLIENT')}
-            className={`
-              p-6 rounded-2xl border-2 transition-all duration-200
-              ${userType === 'CLIENT'
-                ? 'border-sage-500 bg-sage-50 shadow-soft'
-                : 'border-sand-200 hover:border-sage-300 bg-white'
-              }
-            `}
-          >
-            <div className="flex flex-col items-center gap-3">
-              <svg className="w-8 h-8 text-sage-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <div className="text-center">
-                <p className="font-semibold text-coffee-800">Client</p>
-                <p className="text-sm text-coffee-600">Prendre RDV</p>
+        <div className={`grid ${isPro ? 'grid-cols-2' : 'grid-cols-3'} gap-4 mb-8`}>
+          {!isPro && (
+            <button
+              type="button"
+              onClick={() => setUserType('CLIENT')}
+              className={`
+                p-6 rounded-2xl border-2 transition-all duration-200
+                ${userType === 'CLIENT'
+                  ? 'border-cream-600 bg-cream-100 shadow-soft'
+                  : 'border-sand-200 hover:border-cream-400 bg-white'
+                }
+              `}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <svg className="w-8 h-8 text-cream-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <div className="text-center">
+                  <p className="font-semibold text-coffee-800">Client</p>
+                  <p className="text-sm text-coffee-600">Prendre RDV</p>
+                </div>
               </div>
-            </div>
-          </button>
+            </button>
+          )}
 
           <button
             type="button"
@@ -156,13 +172,13 @@ export default function RegisterPage() {
             className={`
               p-6 rounded-2xl border-2 transition-all duration-200
               ${userType === 'PROFESSIONAL'
-                ? 'border-sage-500 bg-sage-50 shadow-soft'
-                : 'border-sand-200 hover:border-sage-300 bg-white'
+                ? 'border-cream-600 bg-cream-100 shadow-soft'
+                : 'border-sand-200 hover:border-cream-400 bg-white'
               }
             `}
           >
             <div className="flex flex-col items-center gap-3">
-              <svg className="w-8 h-8 text-sage-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-cream-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               <div className="text-center">
@@ -178,13 +194,13 @@ export default function RegisterPage() {
             className={`
               p-6 rounded-2xl border-2 transition-all duration-200
               ${userType === 'SALON_OWNER'
-                ? 'border-sage-500 bg-sage-50 shadow-soft'
-                : 'border-sand-200 hover:border-sage-300 bg-white'
+                ? 'border-cream-600 bg-cream-100 shadow-soft'
+                : 'border-sand-200 hover:border-cream-400 bg-white'
               }
             `}
           >
             <div className="flex flex-col items-center gap-3">
-              <svg className="w-8 h-8 text-sage-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-cream-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
               <div className="text-center">
@@ -253,9 +269,9 @@ export default function RegisterPage() {
 
             {/* Champs spécifiques Professionnel */}
             {userType === 'PROFESSIONAL' && (
-              <div className="space-y-4 p-4 bg-sage-50 rounded-xl border-2 border-sage-200">
+              <div className="space-y-4 p-4 bg-cream-50 rounded-xl border-2 border-cream-200">
                 <h3 className="font-semibold text-coffee-800 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-sage-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-cream-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                   Rejoindre un établissement
@@ -279,7 +295,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setUserType('SALON_OWNER')}
-                    className="text-sage-600 hover:text-sage-700 underline"
+                    className="text-cream-700 hover:text-cream-800 underline"
                   >
                     créez votre propre établissement
                   </button>
@@ -408,15 +424,15 @@ export default function RegisterPage() {
                 type="checkbox"
                 id="terms"
                 required
-                className="mt-1 w-4 h-4 rounded border-sand-300 text-sage-600 focus:ring-sage-500"
+                className="mt-1 w-4 h-4 rounded border-sand-300 text-cream-700 focus:ring-cream-600"
               />
               <label htmlFor="terms" className="text-sm text-coffee-600">
                 J&apos;accepte les{' '}
-                <Link href="/terms" className="text-sage-600 hover:text-sage-700 underline">
+                <Link href="/terms" className="text-cream-700 hover:text-cream-800 underline">
                   conditions générales d&apos;utilisation
                 </Link>
                 {' '}et la{' '}
-                <Link href="/privacy" className="text-sage-600 hover:text-sage-700 underline">
+                <Link href="/privacy" className="text-cream-700 hover:text-cream-800 underline">
                   politique de confidentialité
                 </Link>
               </label>
@@ -477,12 +493,20 @@ export default function RegisterPage() {
           Vous avez déjà un compte ?{' '}
           <Link
             href="/login"
-            className="text-sage-600 hover:text-sage-700 font-medium transition-colors"
+            className="text-cream-700 hover:text-cream-800 font-medium transition-colors"
           >
             Se connecter
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Chargement...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

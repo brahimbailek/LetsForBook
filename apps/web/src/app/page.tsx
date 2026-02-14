@@ -303,7 +303,6 @@ export default function HomePage() {
                   key={term}
                   onClick={() => {
                     setSearchQuery(term);
-                    handleSearch();
                   }}
                   className="px-3 py-1 text-sm bg-cream-100 text-cream-800 rounded-lg hover:bg-cream-200 transition-colors"
                 >

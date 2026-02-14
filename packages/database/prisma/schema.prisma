@@ -301,6 +301,32 @@ model ProfessionalProfile {
 }
 
 // =============================================
+// CATEGORIES
+// =============================================
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique // e.g., "Beauté", "Automobile", "Sport & Fitness"
+  slug        String  @unique // e.g., "beaute", "automobile"
+  description String? @db.Text
+  icon        String? // Emoji or icon name
+  color       String? // Hex color for UI
+
+  order       Int     @default(0) // For sorting
+  active      Boolean @default(true)
+
+  // Relationships
+  services    Service[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([active])
+  @@index([order])
+  @@map("salon_categories")
+}
+
+// =============================================
 // SERVICES
 // =============================================
 
@@ -311,7 +337,10 @@ model Service {
 
   name        String
   description String? @db.Text
-  category    String  // e.g., "Haircut", "Coloring", "Massage"
+
+  // Category relationship
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
 
   // Pricing
   price       Int     // In cents
@@ -335,7 +364,7 @@ model Service {
   deletedAt   DateTime? // Soft delete
 
   @@index([salonId])
-  @@index([category])
+  @@index([categoryId])
   @@index([active])
   @@map("salon_services")
 }

@@ -19,12 +19,16 @@ export const salonRouter = router({
           active: true,
           OR: [
             { name: { contains: query, mode: 'insensitive' } },
-            { category: { contains: query, mode: 'insensitive' } },
+            { category: { name: { contains: query, mode: 'insensitive' } } },
           ],
         },
         select: {
           name: true,
-          category: true,
+          category: {
+            select: {
+              name: true,
+            },
+          },
         },
         take: 10,
       });
@@ -46,8 +50,8 @@ export const salonRouter = router({
 
       // Add service categories first (most relevant)
       services.forEach(s => {
-        if (s.category && s.category.toLowerCase().includes(query.toLowerCase())) {
-          suggestions.add(s.category);
+        if (s.category?.name && s.category.name.toLowerCase().includes(query.toLowerCase())) {
+          suggestions.add(s.category.name);
         }
       });
 
@@ -160,7 +164,7 @@ export const salonRouter = router({
           { name: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
           { services: { some: { name: { contains: query, mode: 'insensitive' }, active: true } } },
-          { services: { some: { category: { contains: query, mode: 'insensitive' }, active: true } } },
+          { services: { some: { category: { name: { contains: query, mode: 'insensitive' } }, active: true } } },
         ];
       }
 
@@ -173,7 +177,7 @@ export const salonRouter = router({
       if (categories && categories.length > 0) {
         where.services = {
           some: {
-            category: { in: categories },
+            categoryId: { in: categories },
             active: true,
           },
         };
@@ -219,7 +223,15 @@ export const salonRouter = router({
               name: true,
               price: true,
               durationMinutes: true,
-              category: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  icon: true,
+                  color: true,
+                },
+              },
             },
           },
           reviews: {
@@ -398,6 +410,17 @@ export const salonRouter = router({
           },
           services: {
             where: { active: true },
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  icon: true,
+                  color: true,
+                },
+              },
+            },
           },
           reviews: {
             take: 10,
