@@ -49,9 +49,14 @@
       "Bash(npx turbo build:*)",
       "Bash(npx prisma db push:*)",
       "Bash(npx prisma db pull:*)",
+<<<<<<< Updated upstream
       "Bash(echo:*)",
       "Bash(npx prisma migrate dev:*)",
       "Bash(npm run migrate:dev:*)"
+=======
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)"
+>>>>>>> Stashed changes
     ]
   }
 }
