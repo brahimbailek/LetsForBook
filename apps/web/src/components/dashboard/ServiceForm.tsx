@@ -114,11 +114,28 @@ export function ServiceForm({ isOpen, onClose, salonId, service, defaultCategory
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  // Prepare category options for select
-  const categoryOptions = categories?.map((cat) => ({
-    value: cat.id,
-    label: `${cat.icon || ''} ${cat.name}`.trim(),
-  })) || [];
+  // Prepare category options for select (flattened hierarchy)
+  const categoryOptions: { value: string; label: string }[] = [];
+  if (categories) {
+    for (const cat of categories) {
+      const catLabel = `${cat.icon || ''} ${cat.name}`.trim();
+      // If category has children, show parent as group header and children as options
+      const children = (cat as { children?: { id: string; name: string; icon: string | null }[] }).children;
+      if (children && children.length > 0) {
+        // Add the parent category itself (services can be directly in it)
+        categoryOptions.push({ value: cat.id, label: catLabel });
+        // Add sub-categories indented
+        for (const sub of children) {
+          categoryOptions.push({
+            value: sub.id,
+            label: `  └ ${sub.icon || ''} ${sub.name}`.trim(),
+          });
+        }
+      } else {
+        categoryOptions.push({ value: cat.id, label: catLabel });
+      }
+    }
+  }
 
   return (
     <Modal

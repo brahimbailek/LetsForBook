@@ -41,6 +41,12 @@ export default function BookingPage() {
     { enabled: !!salon?.id && !!selectedDate && !!selectedService }
   );
 
+  // Fetch categories with hierarchy
+  const { data: categoriesData } = trpc.category.getBySalonId.useQuery(
+    { salonId: salon?.id || '' },
+    { enabled: !!salon?.id }
+  );
+
   const createBookingMutation = trpc.booking.create.useMutation({
     onSuccess: (data) => {
       // Check if salon requires deposit
@@ -198,24 +204,23 @@ export default function BookingPage() {
                 <h2 className="text-xl font-semibold text-coffee-800 mb-6">
                   Choisissez une prestation
                 </h2>
-                {(() => {
-                  // Group services by category
-                  const grouped: Record<string, typeof salon.services> = {};
-                  salon.services?.forEach((service) => {
-                    const catName = service.category?.name || 'Autres';
-                    if (!grouped[catName]) grouped[catName] = [];
-                    grouped[catName]!.push(service);
-                  });
+                <div className="space-y-6">
+                  {categoriesData?.map((category) => (
+                    <div key={category.id}>
+                      <h3 className="text-sm font-semibold text-cream-700 uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5">
+                        {category.icon && <span>{category.icon}</span>}
+                        {category.name}
+                      </h3>
 
-                  return (
-                    <div className="space-y-6">
-                      {Object.entries(grouped).map(([categoryName, services]) => (
-                        <div key={categoryName}>
-                          <h3 className="text-sm font-semibold text-cream-700 uppercase tracking-wider mb-3 px-1">
-                            {categoryName}
-                          </h3>
+                      {/* Sub-categories */}
+                      {(category as any).children?.map((subCat: any) => (
+                        <div key={subCat.id} className="ml-3 mb-3">
+                          <p className="text-xs font-medium text-coffee-500 mb-2 flex items-center gap-1">
+                            {subCat.icon && <span>{subCat.icon}</span>}
+                            {subCat.name}
+                          </p>
                           <div className="space-y-2">
-                            {services!.map((service) => (
+                            {subCat.services?.map((service: any) => (
                               <div
                                 key={service.id}
                                 onClick={() => {
@@ -234,7 +239,7 @@ export default function BookingPage() {
                                     <p className="text-sm text-coffee-500">{service.durationMinutes} min</p>
                                   </div>
                                   <span className="font-semibold text-cream-700">
-                                    {service.price.toFixed(2)} €
+                                    {(service.price / 100).toFixed(2)} €
                                   </span>
                                 </div>
                               </div>
@@ -242,9 +247,37 @@ export default function BookingPage() {
                           </div>
                         </div>
                       ))}
+
+                      {/* Direct services */}
+                      <div className="space-y-2">
+                        {category.services?.map((service) => (
+                          <div
+                            key={service.id}
+                            onClick={() => {
+                              setSelectedService(service.id);
+                              setSelectedProfessional(null);
+                            }}
+                            className={`p-4 rounded-xl cursor-pointer transition border-2 ${
+                              selectedService === service.id
+                                ? 'border-cream-500 bg-cream-50'
+                                : 'border-transparent bg-sand-50 hover:bg-sand-100'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="font-medium text-coffee-800">{service.name}</h3>
+                                <p className="text-sm text-coffee-500">{service.durationMinutes} min</p>
+                              </div>
+                              <span className="font-semibold text-cream-700">
+                                {(service.price / 100).toFixed(2)} €
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  );
-                })()}
+                  ))}
+                </div>
 
                 {/* Professional Selection - filtered by selected service */}
                 {salon.professionals && salon.professionals.length > 0 && (() => {
@@ -413,7 +446,7 @@ export default function BookingPage() {
                     <p className="text-sm text-coffee-500">Prestation</p>
                     <p className="font-medium text-coffee-800">{selectedServiceData?.name}</p>
                     <p className="text-sm text-coffee-600">
-                      {selectedServiceData?.durationMinutes} min - {selectedServiceData?.price.toFixed(2)} €
+                      {selectedServiceData?.durationMinutes} min - {selectedServiceData ? (selectedServiceData.price / 100).toFixed(2) : '0.00'} €
                     </p>
                   </div>
 
@@ -523,7 +556,7 @@ export default function BookingPage() {
                   <div className="flex justify-between">
                     <span className="font-medium text-coffee-800">Total</span>
                     <span className="font-bold text-cream-700">
-                      {selectedServiceData?.price.toFixed(2) || '0.00'} €
+                      {selectedServiceData ? (selectedServiceData.price / 100).toFixed(2) : '0.00'} €
                     </span>
                   </div>
 

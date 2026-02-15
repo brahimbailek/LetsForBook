@@ -972,12 +972,61 @@ async function main() {
   const testCatBeaute = await getSalonCategory(testSalon.id, 'Beauté');
   const testCatBienEtre = await getSalonCategory(testSalon.id, 'Bien-être & Spa');
 
+  // Create sub-categories for Coiffure Femme (demo hierarchy)
+  const testSubCatCoupes = await prisma.category.create({
+    data: {
+      name: 'Coupes',
+      slug: 'coupes',
+      icon: '✂️',
+      order: 0,
+      salonId: testSalon.id,
+      parentId: testCatCoiffureFemme,
+      active: true,
+    },
+  });
+  const testSubCatSoinsCapillaires = await prisma.category.create({
+    data: {
+      name: 'Soins Capillaires',
+      slug: 'soins-capillaires',
+      icon: '💆',
+      order: 1,
+      salonId: testSalon.id,
+      parentId: testCatCoiffureFemme,
+      active: true,
+    },
+  });
+
+  // Sub-categories for Beauté
+  const testSubCatManucure = await prisma.category.create({
+    data: {
+      name: 'Manucure',
+      slug: 'manucure',
+      icon: '💅',
+      order: 0,
+      salonId: testSalon.id,
+      parentId: testCatBeaute,
+      active: true,
+    },
+  });
+  const testSubCatRegard = await prisma.category.create({
+    data: {
+      name: 'Regard',
+      slug: 'regard',
+      icon: '👁️',
+      order: 1,
+      salonId: testSalon.id,
+      parentId: testCatBeaute,
+      active: true,
+    },
+  });
+
   const testServices = await Promise.all([
+    // Services in sub-categories under Coiffure Femme
     prisma.service.create({
       data: {
         salonId: testSalon.id,
         name: 'Coupe Femme',
-        categoryId: testCatCoiffureFemme,
+        categoryId: testSubCatCoupes.id,
         price: 4500,
         durationMinutes: 60,
         order: 0,
@@ -987,10 +1036,32 @@ async function main() {
     prisma.service.create({
       data: {
         salonId: testSalon.id,
+        name: 'Coupe + Brushing',
+        categoryId: testSubCatCoupes.id,
+        price: 5500,
+        durationMinutes: 75,
+        order: 1,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
         name: 'Brushing',
-        categoryId: testCatCoiffureFemme,
+        categoryId: testSubCatSoinsCapillaires.id,
         price: 2500,
         durationMinutes: 30,
+        order: 0,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Soin Kératine',
+        categoryId: testSubCatSoinsCapillaires.id,
+        price: 6500,
+        durationMinutes: 90,
         order: 1,
         active: true,
       },
@@ -1039,12 +1110,35 @@ async function main() {
         active: true,
       },
     }),
+    // Services in sub-categories under Beauté
     prisma.service.create({
       data: {
         salonId: testSalon.id,
         name: 'Manucure Gel',
-        categoryId: testCatBeaute,
+        categoryId: testSubCatManucure.id,
         price: 5500,
+        durationMinutes: 90,
+        order: 0,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Semi-Permanent',
+        categoryId: testSubCatManucure.id,
+        price: 3500,
+        durationMinutes: 60,
+        order: 1,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Extension Cils',
+        categoryId: testSubCatRegard.id,
+        price: 8000,
         durationMinutes: 90,
         order: 0,
         active: true,

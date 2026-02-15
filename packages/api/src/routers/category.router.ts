@@ -36,28 +36,40 @@ export const categoryRouter = router({
   getBySalonId: publicProcedure
     .input(z.object({ salonId: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
+      const serviceInclude = {
+        where: { active: true } as const,
+        orderBy: { order: 'asc' } as const,
+        include: {
+          category: {
+            select: { id: true, name: true, slug: true, icon: true, color: true },
+          },
+          professionals: {
+            where: { active: true } as const,
+            include: {
+              professional: {
+                include: {
+                  user: {
+                    select: { id: true, firstName: true, lastName: true, avatar: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
+
       const categories = await ctx.prisma.category.findMany({
-        where: { salonId: input.salonId, active: true },
+        where: { salonId: input.salonId, active: true, parentId: null },
         orderBy: { order: 'asc' },
         include: {
-          services: {
+          services: serviceInclude,
+          children: {
             where: { active: true },
             orderBy: { order: 'asc' },
             include: {
-              category: {
-                select: { id: true, name: true, slug: true, icon: true, color: true },
-              },
-              professionals: {
-                where: { active: true },
-                include: {
-                  professional: {
-                    include: {
-                      user: {
-                        select: { id: true, firstName: true, lastName: true, avatar: true },
-                      },
-                    },
-                  },
-                },
+              services: serviceInclude,
+              _count: {
+                select: { services: { where: { active: true } } },
               },
             },
           },
@@ -99,9 +111,23 @@ export const categoryRouter = router({
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      // Get max order for this salon's categories
+      // If parentId provided, verify parent belongs to same salon
+      if (input.parentId) {
+        const parent = await ctx.prisma.category.findUnique({
+          where: { id: input.parentId },
+          select: { salonId: true, parentId: true },
+        });
+        if (!parent || parent.salonId !== input.salonId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Parent category not found in this salon' });
+        }
+        if (parent.parentId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Sous-catégories imbriquées sur plus de 2 niveaux non supportées' });
+        }
+      }
+
+      // Get max order for this salon's categories at same level
       const maxOrder = await ctx.prisma.category.aggregate({
-        where: { salonId: input.salonId, active: true },
+        where: { salonId: input.salonId, active: true, parentId: input.parentId ?? null },
         _max: { order: true },
       });
 
@@ -113,6 +139,7 @@ export const categoryRouter = router({
           icon: input.icon,
           color: input.color,
           salonId: input.salonId,
+          parentId: input.parentId,
           order: (maxOrder._max.order ?? -1) + 1,
         },
       });
@@ -173,7 +200,12 @@ export const categoryRouter = router({
         where: { id: input.id },
         include: {
           salon: { select: { ownerId: true } },
-          _count: { select: { services: { where: { active: true } } } },
+          _count: {
+            select: {
+              services: { where: { active: true } },
+              children: { where: { active: true } },
+            },
+          },
         },
       });
 
@@ -193,6 +225,13 @@ export const categoryRouter = router({
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Déplacez ou supprimez les prestations de cette catégorie avant de la supprimer.',
+        });
+      }
+
+      if (category._count.children > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Supprimez les sous-catégories avant de supprimer cette catégorie.',
         });
       }
 

@@ -320,6 +320,11 @@ model Category {
   salonId     String?
   salon       Salon?  @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
+  // Parent-child hierarchy (sub-categories)
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryHierarchy")
+
   // Relationships
   services    Service[]
 
@@ -330,6 +335,7 @@ model Category {
   @@index([active])
   @@index([order])
   @@index([salonId])
+  @@index([parentId])
   @@map("salon_categories")
 }
 

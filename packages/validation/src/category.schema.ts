@@ -7,6 +7,7 @@ export const createCategorySchema = z.object({
   description: z.string().max(500).optional(),
   icon: z.string().max(10).optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Couleur hex invalide').optional(),
+  parentId: z.string().cuid().optional(),
 });
 
 // Update category schema

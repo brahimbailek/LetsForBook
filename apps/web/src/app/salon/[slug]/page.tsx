@@ -71,15 +71,11 @@ export default function SalonDetailPage() {
     );
   }
 
-  // Group services by category
-  const servicesByCategory = salon.services?.reduce((acc: Record<string, typeof salon.services>, service) => {
-    const category = service.category?.name || 'Autres';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(service);
-    return acc;
-  }, {}) || {};
+  // Fetch categories with hierarchy for structured display
+  const { data: categoriesData } = trpc.category.getBySalonId.useQuery(
+    { salonId: salon.id },
+    { enabled: !!salon.id }
+  );
 
   // Calculate average rating
   const averageRating = salon.reviews && salon.reviews.length > 0
@@ -215,13 +211,52 @@ export default function SalonDetailPage() {
             <Card>
               <h2 className="text-xl font-semibold text-coffee-800 mb-6">Nos prestations</h2>
               <div className="space-y-6">
-                {Object.entries(servicesByCategory).map(([category, services]) => (
-                  <div key={category}>
-                    <h3 className="text-lg font-medium text-coffee-700 mb-3 pb-2 border-b border-sand-200">
-                      {category}
+                {categoriesData?.map((category) => (
+                  <div key={category.id}>
+                    <h3 className="text-lg font-medium text-coffee-700 mb-3 pb-2 border-b border-sand-200 flex items-center gap-2">
+                      {category.icon && <span>{category.icon}</span>}
+                      {category.name}
                     </h3>
+
+                    {/* Sub-categories */}
+                    {(category as any).children?.map((subCat: any) => (
+                      <div key={subCat.id} className="ml-4 mb-4">
+                        <h4 className="text-sm font-semibold text-coffee-600 mb-2 flex items-center gap-1.5">
+                          {subCat.icon && <span>{subCat.icon}</span>}
+                          {subCat.name}
+                        </h4>
+                        <div className="space-y-3">
+                          {subCat.services?.map((service: any) => (
+                            <div
+                              key={service.id}
+                              className="flex items-center justify-between p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition"
+                            >
+                              <div className="flex-1">
+                                <h4 className="font-medium text-coffee-800">{service.name}</h4>
+                                <p className="text-sm text-coffee-500">
+                                  {service.durationMinutes} min
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <span className="font-semibold text-cream-700">
+                                  {(service.price / 100).toFixed(2)} €
+                                </span>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleBookService(service.id)}
+                                >
+                                  Réserver
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Direct services (not in sub-categories) */}
                     <div className="space-y-3">
-                      {services.map((service) => (
+                      {category.services?.map((service) => (
                         <div
                           key={service.id}
                           className="flex items-center justify-between p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition"
@@ -234,7 +269,7 @@ export default function SalonDetailPage() {
                           </div>
                           <div className="flex items-center gap-4">
                             <span className="font-semibold text-cream-700">
-                              {service.price.toFixed(2)} €
+                              {(service.price / 100).toFixed(2)} €
                             </span>
                             <Button
                               size="sm"
@@ -249,7 +284,7 @@ export default function SalonDetailPage() {
                   </div>
                 ))}
 
-                {Object.keys(servicesByCategory).length === 0 && (
+                {(!categoriesData || categoriesData.length === 0) && (
                   <p className="text-coffee-500 text-center py-8">
                     Aucune prestation disponible pour le moment.
                   </p>
