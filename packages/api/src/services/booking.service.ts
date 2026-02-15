@@ -118,7 +118,7 @@ export class BookingService {
         startTime,
         endTime,
         timezone: professional.salon.timezone,
-        status: 'PENDING',
+        status: 'CONFIRMED',
         clientNotes,
         services: {
           create: appointmentServices,

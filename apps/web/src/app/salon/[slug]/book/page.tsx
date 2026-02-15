@@ -30,7 +30,7 @@ export default function BookingPage() {
     { enabled: !!slug }
   );
 
-  // Get availability for selected date and professional
+  // Get availability for selected date and professional (use resolvedProfessionalId for "Indifférent" case)
   const { data: availability, isLoading: isLoadingAvailability } = trpc.availability.getSlots.useQuery(
     {
       salonId: salon?.id || '',
@@ -84,8 +84,23 @@ export default function BookingPage() {
     }
   };
 
+  // Get the list of professionals who offer the selected service
+  const availableProsForService = selectedService && salon
+    ? salon.professionals?.filter((pro: any) =>
+        pro.services?.some((s: any) => s.serviceId === selectedService)
+      ) || []
+    : salon?.professionals || [];
+
+  // Resolve the professional ID (auto-select first available if "Indifférent")
+  const resolvedProfessionalId = selectedProfessional
+    || (availableProsForService.length === 1 ? availableProsForService[0]?.id : null);
+
   const handleBooking = async () => {
-    if (!selectedService || !selectedProfessional || !selectedDate || !selectedTime || !salon) return;
+    if (!selectedService || !selectedDate || !selectedTime || !salon) return;
+
+    // If no professional selected, pick the first one who offers the service
+    const proId = resolvedProfessionalId || availableProsForService[0]?.id;
+    if (!proId) return;
 
     setIsBooking(true);
 
@@ -97,7 +112,7 @@ export default function BookingPage() {
     startTime.setHours(hours, minutes, 0, 0);
 
     createBookingMutation.mutate({
-      professionalId: selectedProfessional!,
+      professionalId: proId,
       serviceIds: [selectedService],
       startTime: startTime,
     });
@@ -187,7 +202,10 @@ export default function BookingPage() {
                   {salon.services?.map((service) => (
                     <div
                       key={service.id}
-                      onClick={() => setSelectedService(service.id)}
+                      onClick={() => {
+                        setSelectedService(service.id);
+                        setSelectedProfessional(null); // Reset pro when service changes
+                      }}
                       className={`p-4 rounded-xl cursor-pointer transition border-2 ${
                         selectedService === service.id
                           ? 'border-cream-500 bg-cream-50'
@@ -207,51 +225,64 @@ export default function BookingPage() {
                   ))}
                 </div>
 
-                {/* Professional Selection (optional) */}
-                {salon.professionals && salon.professionals.length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="text-lg font-medium text-coffee-800 mb-4">
-                      Avec qui ? (optionnel)
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div
-                        onClick={() => setSelectedProfessional(null)}
-                        className={`p-4 rounded-xl cursor-pointer transition border-2 ${
-                          !selectedProfessional
-                            ? 'border-cream-500 bg-cream-50'
-                            : 'border-transparent bg-sand-50 hover:bg-sand-100'
-                        }`}
-                      >
-                        <p className="font-medium text-coffee-800">Pas de préférence</p>
-                        <p className="text-sm text-coffee-500">Premier disponible</p>
-                      </div>
-                      {salon.professionals.map((pro) => (
-                        <div
-                          key={pro.id}
-                          onClick={() => setSelectedProfessional(pro.id)}
-                          className={`p-4 rounded-xl cursor-pointer transition border-2 ${
-                            selectedProfessional === pro.id
-                              ? 'border-cream-500 bg-cream-50'
-                              : 'border-transparent bg-sand-50 hover:bg-sand-100'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-cream-200 flex items-center justify-center">
-                              <span className="text-cream-700 font-medium text-sm">
-                                {pro.user.firstName?.charAt(0)}{pro.user.lastName?.charAt(0)}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-coffee-800">
-                                {pro.user.firstName} {pro.user.lastName}
-                              </p>
+                {/* Professional Selection - filtered by selected service */}
+                {salon.professionals && salon.professionals.length > 0 && (() => {
+                  // Filter professionals who offer the selected service
+                  const availablePros = selectedService
+                    ? salon.professionals.filter((pro: any) =>
+                        pro.services?.some((s: any) => s.serviceId === selectedService)
+                      )
+                    : salon.professionals;
+
+                  if (availablePros.length === 0) return null;
+
+                  return (
+                    <div className="mt-8">
+                      <h3 className="text-lg font-medium text-coffee-800 mb-4">
+                        Avec qui ?
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {availablePros.length > 1 && (
+                          <div
+                            onClick={() => setSelectedProfessional(null)}
+                            className={`p-4 rounded-xl cursor-pointer transition border-2 ${
+                              !selectedProfessional
+                                ? 'border-cream-500 bg-cream-50'
+                                : 'border-transparent bg-sand-50 hover:bg-sand-100'
+                            }`}
+                          >
+                            <p className="font-medium text-coffee-800">Indifférent</p>
+                            <p className="text-sm text-coffee-500">Premier disponible</p>
+                          </div>
+                        )}
+                        {availablePros.map((pro: any) => (
+                          <div
+                            key={pro.id}
+                            onClick={() => setSelectedProfessional(pro.id)}
+                            className={`p-4 rounded-xl cursor-pointer transition border-2 ${
+                              selectedProfessional === pro.id
+                                ? 'border-cream-500 bg-cream-50'
+                                : 'border-transparent bg-sand-50 hover:bg-sand-100'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-cream-200 flex items-center justify-center">
+                                <span className="text-cream-700 font-medium text-sm">
+                                  {pro.user.firstName?.charAt(0)}{pro.user.lastName?.charAt(0)}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-coffee-800">
+                                  {pro.user.firstName} {pro.user.lastName}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <div className="mt-8">
                   <Button

@@ -43,10 +43,10 @@ export default function DashboardPage() {
     { enabled: !!user && isSalonOwner }
   );
 
-  // PROFESSIONAL data - services assigned to them (read-only)
-  const { data: myServices, isLoading: isLoadingMyServices } = trpc.service.getByProfessionalId.useQuery(
-    { professionalId: user?.professionalProfile?.id ?? '' },
-    { enabled: !!user && !!user.professionalProfile?.id }
+  // PROFESSIONAL data - all services of their salon (read-only)
+  const { data: myServices, isLoading: isLoadingMyServices } = trpc.service.getBySalonId.useQuery(
+    { salonId: user?.professionalProfile?.salon?.id ?? '' },
+    { enabled: !!user && !!user.professionalProfile?.salon?.id }
   );
 
   // Availability data (both roles)
@@ -549,7 +549,7 @@ export default function DashboardPage() {
           {/* =========================================== */}
           {activeTab === 'my-services' && isProfessional && (
             <div>
-              <h1 className="text-3xl font-bold text-coffee-800 mb-8">Mes prestations</h1>
+              <h1 className="text-3xl font-bold text-coffee-800 mb-8">Prestations du salon</h1>
 
               {isLoadingMyServices ? (
                 <div className="flex justify-center py-12">
@@ -562,12 +562,19 @@ export default function DashboardPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-coffee-800">{service.name}</p>
-                          <p className="text-sm text-coffee-500">
-                            {service.customDurationMinutes || service.durationMinutes} min
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-coffee-500">
+                              {service.durationMinutes} min
+                            </p>
+                            {service.category && (
+                              <span className="text-xs bg-sand-100 text-coffee-500 px-2 py-0.5 rounded-full">
+                                {service.category.name}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className="font-semibold text-coffee-800">
-                          {((service.customPrice ?? service.price) / 100).toFixed(2)} €
+                          {(service.price / 100).toFixed(2)} €
                         </span>
                       </div>
                     </Card>
@@ -577,10 +584,10 @@ export default function DashboardPage() {
                 <Card className="text-center py-12">
                   <div className="text-6xl mb-4">✂️</div>
                   <h3 className="text-xl font-semibold text-coffee-800 mb-2">
-                    Aucune prestation assignée
+                    Aucune prestation
                   </h3>
                   <p className="text-coffee-600">
-                    Votre responsable n'a pas encore assigné de prestations à votre profil.
+                    Le salon n'a pas encore ajouté de prestations.
                   </p>
                 </Card>
               )}

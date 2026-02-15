@@ -29,14 +29,6 @@ export function AppointmentsList({ salonId }: AppointmentsListProps) {
     endDate,
   });
 
-  const acceptMutation = trpc.booking.accept.useMutation({
-    onSuccess: () => refetch(),
-  });
-
-  const rejectMutation = trpc.booking.reject.useMutation({
-    onSuccess: () => refetch(),
-  });
-
   const completeMutation = trpc.booking.markCompleted.useMutation({
     onSuccess: () => refetch(),
   });
@@ -47,10 +39,9 @@ export function AppointmentsList({ salonId }: AppointmentsListProps) {
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: 'success' | 'warning' | 'error' | 'info' | 'default'; label: string }> = {
-      PENDING: { variant: 'warning', label: 'En attente' },
       CONFIRMED: { variant: 'success', label: 'Confirmé' },
       CANCELLED_CLIENT: { variant: 'error', label: 'Annulé (client)' },
-      CANCELLED_PROFESSIONAL: { variant: 'error', label: 'Annulé (pro)' },
+      CANCELLED_SALON: { variant: 'error', label: 'Annulé (pro)' },
       COMPLETED: { variant: 'info', label: 'Terminé' },
       NO_SHOW: { variant: 'error', label: 'Absent' },
     };
@@ -147,51 +138,32 @@ export function AppointmentsList({ salonId }: AppointmentsListProps) {
               </div>
 
               {/* Actions based on status */}
-              <div className="flex gap-2 mt-4 pt-4 border-t border-sand-200">
-                {appointment.status === 'PENDING' && (
-                  <>
-                    <Button
-                      size="sm"
-                      onClick={() => acceptMutation.mutate({ id: appointment.id })}
-                      disabled={acceptMutation.isPending}
-                    >
-                      Accepter
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => rejectMutation.mutate({ id: appointment.id })}
-                      disabled={rejectMutation.isPending}
-                    >
-                      Refuser
-                    </Button>
-                  </>
-                )}
+              {appointment.status === 'CONFIRMED' && (
+                <div className="flex gap-2 mt-4 pt-4 border-t border-sand-200">
+                  <Button
+                    size="sm"
+                    onClick={() => completeMutation.mutate({ id: appointment.id })}
+                    disabled={completeMutation.isPending}
+                  >
+                    Marquer terminé
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => noShowMutation.mutate({ id: appointment.id })}
+                    disabled={noShowMutation.isPending}
+                  >
+                    Client absent
+                  </Button>
+                </div>
+              )}
 
-                {appointment.status === 'CONFIRMED' && (
-                  <>
-                    <Button
-                      size="sm"
-                      onClick={() => completeMutation.mutate({ id: appointment.id })}
-                      disabled={completeMutation.isPending}
-                    >
-                      Marquer terminé
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => noShowMutation.mutate({ id: appointment.id })}
-                      disabled={noShowMutation.isPending}
-                    >
-                      Client absent
-                    </Button>
-                  </>
-                )}
-
-                {(appointment.status === 'COMPLETED' || appointment.status === 'NO_SHOW') && (
+              {(appointment.status === 'COMPLETED' || appointment.status === 'NO_SHOW' ||
+                appointment.status === 'CANCELLED_CLIENT' || appointment.status === 'CANCELLED_SALON') && (
+                <div className="flex gap-2 mt-4 pt-4 border-t border-sand-200">
                   <span className="text-sm text-coffee-500">Aucune action disponible</span>
-                )}
-              </div>
+                </div>
+              )}
             </Card>
           ))}
         </div>

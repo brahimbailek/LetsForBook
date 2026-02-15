@@ -406,6 +406,10 @@ export const salonRouter = router({
                   avatar: true,
                 },
               },
+              services: {
+                where: { active: true },
+                select: { serviceId: true },
+              },
             },
           },
           services: {
