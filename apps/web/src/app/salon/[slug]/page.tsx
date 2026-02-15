@@ -25,6 +25,12 @@ export default function SalonDetailPage() {
     { enabled: !!salon?.id && !!user }
   );
 
+  // Fetch categories with hierarchy - must be before any early returns (Rules of Hooks)
+  const { data: categoriesData } = trpc.category.getBySalonId.useQuery(
+    { salonId: salon?.id || '' },
+    { enabled: !!salon?.id }
+  );
+
   const utils = trpc.useUtils();
   const toggleFavoriteMutation = trpc.salon.toggleFavorite.useMutation({
     onSuccess: () => {
@@ -70,12 +76,6 @@ export default function SalonDetailPage() {
       </div>
     );
   }
-
-  // Fetch categories with hierarchy for structured display
-  const { data: categoriesData } = trpc.category.getBySalonId.useQuery(
-    { salonId: salon.id },
-    { enabled: !!salon.id }
-  );
 
   // Calculate average rating
   const averageRating = salon.reviews && salon.reviews.length > 0
