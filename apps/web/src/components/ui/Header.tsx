@@ -4,11 +4,21 @@ import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './Button';
+import { trpc } from '@/lib/trpc/client';
 
 export function Header() {
   const { data: session, status } = useSession();
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const isLoggedIn = status === 'authenticated' && !!session?.user;
+  const userRole = session?.user?.role;
+  const isPro = userRole === 'PROFESSIONAL' || userRole === 'SALON_OWNER' || userRole === 'ADMIN';
+
+  // Fetch user data with salon info for pros
+  const { data: userData } = trpc.auth.me.useQuery(undefined, {
+    enabled: isLoggedIn && isPro,
+  });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -20,9 +30,10 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const isLoggedIn = status === 'authenticated' && !!session?.user;
   const firstName = session?.user?.name?.split(' ')[0] || '';
-  const userRole = session?.user?.role;
+
+  // Get salon name for the dashboard link
+  const salonName = userData?.professionalProfile?.salon?.name;
 
   const handleSignOut = async () => {
     setShowMenu(false);
@@ -93,21 +104,27 @@ export function Header() {
                       <p className="text-xs text-coffee-500">{session.user?.email}</p>
                     </div>
 
-                    {(userRole === 'SALON_OWNER' || userRole === 'PROFESSIONAL') && (
+                    {isPro && (
                       <Link
                         href="/dashboard"
                         onClick={() => setShowMenu(false)}
-                        className="block px-4 py-2.5 text-sm text-coffee-700 hover:bg-sand-50 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-coffee-700 hover:bg-sand-50 transition-colors"
                       >
-                        Tableau de bord
+                        <svg className="w-4 h-4 text-cream-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        {salonName || 'Tableau de bord'}
                       </Link>
                     )}
 
                     <Link
                       href="/profile"
                       onClick={() => setShowMenu(false)}
-                      className="block px-4 py-2.5 text-sm text-coffee-700 hover:bg-sand-50 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-coffee-700 hover:bg-sand-50 transition-colors"
                     >
+                      <svg className="w-4 h-4 text-coffee-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
                       Mon profil
                     </Link>
 

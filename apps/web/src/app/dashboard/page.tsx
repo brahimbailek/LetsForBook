@@ -186,32 +186,6 @@ export default function DashboardPage() {
                     </svg>
                     Accueil particulier
                   </button>
-
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      router.push('/profile');
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-coffee-200 hover:bg-coffee-600 transition-colors text-left"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Mon profil
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      router.push('/my-bookings');
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-coffee-200 hover:bg-coffee-600 transition-colors text-left"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Mes réservations
-                  </button>
                 </div>
 
                 <div className="border-t border-coffee-600 py-1">
