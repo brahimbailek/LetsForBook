@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { Button, Input, Card } from '@/components/ui';
 import { trpc } from '@/lib/trpc/client';
 
@@ -46,7 +46,11 @@ function RegisterForm() {
         setError('Compte créé mais erreur de connexion. Veuillez vous connecter manuellement.');
         router.push('/login');
       } else {
-        router.push('/welcome');
+        // Redirect pros/owners to dashboard, clients to welcome
+        const session = await getSession();
+        const role = session?.user?.role;
+        const isPro = role === 'PROFESSIONAL' || role === 'SALON_OWNER' || role === 'ADMIN';
+        router.push(isPro ? '/dashboard' : '/welcome');
         router.refresh();
       }
     },

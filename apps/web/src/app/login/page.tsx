@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { Button, Input, Card } from '@/components/ui';
 
 function LoginForm() {
@@ -46,7 +46,18 @@ function LoginForm() {
       if (result?.error) {
         setFormError('Email ou mot de passe incorrect');
       } else {
-        router.push(callbackUrl);
+        // Get updated session to check role
+        const session = await getSession();
+        const role = session?.user?.role;
+        const isPro = role === 'PROFESSIONAL' || role === 'SALON_OWNER' || role === 'ADMIN';
+
+        // If no explicit callbackUrl was set, redirect pros/owners to dashboard
+        const hasExplicitCallback = searchParams.get('callbackUrl');
+        if (isPro && !hasExplicitCallback) {
+          router.push('/dashboard');
+        } else {
+          router.push(callbackUrl);
+        }
         router.refresh();
       }
     } catch {

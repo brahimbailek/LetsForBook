@@ -90,7 +90,9 @@ export const authConfig: NextAuthConfig = {
 
       // Redirect logged-in users away from auth pages
       if (isAuthRoute && isLoggedIn) {
-        return Response.redirect(new URL('/', nextUrl));
+        const proRoles = ['PROFESSIONAL', 'SALON_OWNER', 'ADMIN'];
+        const redirectUrl = userRole && proRoles.includes(userRole) ? '/dashboard' : '/';
+        return Response.redirect(new URL(redirectUrl, nextUrl));
       }
 
       // Require auth for protected routes
