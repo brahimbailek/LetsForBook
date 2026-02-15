@@ -556,30 +556,44 @@ export default function DashboardPage() {
                   <Spinner size="lg" />
                 </div>
               ) : myServices && myServices.length > 0 ? (
-                <div className="space-y-3">
-                  {myServices.map((service) => (
-                    <Card key={service.id}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-coffee-800">{service.name}</p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm text-coffee-500">
-                              {service.durationMinutes} min
-                            </p>
-                            {service.category && (
-                              <span className="text-xs bg-sand-100 text-coffee-500 px-2 py-0.5 rounded-full">
-                                {service.category.name}
-                              </span>
-                            )}
+                (() => {
+                  // Group services by category
+                  const grouped: Record<string, typeof myServices> = {};
+                  myServices.forEach((service) => {
+                    const catName = service.category?.name || 'Autres';
+                    if (!grouped[catName]) grouped[catName] = [];
+                    grouped[catName]!.push(service);
+                  });
+
+                  return (
+                    <div className="space-y-8">
+                      {Object.entries(grouped).map(([categoryName, services]) => (
+                        <div key={categoryName}>
+                          <h3 className="text-sm font-semibold text-cream-700 uppercase tracking-wider mb-3 px-1">
+                            {categoryName}
+                          </h3>
+                          <div className="space-y-3">
+                            {services!.map((service) => (
+                              <Card key={service.id}>
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium text-coffee-800">{service.name}</p>
+                                    <p className="text-sm text-coffee-500">
+                                      {service.durationMinutes} min
+                                    </p>
+                                  </div>
+                                  <span className="font-semibold text-coffee-800">
+                                    {(service.price / 100).toFixed(2)} €
+                                  </span>
+                                </div>
+                              </Card>
+                            ))}
                           </div>
                         </div>
-                        <span className="font-semibold text-coffee-800">
-                          {(service.price / 100).toFixed(2)} €
-                        </span>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                      ))}
+                    </div>
+                  );
+                })()
               ) : (
                 <Card className="text-center py-12">
                   <div className="text-6xl mb-4">✂️</div>

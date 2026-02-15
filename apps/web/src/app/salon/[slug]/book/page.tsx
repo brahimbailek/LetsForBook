@@ -198,32 +198,53 @@ export default function BookingPage() {
                 <h2 className="text-xl font-semibold text-coffee-800 mb-6">
                   Choisissez une prestation
                 </h2>
-                <div className="space-y-3">
-                  {salon.services?.map((service) => (
-                    <div
-                      key={service.id}
-                      onClick={() => {
-                        setSelectedService(service.id);
-                        setSelectedProfessional(null); // Reset pro when service changes
-                      }}
-                      className={`p-4 rounded-xl cursor-pointer transition border-2 ${
-                        selectedService === service.id
-                          ? 'border-cream-500 bg-cream-50'
-                          : 'border-transparent bg-sand-50 hover:bg-sand-100'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium text-coffee-800">{service.name}</h3>
-                          <p className="text-sm text-coffee-500">{service.durationMinutes} min</p>
+                {(() => {
+                  // Group services by category
+                  const grouped: Record<string, typeof salon.services> = {};
+                  salon.services?.forEach((service) => {
+                    const catName = service.category?.name || 'Autres';
+                    if (!grouped[catName]) grouped[catName] = [];
+                    grouped[catName]!.push(service);
+                  });
+
+                  return (
+                    <div className="space-y-6">
+                      {Object.entries(grouped).map(([categoryName, services]) => (
+                        <div key={categoryName}>
+                          <h3 className="text-sm font-semibold text-cream-700 uppercase tracking-wider mb-3 px-1">
+                            {categoryName}
+                          </h3>
+                          <div className="space-y-2">
+                            {services!.map((service) => (
+                              <div
+                                key={service.id}
+                                onClick={() => {
+                                  setSelectedService(service.id);
+                                  setSelectedProfessional(null);
+                                }}
+                                className={`p-4 rounded-xl cursor-pointer transition border-2 ${
+                                  selectedService === service.id
+                                    ? 'border-cream-500 bg-cream-50'
+                                    : 'border-transparent bg-sand-50 hover:bg-sand-100'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="font-medium text-coffee-800">{service.name}</h3>
+                                    <p className="text-sm text-coffee-500">{service.durationMinutes} min</p>
+                                  </div>
+                                  <span className="font-semibold text-cream-700">
+                                    {service.price.toFixed(2)} €
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <span className="font-semibold text-cream-700">
-                          {service.price.toFixed(2)} €
-                        </span>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
 
                 {/* Professional Selection - filtered by selected service */}
                 {salon.professionals && salon.professionals.length > 0 && (() => {
