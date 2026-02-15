@@ -637,6 +637,7 @@ export default function DashboardPage() {
                 isLoading={isLoadingAvailability}
                 onRefreshAvailability={refetchAvailability}
                 onRefreshExceptions={refetchExceptions}
+                readOnly={isProfessional}
               />
             </div>
           )}
@@ -721,12 +722,14 @@ function AvailabilityManager({
   isLoading,
   onRefreshAvailability,
   onRefreshExceptions,
+  readOnly = false,
 }: {
   availability: any[] | undefined;
   exceptions: any[] | undefined;
   isLoading: boolean;
   onRefreshAvailability: () => void;
   onRefreshExceptions: () => void;
+  readOnly?: boolean;
 }) {
   type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
   const [editingDay, setEditingDay] = useState<DayOfWeek | null>(null);
@@ -847,12 +850,14 @@ function AvailabilityManager({
                       </span>
                     )}
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleEditDay(day)}>
-                    Modifier
-                  </Button>
+                  {!readOnly && (
+                    <Button variant="ghost" size="sm" onClick={() => handleEditDay(day)}>
+                      Modifier
+                    </Button>
+                  )}
                 </div>
 
-                {isEditing && (
+                {isEditing && !readOnly && (
                   <div className="mt-2 p-4 bg-white border border-sand-200 rounded-lg space-y-4">
                     <div className="flex items-center gap-3">
                       <label className="flex items-center gap-2">
@@ -932,10 +937,12 @@ function AvailabilityManager({
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-coffee-800">Exceptions & congés</h2>
-          <Button size="sm" onClick={() => setShowExceptionForm(true)}>+ Ajouter</Button>
+          {!readOnly && (
+            <Button size="sm" onClick={() => setShowExceptionForm(true)}>+ Ajouter</Button>
+          )}
         </div>
 
-        {showExceptionForm && (
+        {showExceptionForm && !readOnly && (
           <div className="mb-6 p-4 bg-sand-50 rounded-lg space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -1018,14 +1025,16 @@ function AvailabilityManager({
                     {exception.reason && ` · ${exception.reason}`}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteExceptionMutation.mutate({ id: exception.id })}
-                  disabled={deleteExceptionMutation.isPending}
-                >
-                  Supprimer
-                </Button>
+                {!readOnly && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteExceptionMutation.mutate({ id: exception.id })}
+                    disabled={deleteExceptionMutation.isPending}
+                  >
+                    Supprimer
+                  </Button>
+                )}
               </div>
             ))}
           </div>
