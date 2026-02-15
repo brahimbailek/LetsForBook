@@ -665,7 +665,8 @@ function AvailabilityManager({
   onRefreshAvailability: () => void;
   onRefreshExceptions: () => void;
 }) {
-  const [editingDay, setEditingDay] = useState<string | null>(null);
+  type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+  const [editingDay, setEditingDay] = useState<DayOfWeek | null>(null);
   const [editForm, setEditForm] = useState({ startTime: '', endTime: '', breakStartTime: '', breakEndTime: '', isAvailable: true });
   const [showExceptionForm, setShowExceptionForm] = useState(false);
   const [exceptionForm, setExceptionForm] = useState({ date: '', type: 'UNAVAILABLE' as 'UNAVAILABLE' | 'CUSTOM', reason: '', startTime: '', endTime: '' });
@@ -699,9 +700,9 @@ function AvailabilityManager({
     SUNDAY: 'Dimanche',
   };
 
-  const ALL_DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+  const ALL_DAYS: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
-  const handleEditDay = (day: string) => {
+  const handleEditDay = (day: DayOfWeek) => {
     const dayAvail = availability?.find((a) => a.dayOfWeek === day);
     setEditForm({
       startTime: dayAvail?.startTime || '09:00',
