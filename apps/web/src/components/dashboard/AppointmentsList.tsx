@@ -11,25 +11,18 @@ interface AppointmentsListProps {
 export function AppointmentsList({ salonId }: AppointmentsListProps) {
   const [filter, setFilter] = useState<'today' | 'week' | 'month'>('today');
 
-  // Calculate date range based on filter
-  const getDateRange = () => {
-    const now = new Date();
-    const startDate = new Date(now);
-    startDate.setHours(0, 0, 0, 0);
+  // Calculate date range based on filter (stable values to avoid infinite re-fetching)
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
 
-    const endDate = new Date(now);
-    if (filter === 'today') {
-      endDate.setHours(23, 59, 59, 999);
-    } else if (filter === 'week') {
-      endDate.setDate(endDate.getDate() + 7);
-    } else {
-      endDate.setMonth(endDate.getMonth() + 1);
-    }
-
-    return { startDate, endDate };
-  };
-
-  const { startDate, endDate } = getDateRange();
+  let endDate: Date;
+  if (filter === 'today') {
+    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  } else if (filter === 'week') {
+    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59, 999);
+  } else {
+    endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate(), 23, 59, 59, 999);
+  }
 
   const { data: appointments, isLoading, refetch } = trpc.booking.getProfessionalBookings.useQuery({
     startDate,

@@ -140,6 +140,28 @@ async function main() {
   console.log('✅ 1 Admin créé (admin@letsforbook.fr)');
 
   // ============================================
+  // 2b. COMPTE TEST CLIENT
+  // ============================================
+  await prisma.user.create({
+    data: {
+      email: 'client@letsforbook.fr',
+      password: defaultPassword,
+      firstName: 'Jean',
+      lastName: 'Client',
+      phone: '+33611111111',
+      role: UserRole.CLIENT,
+      emailVerified: new Date(),
+      clientProfile: {
+        create: {
+          preferredLanguage: 'fr',
+          marketingOptIn: true,
+        },
+      },
+    },
+  });
+  console.log('✅ 1 Compte test CLIENT créé (client@letsforbook.fr)');
+
+  // ============================================
   // 3. CLIENTS (15 utilisateurs)
   // ============================================
   const clientsData = [
@@ -1058,7 +1080,7 @@ async function main() {
 🔐 COMPTES DE TEST:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ADMIN:         admin@letsforbook.fr / password123
-CLIENT:        marie.dupont@gmail.com / password123
+CLIENT:        client@letsforbook.fr / password123
 OWNER (TEST):  test-owner@letsforbook.fr / password123
   └─ Salon:    Salon Test Paris
   └─ Pros:     test-pro1@letsforbook.fr (Sophie Test - Coiffure)
