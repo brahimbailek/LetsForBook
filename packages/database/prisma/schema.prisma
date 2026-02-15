@@ -234,6 +234,7 @@ model Salon {
   // Relationships
   professionals ProfessionalProfile[]
   services      Service[]
+  categories    Category[]
   appointments  Appointment[]
   reviews       Review[]
   availability  SalonAvailability[]
@@ -306,8 +307,8 @@ model ProfessionalProfile {
 
 model Category {
   id          String  @id @default(cuid())
-  name        String  @unique // e.g., "Beauté", "Automobile", "Sport & Fitness"
-  slug        String  @unique // e.g., "beaute", "automobile"
+  name        String
+  slug        String
   description String? @db.Text
   icon        String? // Emoji or icon name
   color       String? // Hex color for UI
@@ -315,14 +316,20 @@ model Category {
   order       Int     @default(0) // For sorting
   active      Boolean @default(true)
 
+  // Salon ownership (null = global category for homepage browsing)
+  salonId     String?
+  salon       Salon?  @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
   // Relationships
   services    Service[]
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  @@unique([salonId, slug])
   @@index([active])
   @@index([order])
+  @@index([salonId])
   @@map("salon_categories")
 }
 
@@ -355,6 +362,9 @@ model Service {
   // Status
   active      Boolean @default(true)
 
+  // Ordering within category
+  order       Int     @default(0)
+
   // Relationships
   professionals ProfessionalService[]
   appointments  AppointmentService[]
@@ -366,6 +376,7 @@ model Service {
   @@index([salonId])
   @@index([categoryId])
   @@index([active])
+  @@index([order])
   @@map("salon_services")
 }
 

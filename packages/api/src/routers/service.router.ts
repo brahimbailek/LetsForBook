@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { router, publicProcedure, professionalProcedure } from '../trpc';
+import { router, publicProcedure, professionalProcedure, salonOwnerProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
-import { createServiceSchema, updateServiceSchema } from '@letsforbook/validation';
+import { createServiceSchema, updateServiceSchema, reorderServicesSchema } from '@letsforbook/validation';
 
 export const serviceRouter = router({
   /**
@@ -44,7 +44,7 @@ export const serviceRouter = router({
             },
           },
         },
-        orderBy: [{ category: { name: 'asc' } }, { name: 'asc' }],
+        orderBy: [{ category: { order: 'asc' } }, { order: 'asc' }, { name: 'asc' }],
       });
 
       return services;
@@ -396,5 +396,38 @@ export const serviceRouter = router({
         customPrice: ps.customPrice,
         customDurationMinutes: ps.customDurationMinutes,
       }));
+    }),
+
+  /**
+   * Reorder services (batch update order and categoryId)
+   * Used for drag & drop between categories
+   * SALON_OWNER ONLY
+   */
+  reorder: salonOwnerProcedure
+    .input(reorderServicesSchema)
+    .mutation(async ({ ctx, input }) => {
+      const salon = await ctx.prisma.salon.findUnique({
+        where: { id: input.salonId },
+        select: { ownerId: true },
+      });
+
+      if (!salon) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Salon not found' });
+      }
+
+      if (salon.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not your salon' });
+      }
+
+      await ctx.prisma.$transaction(
+        input.services.map((s) =>
+          ctx.prisma.service.update({
+            where: { id: s.id },
+            data: { categoryId: s.categoryId, order: s.order },
+          })
+        )
+      );
+
+      return { success: true };
     }),
 });

@@ -18,3 +18,6 @@ export * from './availability.schema';
 
 // Review schemas
 export * from './review.schema';
+
+// Category schemas
+export * from './category.schema';

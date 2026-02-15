@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { Button, Card, Badge, Spinner } from '@/components/ui';
-import { AppointmentsList, SalonForm, ServiceForm } from '@/components/dashboard';
+import { AppointmentsList, SalonForm, ServiceForm, PrestationsManager } from '@/components/dashboard';
 
 type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'my-agenda' | 'my-services' | 'my-availability';
 
@@ -520,13 +520,14 @@ export default function DashboardPage() {
               </div>
 
               {mySalons && mySalons.length > 0 ? (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {mySalons.map((salon) => (
-                    <SalonServicesCard
-                      key={salon.id}
-                      salon={salon}
-                      onAddService={() => handleAddService(salon.id)}
-                    />
+                    <div key={salon.id}>
+                      {mySalons.length > 1 && (
+                        <h2 className="text-xl font-semibold text-coffee-800 mb-4">{salon.name}</h2>
+                      )}
+                      <PrestationsManager salonId={salon.id} />
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -690,49 +691,6 @@ export default function DashboardPage() {
         </>
       )}
     </div>
-  );
-}
-
-// Sous-composant pour afficher les services d'un salon
-function SalonServicesCard({ salon, onAddService }: { salon: any; onAddService: () => void }) {
-  const { data: services, isLoading } = trpc.service.getBySalonId.useQuery({ salonId: salon.id });
-
-  return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-coffee-800">{salon.name}</h2>
-        <Button size="sm" onClick={onAddService}>+ Ajouter</Button>
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-4">
-          <Spinner />
-        </div>
-      ) : services && services.length > 0 ? (
-        <div className="space-y-3">
-          {services.map((service) => (
-            <div key={service.id} className="flex items-center justify-between p-3 bg-sand-50 rounded-lg">
-              <div>
-                <p className="font-medium text-coffee-800">{service.name}</p>
-                <p className="text-sm text-coffee-500">
-                  {service.category?.name} · {service.durationMinutes} min
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="font-semibold text-coffee-800">
-                  {(service.price / 100).toFixed(2)} €
-                </span>
-                <Button variant="ghost" size="sm">Modifier</Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-coffee-500 text-center py-4">
-          Aucune prestation pour cet établissement
-        </p>
-      )}
-    </Card>
   );
 }
 

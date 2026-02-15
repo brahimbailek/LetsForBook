@@ -45,12 +45,45 @@ async function main() {
     }),
     prisma.category.create({
       data: {
-        name: 'Coiffure',
-        slug: 'coiffure',
-        description: 'Salons de coiffure pour hommes et femmes',
-        icon: '✂️',
+        name: 'Coiffure Femme',
+        slug: 'coiffure-femme',
+        description: 'Coupes, brushings et soins capillaires pour femmes',
+        icon: '💇‍♀️',
         color: '#9C27B0',
         order: 2,
+        active: true,
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: 'Coiffure Homme',
+        slug: 'coiffure-homme',
+        description: 'Coupes et coiffures pour hommes',
+        icon: '💇‍♂️',
+        color: '#7B1FA2',
+        order: 3,
+        active: true,
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: 'Coiffure Enfant',
+        slug: 'coiffure-enfant',
+        description: 'Coupes et coiffures pour enfants',
+        icon: '👶',
+        color: '#BA68C8',
+        order: 4,
+        active: true,
+      },
+    }),
+    prisma.category.create({
+      data: {
+        name: 'Coloration',
+        slug: 'coloration',
+        description: 'Colorations, balayages, mèches et techniques couleur',
+        icon: '🎨',
+        color: '#AB47BC',
+        order: 5,
         active: true,
       },
     }),
@@ -61,7 +94,7 @@ async function main() {
         description: 'Barbershops, coupes homme et taille de barbe',
         icon: '💈',
         color: '#3F51B5',
-        order: 3,
+        order: 6,
         active: true,
       },
     }),
@@ -72,7 +105,7 @@ async function main() {
         description: 'Massages, spa, hammam, soins relaxants',
         icon: '🧘',
         color: '#00BCD4',
-        order: 4,
+        order: 7,
         active: true,
       },
     }),
@@ -83,7 +116,7 @@ async function main() {
         description: 'Coaching sportif, yoga, pilates, musculation',
         icon: '💪',
         color: '#4CAF50',
-        order: 5,
+        order: 8,
         active: true,
       },
     }),
@@ -94,7 +127,7 @@ async function main() {
         description: 'Studios de tatouage et piercing professionnels',
         icon: '🎨',
         color: '#FF5722',
-        order: 6,
+        order: 9,
         active: true,
       },
     }),
@@ -105,7 +138,7 @@ async function main() {
         description: 'Garages, mécanique, entretien et réparation automobile',
         icon: '🚗',
         color: '#607D8B',
-        order: 7,
+        order: 10,
         active: true,
       },
     }),
@@ -113,7 +146,10 @@ async function main() {
 
   const categoryMap = {
     'Beauté': categories.find(c => c.slug === 'beaute')!.id,
-    'Coiffure': categories.find(c => c.slug === 'coiffure')!.id,
+    'Coiffure Femme': categories.find(c => c.slug === 'coiffure-femme')!.id,
+    'Coiffure Homme': categories.find(c => c.slug === 'coiffure-homme')!.id,
+    'Coiffure Enfant': categories.find(c => c.slug === 'coiffure-enfant')!.id,
+    'Coloration': categories.find(c => c.slug === 'coloration')!.id,
     'Barbier': categories.find(c => c.slug === 'barbier')!.id,
     'Bien-être & Spa': categories.find(c => c.slug === 'bien-etre-spa')!.id,
     'Sport & Fitness': categories.find(c => c.slug === 'sport-fitness')!.id,
@@ -796,15 +832,21 @@ async function main() {
   // 8. SERVICES (60+)
   // ============================================
   const servicesData = [
-    // Coiffure
-    { name: 'Coupe Femme', category: 'Coiffure', price: 4500, duration: 60, salonIndices: [0, 1, 7, 12, 19] },
-    { name: 'Coupe Homme', category: 'Coiffure', price: 2800, duration: 45, salonIndices: [0, 1, 7, 12, 19] },
-    { name: 'Coupe Enfant', category: 'Coiffure', price: 1800, duration: 30, salonIndices: [0, 1, 7, 12] },
-    { name: 'Coloration Complète', category: 'Coiffure', price: 8500, duration: 120, salonIndices: [0, 1, 7, 12, 19] },
-    { name: 'Balayage', category: 'Coiffure', price: 9500, duration: 150, salonIndices: [0, 1, 7, 19] },
-    { name: 'Mèches', category: 'Coiffure', price: 7500, duration: 90, salonIndices: [0, 1, 7, 12] },
-    { name: 'Brushing', category: 'Coiffure', price: 2500, duration: 30, salonIndices: [0, 1, 7, 12, 19] },
-    { name: 'Lissage Brésilien', category: 'Coiffure', price: 20000, duration: 180, salonIndices: [1, 7, 19] },
+    // Coiffure Femme
+    { name: 'Coupe Femme', category: 'Coiffure Femme', price: 4500, duration: 60, salonIndices: [0, 1, 7, 12, 19] },
+    { name: 'Brushing', category: 'Coiffure Femme', price: 2500, duration: 30, salonIndices: [0, 1, 7, 12, 19] },
+    { name: 'Lissage Brésilien', category: 'Coiffure Femme', price: 20000, duration: 180, salonIndices: [1, 7, 19] },
+
+    // Coiffure Homme
+    { name: 'Coupe Homme', category: 'Coiffure Homme', price: 2800, duration: 45, salonIndices: [0, 1, 7, 12, 19] },
+
+    // Coiffure Enfant
+    { name: 'Coupe Enfant', category: 'Coiffure Enfant', price: 1800, duration: 30, salonIndices: [0, 1, 7, 12] },
+
+    // Coloration
+    { name: 'Coloration Complète', category: 'Coloration', price: 8500, duration: 120, salonIndices: [0, 1, 7, 12, 19] },
+    { name: 'Balayage', category: 'Coloration', price: 9500, duration: 150, salonIndices: [0, 1, 7, 19] },
+    { name: 'Mèches', category: 'Coloration', price: 7500, duration: 90, salonIndices: [0, 1, 7, 12] },
 
     // Barbier
     { name: 'Coupe + Barbe', category: 'Barbier', price: 3800, duration: 60, salonIndices: [4, 17, 21] },
@@ -867,17 +909,53 @@ async function main() {
     { name: 'Réparation Carrosserie Légère', category: 'Automobile', price: 25000, duration: 180, salonIndices: [6, 19] },
   ];
 
+  // Helper: get or create salon-specific category
+  const salonCategoryCache: Record<string, Record<string, string>> = {};
+  async function getSalonCategory(salonId: string, categoryName: string): Promise<string> {
+    if (!salonCategoryCache[salonId]) salonCategoryCache[salonId] = {};
+    if (salonCategoryCache[salonId]![categoryName]) return salonCategoryCache[salonId]![categoryName]!;
+
+    // Find the global category info to copy its icon/color
+    const globalCat = categories.find(c => c.name === categoryName);
+    const slug = categoryName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    const order = Object.keys(salonCategoryCache[salonId]!).length;
+
+    const cat = await prisma.category.create({
+      data: {
+        name: categoryName,
+        slug,
+        icon: globalCat?.icon || null,
+        color: globalCat?.color || null,
+        order,
+        salonId,
+        active: true,
+      },
+    });
+
+    salonCategoryCache[salonId]![categoryName] = cat.id;
+    return cat.id;
+  }
+
   const services = [];
   for (const serviceData of servicesData) {
     for (const salonIndex of serviceData.salonIndices) {
       if (salonIndex < salons.length) {
+        const salonId = salons[salonIndex]!.id;
+        const catId = await getSalonCategory(salonId, serviceData.category);
         const service = await prisma.service.create({
           data: {
-            salonId: salons[salonIndex]!.id,
+            salonId,
             name: serviceData.name,
-            categoryId: categoryMap[serviceData.category as keyof typeof categoryMap],
+            categoryId: catId,
             price: serviceData.price,
             durationMinutes: serviceData.duration,
+            order: services.filter(s => s.salonId === salonId && s.categoryId === catId).length,
             active: true,
           },
         });
@@ -886,45 +964,100 @@ async function main() {
     }
   }
 
-  // Services pour le salon test
+  // Services pour le salon test (salon-specific categories)
+  const testCatCoiffureFemme = await getSalonCategory(testSalon.id, 'Coiffure Femme');
+  const testCatCoiffureHomme = await getSalonCategory(testSalon.id, 'Coiffure Homme');
+  const testCatCoiffureEnfant = await getSalonCategory(testSalon.id, 'Coiffure Enfant');
+  const testCatColoration = await getSalonCategory(testSalon.id, 'Coloration');
+  const testCatBeaute = await getSalonCategory(testSalon.id, 'Beauté');
+  const testCatBienEtre = await getSalonCategory(testSalon.id, 'Bien-être & Spa');
+
   const testServices = await Promise.all([
     prisma.service.create({
       data: {
         salonId: testSalon.id,
-        name: 'Coupe Femme Test',
-        categoryId: categoryMap['Coiffure'],
+        name: 'Coupe Femme',
+        categoryId: testCatCoiffureFemme,
         price: 4500,
         durationMinutes: 60,
+        order: 0,
         active: true,
       },
     }),
     prisma.service.create({
       data: {
         salonId: testSalon.id,
-        name: 'Coloration Test',
-        categoryId: categoryMap['Coiffure'],
+        name: 'Brushing',
+        categoryId: testCatCoiffureFemme,
+        price: 2500,
+        durationMinutes: 30,
+        order: 1,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Coupe Homme',
+        categoryId: testCatCoiffureHomme,
+        price: 2800,
+        durationMinutes: 45,
+        order: 0,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Coupe Enfant',
+        categoryId: testCatCoiffureEnfant,
+        price: 1800,
+        durationMinutes: 30,
+        order: 0,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Coloration Complète',
+        categoryId: testCatColoration,
         price: 8500,
         durationMinutes: 120,
+        order: 0,
         active: true,
       },
     }),
     prisma.service.create({
       data: {
         salonId: testSalon.id,
-        name: 'Manucure Gel Test',
-        categoryId: categoryMap['Beauté'],
+        name: 'Balayage',
+        categoryId: testCatColoration,
+        price: 9500,
+        durationMinutes: 150,
+        order: 1,
+        active: true,
+      },
+    }),
+    prisma.service.create({
+      data: {
+        salonId: testSalon.id,
+        name: 'Manucure Gel',
+        categoryId: testCatBeaute,
         price: 5500,
         durationMinutes: 90,
+        order: 0,
         active: true,
       },
     }),
     prisma.service.create({
       data: {
         salonId: testSalon.id,
-        name: 'Massage Relaxant Test',
-        categoryId: categoryMap['Bien-être & Spa'],
+        name: 'Massage Relaxant',
+        categoryId: testCatBienEtre,
         price: 7500,
         durationMinutes: 60,
+        order: 0,
         active: true,
       },
     }),

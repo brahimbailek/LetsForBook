@@ -16,6 +16,7 @@ interface ServiceFormProps {
     durationMinutes: number;
     categoryId: string;
   };
+  defaultCategoryId?: string;
   onSuccess: () => void;
 }
 
@@ -29,18 +30,21 @@ const DURATIONS = [
   { value: '180', label: '3h' },
 ];
 
-export function ServiceForm({ isOpen, onClose, salonId, service, onSuccess }: ServiceFormProps) {
+export function ServiceForm({ isOpen, onClose, salonId, service, defaultCategoryId, onSuccess }: ServiceFormProps) {
   const isEditing = !!service;
 
-  // Load categories from database
-  const { data: categories, isLoading: categoriesLoading } = trpc.category.getAll.useQuery();
+  // Load salon-specific categories
+  const { data: categories, isLoading: categoriesLoading } = trpc.category.getBySalonId.useQuery(
+    { salonId },
+    { enabled: !!salonId }
+  );
 
   const [formData, setFormData] = useState({
     name: service?.name || '',
     description: service?.description || '',
     price: service ? (service.price / 100).toString() : '',
     durationMinutes: service?.durationMinutes.toString() || '60',
-    categoryId: service?.categoryId || '',
+    categoryId: service?.categoryId || defaultCategoryId || '',
   });
 
   const [error, setError] = useState<string | null>(null);
