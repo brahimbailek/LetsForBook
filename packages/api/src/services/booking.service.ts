@@ -1,20 +1,52 @@
+/**
+ * Service de réservation (BookingService)
+ *
+ * Gère toute la logique métier des rendez-vous côté backend :
+ *
+ * - createBooking()            : Crée un RDV (avec auto-assignation "Peu importe" si pas de pro spécifié)
+ * - getUserBookings()          : Liste les RDV d'un client (upcoming / past / all) avec pagination par curseur
+ * - getBookingById()           : Récupère un RDV par ID avec toutes les relations
+ * - cancelBooking()            : Annulation côté client (statut → CANCELLED_CLIENT)
+ * - acceptBooking()            : Acceptation côté pro (statut PENDING → CONFIRMED)
+ * - rejectBooking()            : Rejet côté pro (statut → CANCELLED_SALON)
+ * - getProfessionalBookings()  : Liste les RDV d'un pro pour la vue calendrier
+ * - markBookingCompleted()     : Marque un RDV comme terminé (CONFIRMED/IN_PROGRESS → COMPLETED)
+ * - markBookingNoShow()        : Marque un RDV comme absent (CONFIRMED → NO_SHOW)
+ * - updateBooking()            : Modification côté client (changement d'horaire, notes)
+ *
+ * Les prix sont stockés en centimes dans la base de données.
+ */
 import type { PrismaClient } from '@letsforbook/database';
 import { TRPCError } from '@trpc/server';
 import { addMinutes } from 'date-fns';
 import { availabilityService } from './availability.service';
 
+/** Données d'entrée pour créer une réservation */
 interface CreateBookingInput {
   userId: string;
-  professionalId?: string;
-  salonId: string;
-  serviceIds: string[];
+  professionalId?: string; // Optionnel : si absent → mode "Peu importe" (auto-assignation aléatoire)
+  salonId: string;         // Requis pour identifier le salon (nécessaire à l'auto-assignation)
+  serviceIds: string[];    // Au moins 1 service requis
   startTime: Date;
   clientNotes?: string;
 }
 
 export class BookingService {
   /**
-   * Create a new booking
+   * Crée une nouvelle réservation.
+   *
+   * Flow :
+   *   1. Récupère le profil client via userId
+   *   2. Résout le professionnel :
+   *      - Si professionalId fourni → utilise directement ce pro
+   *      - Si absent ("Peu importe") → cherche tous les pros du salon qui proposent
+   *        TOUS les services demandés, vérifie leur disponibilité sur le créneau,
+   *        et en choisit un au hasard parmi les disponibles
+   *   3. Vérifie que le pro appartient bien au salon demandé
+   *   4. Récupère les services et calcule durée totale + prix total
+   *      (utilise les prix/durées personnalisés du pro via ProfessionalService si définis)
+   *   5. Vérifie la disponibilité du créneau final
+   *   6. Crée le RDV en base avec statut CONFIRMED et les services associés
    */
   async createBooking(
     prisma: PrismaClient,
@@ -22,7 +54,7 @@ export class BookingService {
   ): Promise<any> {
     const { userId, professionalId, salonId, serviceIds, startTime, clientNotes } = input;
 
-    // 1. Get client profile
+    // 1. Récupérer le profil client
     const clientProfile = await prisma.clientProfile.findUnique({
       where: { userId },
     });
@@ -34,11 +66,11 @@ export class BookingService {
       });
     }
 
-    // 2. Resolve professional (auto-assign if "Peu importe")
+    // 2. Résoudre le professionnel — auto-assignation si "Peu importe"
     let resolvedProfessionalId = professionalId;
 
     if (!resolvedProfessionalId) {
-      // Find all professionals in this salon who offer the requested services
+      // Mode "Peu importe" : trouver tous les pros du salon proposant les services demandés
       const professionalsWithServices = await prisma.professionalProfile.findMany({
         where: {
           salonId,
@@ -61,7 +93,7 @@ export class BookingService {
         },
       });
 
-      // Filter to only professionals who offer ALL requested services
+      // Ne garder que les pros qui proposent TOUS les services demandés (pas juste un)
       const eligiblePros = professionalsWithServices.filter(
         (pro) => pro.services.length === serviceIds.length
       );
@@ -73,7 +105,7 @@ export class BookingService {
         });
       }
 
-      // Calculate total duration for availability check
+      // Calculer la durée totale pour vérifier la disponibilité du créneau
       const servicesForDuration = await prisma.service.findMany({
         where: { id: { in: serviceIds }, active: true },
       });
@@ -82,7 +114,7 @@ export class BookingService {
       );
       const endTimeForCheck = addMinutes(startTime, totalDuration);
 
-      // Check availability for each eligible professional
+      // Vérifier la disponibilité de chaque pro éligible sur le créneau demandé
       const availablePros: typeof eligiblePros = [];
       for (const pro of eligiblePros) {
         const isAvailable = await availabilityService.isSlotAvailable(
@@ -103,12 +135,12 @@ export class BookingService {
         });
       }
 
-      // Randomly pick one from available professionals
+      // Choisir aléatoirement parmi les pros disponibles
       const randomIndex = Math.floor(Math.random() * availablePros.length);
       resolvedProfessionalId = availablePros[randomIndex]!.id;
     }
 
-    // 3. Get professional and salon info
+    // 3. Récupérer les infos du pro et vérifier qu'il appartient au salon
     const professional = await prisma.professionalProfile.findUnique({
       where: { id: resolvedProfessionalId },
       include: {
@@ -130,7 +162,8 @@ export class BookingService {
       });
     }
 
-    // 4. Get services and calculate duration + price
+    // 4. Récupérer les services et calculer durée + prix total
+    //    Utilise les prix/durées personnalisés du pro (ProfessionalService) si définis
     const services = await prisma.service.findMany({
       where: {
         id: { in: serviceIds },
@@ -176,7 +209,7 @@ export class BookingService {
 
     const endTime = addMinutes(startTime, totalDuration);
 
-    // 5. Check if slot is available
+    // 5. Vérifier que le créneau est encore disponible (protection contre les réservations concurrentes)
     const isAvailable = await availabilityService.isSlotAvailable(
       prisma,
       resolvedProfessionalId,
@@ -191,7 +224,7 @@ export class BookingService {
       });
     }
 
-    // 6. Create appointment with services
+    // 6. Créer le RDV en base avec statut CONFIRMED et les services associés
     const appointment = await prisma.appointment.create({
       data: {
         clientId: clientProfile.id,
@@ -230,7 +263,8 @@ export class BookingService {
   }
 
   /**
-   * Get user bookings (client side)
+   * Récupère les RDV d'un client avec pagination par curseur.
+   * Filtres possibles : 'upcoming' (à venir), 'past' (passés), 'all' (tous).
    */
   async getUserBookings(
     prisma: PrismaClient,
@@ -301,7 +335,8 @@ export class BookingService {
   }
 
   /**
-   * Get booking by ID
+   * Récupère un RDV par ID avec toutes les relations (services, pro, salon, client, paiement).
+   * Lève une erreur NOT_FOUND si le RDV n'existe pas.
    */
   async getBookingById(prisma: PrismaClient, id: string) {
     const appointment = await prisma.appointment.findUnique({
@@ -338,7 +373,9 @@ export class BookingService {
   }
 
   /**
-   * Cancel booking (client side)
+   * Annulation d'un RDV côté client.
+   * Vérifie que le client est bien le propriétaire et que le statut est PENDING ou CONFIRMED.
+   * Statut → CANCELLED_CLIENT.
    */
   async cancelBooking(
     prisma: PrismaClient,
@@ -385,7 +422,9 @@ export class BookingService {
   }
 
   /**
-   * Accept booking (professional side)
+   * Acceptation d'un RDV côté professionnel.
+   * Vérifie que le pro est bien le propriétaire et que le statut est PENDING.
+   * Statut PENDING → CONFIRMED.
    */
   async acceptBooking(prisma: PrismaClient, id: string, userId: string) {
     const appointment = await this.getBookingById(prisma, id);
@@ -425,7 +464,9 @@ export class BookingService {
   }
 
   /**
-   * Reject booking (professional side)
+   * Rejet d'un RDV côté professionnel.
+   * Vérifie que le pro est bien le propriétaire et que le statut est PENDING.
+   * Statut → CANCELLED_SALON.
    */
   async rejectBooking(
     prisma: PrismaClient,
@@ -472,7 +513,7 @@ export class BookingService {
   }
 
   /**
-   * Get professional bookings (for calendar view)
+   * Récupère les RDV d'un professionnel sur une plage de dates (pour la vue calendrier du dashboard).
    */
   async getProfessionalBookings(
     prisma: PrismaClient,
@@ -521,7 +562,8 @@ export class BookingService {
   }
 
   /**
-   * Mark booking as completed
+   * Marque un RDV comme terminé (côté pro).
+   * Statut CONFIRMED ou IN_PROGRESS → COMPLETED.
    */
   async markBookingCompleted(prisma: PrismaClient, id: string, userId: string) {
     const appointment = await this.getBookingById(prisma, id);
@@ -551,7 +593,8 @@ export class BookingService {
   }
 
   /**
-   * Mark booking as no-show
+   * Marque un RDV comme absent / no-show (côté pro).
+   * Statut CONFIRMED → NO_SHOW.
    */
   async markBookingNoShow(prisma: PrismaClient, id: string, userId: string) {
     const appointment = await this.getBookingById(prisma, id);
@@ -581,7 +624,9 @@ export class BookingService {
   }
 
   /**
-   * Update booking
+   * Modification d'un RDV côté client (changement d'horaire et/ou de notes).
+   * Si l'horaire change, recalcule endTime et vérifie la disponibilité du nouveau créneau.
+   * Seuls les RDV en statut PENDING ou CONFIRMED peuvent être modifiés.
    */
   async updateBooking(
     prisma: PrismaClient,
@@ -605,7 +650,7 @@ export class BookingService {
       });
     }
 
-    // If updating start time, recalculate end time
+    // Si changement d'horaire → recalculer endTime et vérifier la disponibilité
     let endTime = appointment.endTime;
     if (data.startTime) {
       const totalDuration = appointment.services.reduce(
@@ -614,7 +659,7 @@ export class BookingService {
       );
       endTime = addMinutes(data.startTime, totalDuration);
 
-      // Check if new slot is available
+      // Vérifier que le nouveau créneau est disponible
       const isAvailable = await availabilityService.isSlotAvailable(
         prisma,
         appointment.professionalId,

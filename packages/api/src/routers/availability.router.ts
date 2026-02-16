@@ -1,3 +1,21 @@
+/**
+ * Router de disponibilité (availability)
+ *
+ * Endpoints publics :
+ *   - getSlots                           : Créneaux disponibles pour une date/salon/service
+ *                                          Deux modes : "Peu importe" (agrégation multi-pro) ou pro spécifique
+ *   - getProfessionalWeeklyAvailability  : Horaires hebdomadaires d'un pro (lun-dim)
+ *   - getExceptions                      : Exceptions de disponibilité (congés, jours fériés, horaires spéciaux)
+ *
+ * Endpoints professionnels (authentifiés) :
+ *   - updateAvailability      : Modifier les horaires d'un jour de la semaine
+ *   - batchUpdateAvailability : Modifier tous les jours d'un coup
+ *   - createException         : Créer une exception (congé, maladie, horaires spéciaux)
+ *   - updateException         : Modifier une exception
+ *   - deleteException         : Supprimer une exception
+ *   - getMyAvailability       : Mes horaires (dashboard pro)
+ *   - getMyExceptions         : Mes exceptions (dashboard pro)
+ */
 import { z } from 'zod';
 import { router, professionalProcedure, publicProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
@@ -9,8 +27,20 @@ import {
 
 export const availabilityRouter = router({
   /**
-   * Get available time slots for a given date, salon, and optionally professional/service
-   * PUBLIC
+   * Récupère les créneaux disponibles pour une date, un salon, et optionnellement un pro/service.
+   *
+   * Deux modes de fonctionnement :
+   *   1. Mode "Peu importe" (pas de professionalId + serviceId fourni) :
+   *      → Trouve tous les pros proposant ce service
+   *      → Appelle availabilityService.getAvailableSlots() pour chacun
+   *      → Agrège : un créneau est "available" si AU MOINS un pro l'a disponible
+   *
+   *   2. Mode "Pro spécifique" (professionalId fourni) :
+   *      → Génère des créneaux de 30 min entre 9h-19h
+   *      → Vérifie les conflits avec les RDV existants
+   *      → Exclut les créneaux passés pour aujourd'hui
+   *
+   * PUBLIC — pas d'authentification requise.
    */
   getSlots: publicProcedure
     .input(
@@ -24,9 +54,9 @@ export const availabilityRouter = router({
     .query(async ({ ctx, input }) => {
       const { salonId, professionalId, serviceId, date } = input;
 
-      // "Peu importe" mode: aggregate real availability across all professionals
+      // --- Mode "Peu importe" : agrégation des dispos de tous les pros ---
       if (!professionalId && serviceId) {
-        // Find all professionals offering this service
+        // Trouver tous les pros actifs du salon qui proposent ce service
         const prosForService = await ctx.prisma.professionalService.findMany({
           where: {
             serviceId,
@@ -44,7 +74,7 @@ export const availabilityRouter = router({
           return [];
         }
 
-        // Get slots for each professional using the real availability service
+        // Récupérer les créneaux de chaque pro via le service de disponibilité
         const allSlotsArrays = await Promise.all(
           prosForService.map((ps) =>
             availabilityService.getAvailableSlots(
@@ -56,7 +86,7 @@ export const availabilityRouter = router({
           )
         );
 
-        // Merge: a time slot is "available" if ANY professional has it available
+        // Fusionner : un créneau est "available" si AU MOINS un pro l'a disponible
         const slotMap = new Map<string, boolean>();
         for (const proSlots of allSlotsArrays) {
           for (const slot of proSlots) {
@@ -69,19 +99,19 @@ export const availabilityRouter = router({
           }
         }
 
-        // Sort and return
+        // Trier par heure et retourner au format { time: "HH:MM", available: boolean }
         return Array.from(slotMap.entries())
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([time, available]) => ({ time, available }));
       }
 
-      // Specific professional mode: use simplified slot generation
+      // --- Mode "Pro spécifique" : génération simplifiée de créneaux ---
       const slots = [];
-      const startHour = 9;
-      const endHour = 19;
-      const slotDuration = 30; // 30 minutes slots
+      const startHour = 9;   // Début journée par défaut
+      const endHour = 19;    // Fin journée par défaut
+      const slotDuration = 30; // Intervalle de 30 minutes entre les créneaux
 
-      // Get service duration if provided
+      // Récupérer la durée réelle du service si fourni (sinon 30 min par défaut)
       let serviceDuration = slotDuration;
       if (serviceId) {
         const service = await ctx.prisma.service.findUnique({
@@ -93,7 +123,7 @@ export const availabilityRouter = router({
         }
       }
 
-      // Get existing appointments for the date
+      // Récupérer les RDV existants pour cette date (hors annulés)
       const dateStart = new Date(date);
       dateStart.setHours(0, 0, 0, 0);
       const dateEnd = new Date(date);
@@ -112,12 +142,12 @@ export const availabilityRouter = router({
         },
       });
 
-      // Generate time slots
+      // Générer les créneaux et vérifier les conflits avec les RDV existants
       for (let hour = startHour; hour < endHour; hour++) {
         for (let minute = 0; minute < 60; minute += slotDuration) {
           const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 
-          // Check if this slot conflicts with existing appointments
+          // Vérifier si ce créneau chevauche un RDV existant
           const slotStart = new Date(date);
           slotStart.setHours(hour, minute, 0, 0);
           const slotEnd = new Date(slotStart.getTime() + serviceDuration * 60000);
@@ -128,7 +158,7 @@ export const availabilityRouter = router({
             return slotStart < aptEnd && slotEnd > aptStart;
           });
 
-          // Don't show past time slots for today
+          // Exclure les créneaux passés pour aujourd'hui
           const now = new Date();
           const isPast = slotStart < now;
 
@@ -143,8 +173,8 @@ export const availabilityRouter = router({
     }),
 
   /**
-   * Get professional's weekly availability
-   * PUBLIC
+   * Récupère les horaires hebdomadaires d'un professionnel (lundi → dimanche).
+   * PUBLIC — utilisé par la page salon et la page de réservation.
    */
   getProfessionalWeeklyAvailability: publicProcedure
     .input(z.object({ professionalId: z.string().cuid() }))
@@ -158,8 +188,10 @@ export const availabilityRouter = router({
     }),
 
   /**
-   * Update professional availability for a day
-   * PROFESSIONAL ONLY
+   * Met à jour les horaires d'un jour de la semaine pour le pro connecté.
+   * Si aucune entrée n'existe pour ce jour → création (startTime et endTime requis).
+   * Si elle existe déjà → mise à jour partielle.
+   * PROFESSIONNEL AUTHENTIFIÉ.
    */
   updateAvailability: professionalProcedure
     .input(updateAvailabilitySchema)
@@ -225,8 +257,9 @@ export const availabilityRouter = router({
     }),
 
   /**
-   * Batch update all weekly availability
-   * PROFESSIONAL ONLY
+   * Mise à jour en lot de tous les jours de la semaine.
+   * Utile pour le formulaire de configuration initiale des horaires.
+   * PROFESSIONNEL AUTHENTIFIÉ.
    */
   batchUpdateAvailability: professionalProcedure
     .input(
@@ -298,8 +331,9 @@ export const availabilityRouter = router({
     }),
 
   /**
-   * Get availability exceptions
-   * PUBLIC
+   * Récupère les exceptions de disponibilité d'un pro sur une plage de dates.
+   * Types : UNAVAILABLE (congé, maladie) ou CUSTOM (horaires spéciaux).
+   * PUBLIC — utilisé par la page de réservation.
    */
   getExceptions: publicProcedure
     .input(
@@ -323,8 +357,9 @@ export const availabilityRouter = router({
     }),
 
   /**
-   * Create availability exception (holiday, sick day, special hours)
-   * PROFESSIONAL ONLY
+   * Crée une exception de disponibilité (congé, maladie, horaires spéciaux).
+   * Le professionalId est automatiquement déduit de l'utilisateur connecté.
+   * PROFESSIONNEL AUTHENTIFIÉ.
    */
   createException: professionalProcedure
     .input(createAvailabilityExceptionSchema.omit({ professionalId: true }))
@@ -352,8 +387,8 @@ export const availabilityRouter = router({
     }),
 
   /**
-   * Update availability exception
-   * PROFESSIONAL ONLY
+   * Modifie une exception existante. Vérifie que le pro est bien le propriétaire.
+   * PROFESSIONNEL AUTHENTIFIÉ.
    */
   updateException: professionalProcedure
     .input(
@@ -401,8 +436,8 @@ export const availabilityRouter = router({
     }),
 
   /**
-   * Delete availability exception
-   * PROFESSIONAL ONLY
+   * Supprime une exception. Vérifie que le pro est bien le propriétaire.
+   * PROFESSIONNEL AUTHENTIFIÉ.
    */
   deleteException: professionalProcedure
     .input(z.object({ id: z.string().cuid() }))
@@ -439,8 +474,8 @@ export const availabilityRouter = router({
     }),
 
   /**
-   * Get my availability (for professional dashboard)
-   * PROFESSIONAL ONLY
+   * Récupère les horaires hebdomadaires du pro connecté (pour le dashboard professionnel).
+   * PROFESSIONNEL AUTHENTIFIÉ.
    */
   getMyAvailability: professionalProcedure.query(async ({ ctx }) => {
     // Get professional profile
@@ -464,8 +499,9 @@ export const availabilityRouter = router({
   }),
 
   /**
-   * Get my exceptions (for professional dashboard)
-   * PROFESSIONAL ONLY
+   * Récupère les exceptions du pro connecté (pour le dashboard professionnel).
+   * Filtrage optionnel par plage de dates.
+   * PROFESSIONNEL AUTHENTIFIÉ.
    */
   getMyExceptions: professionalProcedure
     .input(

@@ -1,5 +1,25 @@
 'use client';
 
+/**
+ * Page de réservation d'un salon (/salon/[slug]/book)
+ *
+ * Flow en 3 étapes :
+ *   1. Sélection d'une prestation → affichage dynamique des professionnels qui la proposent
+ *      - Seuls les services proposés par au moins un professionnel sont affichés
+ *      - "Peu importe" n'apparaît que si 2+ pros proposent le service sélectionné
+ *      - Si un seul pro propose le service, seul ce pro est affiché (pas de "Peu importe")
+ *   2. Sélection d'une date et d'un créneau horaire
+ *      - Si "Peu importe" : les créneaux sont agrégés (disponible si AU MOINS un pro l'est)
+ *      - Si pro spécifique : créneaux de ce pro uniquement
+ *   3. Confirmation et réservation
+ *      - Si "Peu importe" : le backend assigne aléatoirement un pro disponible
+ *      - Si acompte requis par le salon : ouverture de la modale de paiement
+ *
+ * Paramètres URL optionnels :
+ *   - ?service=<CUID>       : pré-sélectionne un service
+ *   - ?professional=<CUID>  : pré-sélectionne un professionnel
+ */
+
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -13,20 +33,23 @@ export default function BookingPage() {
   const router = useRouter();
   const slug = params['slug'] as string;
 
+  // Paramètres URL optionnels pour pré-sélection
   const serviceId = searchParams.get('service');
   const professionalId = searchParams.get('professional');
 
-  // Service first, then professional
+  // --- État du flow de réservation ---
+  // L'utilisateur choisit d'abord un service, puis un professionnel
   const [selectedService, setSelectedService] = useState<string | null>(serviceId);
-  // null = not chosen yet, 'peu_importe' = any pro, or a CUID = specific pro
+  // null = pas encore choisi, 'peu_importe' = n'importe quel pro, CUID = pro spécifique
   const [selectedProfessional, setSelectedProfessional] = useState<string | null>(professionalId);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1 = prestation, 2 = date/heure, 3 = confirmation
   const [isBooking, setIsBooking] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [createdAppointmentId, setCreatedAppointmentId] = useState<string | null>(null);
 
+  // Raccourci : vérifie si le mode "Peu importe" est actif
   const isPeuImporte = selectedProfessional === 'peu_importe';
 
   const { data: salon, isLoading } = trpc.salon.getBySlug.useQuery(
@@ -34,7 +57,9 @@ export default function BookingPage() {
     { enabled: !!slug }
   );
 
-  // Get availability — don't send 'peu_importe' as professionalId
+  // Récupération des créneaux disponibles
+  // - Si "Peu importe" : on ne passe pas de professionalId → le backend agrège les dispos de tous les pros
+  // - Si pro spécifique : on passe son ID → créneaux de ce pro uniquement
   const { data: availability, isLoading: isLoadingAvailability } = trpc.availability.getSlots.useQuery(
     {
       salonId: salon?.id || '',
@@ -45,12 +70,15 @@ export default function BookingPage() {
     { enabled: !!salon?.id && !!selectedDate && !!selectedService }
   );
 
-  // Fetch categories with hierarchy
+  // Récupération des catégories avec hiérarchie (catégories → sous-catégories → services)
   const { data: categoriesData } = trpc.category.getBySalonId.useQuery(
     { salonId: salon?.id || '' },
     { enabled: !!salon?.id }
   );
 
+  // Mutation de création de réservation
+  // - Si acompte requis : ouvre la modale de paiement après succès
+  // - Sinon : redirige directement vers la page de confirmation
   const createBookingMutation = trpc.booking.create.useMutation({
     onSuccess: (data) => {
       if (salon?.depositRequired && salon?.depositPercentage && salon.depositPercentage > 0) {
@@ -67,7 +95,7 @@ export default function BookingPage() {
     },
   });
 
-  // Generate next 14 days for date selection
+  // Génère les 14 prochains jours pour la sélection de date (step 2)
   const dates = Array.from({ length: 14 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() + i);
@@ -79,8 +107,10 @@ export default function BookingPage() {
     };
   });
 
+  // Données du service sélectionné (pour le récapitulatif et le calcul du prix)
   const selectedServiceData = salon?.services?.find(s => s.id === selectedService);
 
+  // Calcul de l'acompte si le salon l'exige (prix en centimes)
   const requiresDeposit = salon?.depositRequired && salon?.depositPercentage && salon.depositPercentage > 0;
   const depositPercentage = salon?.depositPercentage || 100;
   const totalPrice = selectedServiceData?.price || 0;
@@ -92,7 +122,11 @@ export default function BookingPage() {
     }
   };
 
-  // Dynamically filter professionals who offer the selected service
+  /**
+   * Filtre dynamique des professionnels qui proposent le service sélectionné.
+   * Utilisé pour afficher la section "Avec qui ?" après sélection d'un service.
+   * Retourne un tableau vide si aucun service n'est sélectionné.
+   */
   const availableProsForService = useMemo(() => {
     if (!selectedService || !salon?.professionals) return [];
     return salon.professionals.filter((pro: any) =>
@@ -100,22 +134,33 @@ export default function BookingPage() {
     );
   }, [selectedService, salon]);
 
-  // Generate unique short display names (first name + disambiguate if needed)
+  /**
+   * Génère des noms d'affichage courts et uniques pour les professionnels.
+   * - Si un seul pro a ce prénom → affiche juste le prénom ("Camille")
+   * - Si plusieurs pros ont le même prénom → ajoute progressivement des lettres
+   *   du nom de famille jusqu'à désambiguïsation ("Camille R", "Camille D", etc.)
+   * - S'arrête après 10 caractères max du nom de famille
+   *
+   * Retourne une Map<professionalId, displayName>
+   */
   const proDisplayNames = useMemo(() => {
     const names = new Map<string, string>();
     const pros = salon?.professionals || [];
-    // Group by first name
+
+    // Regrouper les pros par prénom
     const byFirstName = new Map<string, any[]>();
     for (const pro of pros) {
       const fn = pro.user.firstName || '';
       if (!byFirstName.has(fn)) byFirstName.set(fn, []);
       byFirstName.get(fn)!.push(pro);
     }
+
     for (const [, group] of byFirstName) {
       if (group.length === 1) {
+        // Prénom unique → pas de désambiguïsation nécessaire
         names.set(group[0].id, group[0].user.firstName);
       } else {
-        // Need to disambiguate with last name letters
+        // Prénoms en doublon → ajouter lettre(s) du nom progressivement
         let charIndex = 0;
         let resolved = false;
         while (!resolved) {
@@ -140,6 +185,28 @@ export default function BookingPage() {
     return names;
   }, [salon]);
 
+  /**
+   * Ensemble des IDs de services proposés par au moins un professionnel.
+   * Sert à filtrer les services affichés dans la page de réservation :
+   * un service sans aucun pro ne sera pas affiché (ex: "Brushing" que personne ne propose).
+   */
+  const offeredServiceIds = useMemo(() => {
+    if (!salon?.professionals) return new Set<string>();
+    const ids = new Set<string>();
+    for (const pro of salon.professionals) {
+      for (const ps of (pro as any).services || []) {
+        ids.add(ps.serviceId);
+      }
+    }
+    return ids;
+  }, [salon]);
+
+  /**
+   * Soumet la réservation au backend.
+   * - Construit un objet Date à partir de la date + heure sélectionnées
+   * - Si "Peu importe" : professionalId n'est pas envoyé → le backend auto-assigne un pro disponible
+   * - Si pro spécifique : professionalId est envoyé pour réserver avec ce pro
+   */
   const handleBooking = async () => {
     if (!selectedService || !selectedDate || !selectedTime || !salon) return;
 
@@ -240,8 +307,26 @@ export default function BookingPage() {
                 <h2 className="text-xl font-semibold text-coffee-800 mb-6">
                   Choisissez une prestation
                 </h2>
+                {/* Affichage des catégories → sous-catégories → services.
+                    Seuls les services proposés par au moins un pro sont affichés.
+                    Les catégories/sous-catégories vides après filtrage sont masquées. */}
                 <div className="space-y-6">
-                  {categoriesData?.map((category) => (
+                  {categoriesData?.map((category) => {
+                    // Filtrer les sous-catégories : ne garder que les services proposés par un pro
+                    const filteredChildren = ((category as any).children || [])
+                      .map((subCat: any) => ({
+                        ...subCat,
+                        services: (subCat.services || []).filter((s: any) => offeredServiceIds.has(s.id)),
+                      }))
+                      .filter((subCat: any) => subCat.services.length > 0);
+
+                    // Filtrer les services directs de la catégorie (sans sous-catégorie)
+                    const filteredDirectServices = (category.services || []).filter((s: any) => offeredServiceIds.has(s.id));
+
+                    // Masquer la catégorie entière si aucun service après filtrage
+                    if (filteredChildren.length === 0 && filteredDirectServices.length === 0) return null;
+
+                    return (
                     <div key={category.id}>
                       <h3 className="text-sm font-semibold text-cream-700 uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5">
                         {category.icon && <span>{category.icon}</span>}
@@ -249,14 +334,14 @@ export default function BookingPage() {
                       </h3>
 
                       {/* Sub-categories */}
-                      {(category as any).children?.map((subCat: any) => (
+                      {filteredChildren.map((subCat: any) => (
                         <div key={subCat.id} className="ml-3 mb-3">
                           <p className="text-xs font-medium text-coffee-500 mb-2 flex items-center gap-1">
                             {subCat.icon && <span>{subCat.icon}</span>}
                             {subCat.name}
                           </p>
                           <div className="space-y-2">
-                            {subCat.services?.map((service: any) => (
+                            {subCat.services.map((service: any) => (
                               <div
                                 key={service.id}
                                 onClick={() => {
@@ -286,7 +371,7 @@ export default function BookingPage() {
 
                       {/* Direct services */}
                       <div className="space-y-2">
-                        {category.services?.map((service) => (
+                        {filteredDirectServices.map((service: any) => (
                           <div
                             key={service.id}
                             onClick={() => {
@@ -312,7 +397,8 @@ export default function BookingPage() {
                         ))}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
 
                   {(!categoriesData || categoriesData.length === 0) && (
                     <p className="text-coffee-500 text-center py-4">
@@ -321,14 +407,17 @@ export default function BookingPage() {
                   )}
                 </div>
 
-                {/* Professional Selection — appears dynamically after service is chosen */}
+                {/* Section "Avec qui ?" — apparaît dynamiquement après sélection d'un service.
+                    Visible uniquement si au moins 1 pro propose le service sélectionné.
+                    "Peu importe" n'apparaît que si 2+ pros proposent ce service. */}
                 {selectedService && availableProsForService.length > 0 && (
                   <div className="mt-8">
                     <h2 className="text-xl font-semibold text-coffee-800 mb-4">
                       Avec qui ?
                     </h2>
                     <div className="grid grid-cols-2 gap-3">
-                      {/* "Peu importe" option */}
+                      {/* "Peu importe" option — only if 2+ pros offer this service */}
+                      {availableProsForService.length >= 2 && (
                       <div
                         onClick={() => setSelectedProfessional('peu_importe')}
                         className={`p-4 rounded-xl cursor-pointer transition border-2 ${
@@ -349,6 +438,7 @@ export default function BookingPage() {
                           </div>
                         </div>
                       </div>
+                      )}
 
                       {/* Individual professionals who offer this service */}
                       {availableProsForService.map((pro: any) => (
@@ -385,6 +475,7 @@ export default function BookingPage() {
                   </div>
                 )}
 
+                {/* Bouton "Continuer" — désactivé tant que service ET professionnel ne sont pas choisis */}
                 <div className="mt-8">
                   <Button
                     fullWidth
