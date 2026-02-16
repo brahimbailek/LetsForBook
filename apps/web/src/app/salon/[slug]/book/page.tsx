@@ -80,7 +80,6 @@ export default function BookingPage() {
   });
 
   const selectedServiceData = salon?.services?.find(s => s.id === selectedService);
-  const selectedProfessionalData = salon?.professionals?.find(p => p.id === selectedProfessional);
 
   const requiresDeposit = salon?.depositRequired && salon?.depositPercentage && salon.depositPercentage > 0;
   const depositPercentage = salon?.depositPercentage || 100;
@@ -100,6 +99,46 @@ export default function BookingPage() {
       pro.services?.some((s: any) => s.serviceId === selectedService)
     );
   }, [selectedService, salon]);
+
+  // Generate unique short display names (first name + disambiguate if needed)
+  const proDisplayNames = useMemo(() => {
+    const names = new Map<string, string>();
+    const pros = salon?.professionals || [];
+    // Group by first name
+    const byFirstName = new Map<string, any[]>();
+    for (const pro of pros) {
+      const fn = pro.user.firstName || '';
+      if (!byFirstName.has(fn)) byFirstName.set(fn, []);
+      byFirstName.get(fn)!.push(pro);
+    }
+    for (const [, group] of byFirstName) {
+      if (group.length === 1) {
+        names.set(group[0].id, group[0].user.firstName);
+      } else {
+        // Need to disambiguate with last name letters
+        let charIndex = 0;
+        let resolved = false;
+        while (!resolved) {
+          const seen = new Map<string, any[]>();
+          for (const pro of group) {
+            const suffix = (pro.user.lastName || '').substring(0, charIndex + 1).toUpperCase();
+            const key = `${pro.user.firstName} ${suffix}`;
+            if (!seen.has(key)) seen.set(key, []);
+            seen.get(key)!.push(pro);
+          }
+          if ([...seen.values()].every(g => g.length === 1) || charIndex >= 10) {
+            for (const [displayName, g] of seen) {
+              names.set(g[0].id, displayName);
+            }
+            resolved = true;
+          } else {
+            charIndex++;
+          }
+        }
+      }
+    }
+    return names;
+  }, [salon]);
 
   const handleBooking = async () => {
     if (!selectedService || !selectedDate || !selectedTime || !salon) return;
@@ -326,24 +365,19 @@ export default function BookingPage() {
                             {pro.user.avatar ? (
                               <img
                                 src={pro.user.avatar}
-                                alt={`${pro.user.firstName} ${pro.user.lastName}`}
+                                alt={proDisplayNames.get(pro.id) || pro.user.firstName}
                                 className="w-10 h-10 rounded-full object-cover"
                               />
                             ) : (
                               <div className="w-10 h-10 rounded-full bg-cream-200 flex items-center justify-center">
                                 <span className="text-cream-700 font-medium text-sm">
-                                  {pro.user.firstName?.charAt(0)}{pro.user.lastName?.charAt(0)}
+                                  {pro.user.firstName?.charAt(0)}
                                 </span>
                               </div>
                             )}
-                            <div>
-                              <p className="font-medium text-coffee-800">
-                                {pro.user.firstName} {pro.user.lastName}
-                              </p>
-                              {pro.specialties && (
-                                <p className="text-sm text-coffee-500">{pro.specialties}</p>
-                              )}
-                            </div>
+                            <p className="font-medium text-coffee-800">
+                              {proDisplayNames.get(pro.id) || pro.user.firstName}
+                            </p>
                           </div>
                         </div>
                       ))}
@@ -468,8 +502,8 @@ export default function BookingPage() {
                     <p className="font-medium text-coffee-800">
                       {isPeuImporte
                         ? 'Peu importe (premier disponible)'
-                        : selectedProfessionalData
-                        ? `${selectedProfessionalData.user.firstName} ${selectedProfessionalData.user.lastName}`
+                        : selectedProfessional && proDisplayNames.get(selectedProfessional)
+                        ? proDisplayNames.get(selectedProfessional)
                         : '-'
                       }
                     </p>
@@ -545,9 +579,7 @@ export default function BookingPage() {
                     <p className="font-medium text-coffee-800">
                       {isPeuImporte
                         ? 'Peu importe'
-                        : selectedProfessionalData
-                        ? `${selectedProfessionalData.user.firstName} ${selectedProfessionalData.user.lastName}`
-                        : '-'
+                        : proDisplayNames.get(selectedProfessional) || '-'
                       }
                     </p>
                   </div>
