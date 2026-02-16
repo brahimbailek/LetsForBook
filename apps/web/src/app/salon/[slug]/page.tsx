@@ -229,7 +229,8 @@ export default function SalonDetailPage() {
                           {subCat.services?.map((service: any) => (
                             <div
                               key={service.id}
-                              className="flex items-center justify-between p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition"
+                              onClick={() => handleBookService(service.id)}
+                              className="flex items-center justify-between p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition cursor-pointer"
                             >
                               <div className="flex-1">
                                 <h4 className="font-medium text-coffee-800">{service.name}</h4>
@@ -237,17 +238,9 @@ export default function SalonDetailPage() {
                                   {service.durationMinutes} min
                                 </p>
                               </div>
-                              <div className="flex items-center gap-4">
-                                <span className="font-semibold text-cream-700">
+                              <span className="font-semibold text-cream-700">
                                   {(service.price / 100).toFixed(2)} €
                                 </span>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleBookService(service.id)}
-                                >
-                                  Réserver
-                                </Button>
-                              </div>
                             </div>
                           ))}
                         </div>
@@ -259,7 +252,8 @@ export default function SalonDetailPage() {
                       {category.services?.map((service) => (
                         <div
                           key={service.id}
-                          className="flex items-center justify-between p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition"
+                          onClick={() => handleBookService(service.id)}
+                          className="flex items-center justify-between p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition cursor-pointer"
                         >
                           <div className="flex-1">
                             <h4 className="font-medium text-coffee-800">{service.name}</h4>
@@ -267,17 +261,9 @@ export default function SalonDetailPage() {
                               {service.durationMinutes} min
                             </p>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <span className="font-semibold text-cream-700">
-                              {(service.price / 100).toFixed(2)} €
-                            </span>
-                            <Button
-                              size="sm"
-                              onClick={() => handleBookService(service.id)}
-                            >
-                              Réserver
-                            </Button>
-                          </div>
+                          <span className="font-semibold text-cream-700">
+                            {(service.price / 100).toFixed(2)} €
+                          </span>
                         </div>
                       ))}
                     </div>

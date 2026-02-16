@@ -23,7 +23,7 @@
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Button, Card, Header, Badge } from '@/components/ui';
 import { PaymentModal } from '@/components/payment';
 
@@ -51,6 +51,9 @@ export default function BookingPage() {
 
   // Raccourci : vérifie si le mode "Peu importe" est actif
   const isPeuImporte = selectedProfessional === 'peu_importe';
+
+  // Ref pour le scroll automatique vers la section "Avec qui ?" après sélection d'un service
+  const proSectionRef = useRef<HTMLDivElement>(null);
 
   const { data: salon, isLoading } = trpc.salon.getBySlug.useQuery(
     { slug },
@@ -355,6 +358,7 @@ export default function BookingPage() {
                                 onClick={() => {
                                   setSelectedService(service.id);
                                   setSelectedProfessional(null);
+                                  setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
                                 }}
                                 className={`p-4 rounded-xl cursor-pointer transition border-2 ${
                                   selectedService === service.id
@@ -419,7 +423,7 @@ export default function BookingPage() {
                     Visible uniquement si au moins 1 pro propose le service sélectionné.
                     "Peu importe" n'apparaît que si 2+ pros proposent ce service. */}
                 {selectedService && availableProsForService.length > 0 && (
-                  <div className="mt-8">
+                  <div ref={proSectionRef} className="mt-8">
                     <h2 className="text-xl font-semibold text-coffee-800 mb-4">
                       Avec qui ?
                     </h2>
@@ -480,19 +484,20 @@ export default function BookingPage() {
                         </div>
                       ))}
                     </div>
+
+                    {/* Bouton "Continuer" — visible uniquement quand un professionnel est sélectionné */}
+                    {selectedProfessional && (
+                      <div className="mt-6">
+                        <Button
+                          fullWidth
+                          onClick={() => setStep(2)}
+                        >
+                          Continuer
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
-
-                {/* Bouton "Continuer" — désactivé tant que service ET professionnel ne sont pas choisis */}
-                <div className="mt-8">
-                  <Button
-                    fullWidth
-                    disabled={!selectedService || !selectedProfessional}
-                    onClick={() => setStep(2)}
-                  >
-                    Continuer
-                  </Button>
-                </div>
               </Card>
             )}
 
