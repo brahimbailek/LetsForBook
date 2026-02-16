@@ -24,7 +24,58 @@ export const availabilityRouter = router({
     .query(async ({ ctx, input }) => {
       const { salonId, professionalId, serviceId, date } = input;
 
-      // Get the salon's opening hours (simplified - using 9:00-19:00)
+      // "Peu importe" mode: aggregate real availability across all professionals
+      if (!professionalId && serviceId) {
+        // Find all professionals offering this service
+        const prosForService = await ctx.prisma.professionalService.findMany({
+          where: {
+            serviceId,
+            active: true,
+            professional: {
+              salonId,
+              active: true,
+              acceptsOnlineBookings: true,
+            },
+          },
+          select: { professionalId: true },
+        });
+
+        if (prosForService.length === 0) {
+          return [];
+        }
+
+        // Get slots for each professional using the real availability service
+        const allSlotsArrays = await Promise.all(
+          prosForService.map((ps) =>
+            availabilityService.getAvailableSlots(
+              ctx.prisma,
+              ps.professionalId,
+              [serviceId],
+              new Date(date)
+            )
+          )
+        );
+
+        // Merge: a time slot is "available" if ANY professional has it available
+        const slotMap = new Map<string, boolean>();
+        for (const proSlots of allSlotsArrays) {
+          for (const slot of proSlots) {
+            const timeKey = `${slot.startTime.getHours().toString().padStart(2, '0')}:${slot.startTime.getMinutes().toString().padStart(2, '0')}`;
+            if (slot.available) {
+              slotMap.set(timeKey, true);
+            } else if (!slotMap.has(timeKey)) {
+              slotMap.set(timeKey, false);
+            }
+          }
+        }
+
+        // Sort and return
+        return Array.from(slotMap.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([time, available]) => ({ time, available }));
+      }
+
+      // Specific professional mode: use simplified slot generation
       const slots = [];
       const startHour = 9;
       const endHour = 19;

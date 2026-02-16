@@ -5,7 +5,8 @@ import { availabilityService } from './availability.service';
 
 interface CreateBookingInput {
   userId: string;
-  professionalId: string;
+  professionalId?: string;
+  salonId: string;
   serviceIds: string[];
   startTime: Date;
   clientNotes?: string;
@@ -19,11 +20,97 @@ export class BookingService {
     prisma: PrismaClient,
     input: CreateBookingInput
   ): Promise<any> {
-    const { userId, professionalId, serviceIds, startTime, clientNotes } = input;
+    const { userId, professionalId, salonId, serviceIds, startTime, clientNotes } = input;
 
-    // 1. Get professional and salon info
+    // 1. Get client profile
+    const clientProfile = await prisma.clientProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!clientProfile) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Client profile not found',
+      });
+    }
+
+    // 2. Resolve professional (auto-assign if "Peu importe")
+    let resolvedProfessionalId = professionalId;
+
+    if (!resolvedProfessionalId) {
+      // Find all professionals in this salon who offer the requested services
+      const professionalsWithServices = await prisma.professionalProfile.findMany({
+        where: {
+          salonId,
+          active: true,
+          acceptsOnlineBookings: true,
+          services: {
+            some: {
+              serviceId: { in: serviceIds },
+              active: true,
+            },
+          },
+        },
+        include: {
+          services: {
+            where: {
+              serviceId: { in: serviceIds },
+              active: true,
+            },
+          },
+        },
+      });
+
+      // Filter to only professionals who offer ALL requested services
+      const eligiblePros = professionalsWithServices.filter(
+        (pro) => pro.services.length === serviceIds.length
+      );
+
+      if (eligiblePros.length === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Aucun professionnel disponible pour ces services',
+        });
+      }
+
+      // Calculate total duration for availability check
+      const servicesForDuration = await prisma.service.findMany({
+        where: { id: { in: serviceIds }, active: true },
+      });
+      const totalDuration = servicesForDuration.reduce(
+        (sum, s) => sum + s.durationMinutes, 0
+      );
+      const endTimeForCheck = addMinutes(startTime, totalDuration);
+
+      // Check availability for each eligible professional
+      const availablePros: typeof eligiblePros = [];
+      for (const pro of eligiblePros) {
+        const isAvailable = await availabilityService.isSlotAvailable(
+          prisma,
+          pro.id,
+          startTime,
+          endTimeForCheck
+        );
+        if (isAvailable) {
+          availablePros.push(pro);
+        }
+      }
+
+      if (availablePros.length === 0) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'Aucun professionnel disponible pour ce créneau',
+        });
+      }
+
+      // Randomly pick one from available professionals
+      const randomIndex = Math.floor(Math.random() * availablePros.length);
+      resolvedProfessionalId = availablePros[randomIndex]!.id;
+    }
+
+    // 3. Get professional and salon info
     const professional = await prisma.professionalProfile.findUnique({
-      where: { id: professionalId },
+      where: { id: resolvedProfessionalId },
       include: {
         salon: true,
       },
@@ -36,19 +123,14 @@ export class BookingService {
       });
     }
 
-    // 2. Get client profile
-    const clientProfile = await prisma.clientProfile.findUnique({
-      where: { userId },
-    });
-
-    if (!clientProfile) {
+    if (professional.salonId !== salonId) {
       throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Client profile not found',
+        code: 'BAD_REQUEST',
+        message: 'Professional does not belong to this salon',
       });
     }
 
-    // 3. Get services and calculate duration + price
+    // 4. Get services and calculate duration + price
     const services = await prisma.service.findMany({
       where: {
         id: { in: serviceIds },
@@ -58,7 +140,7 @@ export class BookingService {
       include: {
         professionals: {
           where: {
-            professionalId,
+            professionalId: resolvedProfessionalId,
             active: true,
           },
         },
@@ -94,10 +176,10 @@ export class BookingService {
 
     const endTime = addMinutes(startTime, totalDuration);
 
-    // 4. Check if slot is available
+    // 5. Check if slot is available
     const isAvailable = await availabilityService.isSlotAvailable(
       prisma,
-      professionalId,
+      resolvedProfessionalId,
       startTime,
       endTime
     );
@@ -109,11 +191,11 @@ export class BookingService {
       });
     }
 
-    // 5. Create appointment with services
+    // 6. Create appointment with services
     const appointment = await prisma.appointment.create({
       data: {
         clientId: clientProfile.id,
-        professionalId,
+        professionalId: resolvedProfessionalId,
         salonId: professional.salonId,
         startTime,
         endTime,

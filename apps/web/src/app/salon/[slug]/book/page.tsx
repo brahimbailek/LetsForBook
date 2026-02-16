@@ -3,7 +3,7 @@
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button, Card, Header, Badge } from '@/components/ui';
 import { PaymentModal } from '@/components/payment';
 
@@ -16,7 +16,9 @@ export default function BookingPage() {
   const serviceId = searchParams.get('service');
   const professionalId = searchParams.get('professional');
 
+  // Service first, then professional
   const [selectedService, setSelectedService] = useState<string | null>(serviceId);
+  // null = not chosen yet, 'peu_importe' = any pro, or a CUID = specific pro
   const [selectedProfessional, setSelectedProfessional] = useState<string | null>(professionalId);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -25,16 +27,18 @@ export default function BookingPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [createdAppointmentId, setCreatedAppointmentId] = useState<string | null>(null);
 
+  const isPeuImporte = selectedProfessional === 'peu_importe';
+
   const { data: salon, isLoading } = trpc.salon.getBySlug.useQuery(
     { slug },
     { enabled: !!slug }
   );
 
-  // Get availability for selected date and professional (use resolvedProfessionalId for "Indifférent" case)
+  // Get availability — don't send 'peu_importe' as professionalId
   const { data: availability, isLoading: isLoadingAvailability } = trpc.availability.getSlots.useQuery(
     {
       salonId: salon?.id || '',
-      professionalId: selectedProfessional || undefined,
+      professionalId: isPeuImporte ? undefined : (selectedProfessional || undefined),
       serviceId: selectedService || undefined,
       date: selectedDate,
     },
@@ -49,7 +53,6 @@ export default function BookingPage() {
 
   const createBookingMutation = trpc.booking.create.useMutation({
     onSuccess: (data) => {
-      // Check if salon requires deposit
       if (salon?.depositRequired && salon?.depositPercentage && salon.depositPercentage > 0) {
         setCreatedAppointmentId(data.id);
         setShowPaymentModal(true);
@@ -90,27 +93,19 @@ export default function BookingPage() {
     }
   };
 
-  // Get the list of professionals who offer the selected service
-  const availableProsForService = selectedService && salon
-    ? salon.professionals?.filter((pro: any) =>
-        pro.services?.some((s: any) => s.serviceId === selectedService)
-      ) || []
-    : salon?.professionals || [];
-
-  // Resolve the professional ID (auto-select first available if "Indifférent")
-  const resolvedProfessionalId = selectedProfessional
-    || (availableProsForService.length === 1 ? availableProsForService[0]?.id : null);
+  // Dynamically filter professionals who offer the selected service
+  const availableProsForService = useMemo(() => {
+    if (!selectedService || !salon?.professionals) return [];
+    return salon.professionals.filter((pro: any) =>
+      pro.services?.some((s: any) => s.serviceId === selectedService)
+    );
+  }, [selectedService, salon]);
 
   const handleBooking = async () => {
     if (!selectedService || !selectedDate || !selectedTime || !salon) return;
 
-    // If no professional selected, pick the first one who offers the service
-    const proId = resolvedProfessionalId || availableProsForService[0]?.id;
-    if (!proId) return;
-
     setIsBooking(true);
 
-    // Parse time and create start datetime
     const timeParts = selectedTime.split(':').map(Number);
     const hours = timeParts[0] ?? 0;
     const minutes = timeParts[1] ?? 0;
@@ -118,7 +113,8 @@ export default function BookingPage() {
     startTime.setHours(hours, minutes, 0, 0);
 
     createBookingMutation.mutate({
-      professionalId: proId,
+      professionalId: isPeuImporte ? undefined : (selectedProfessional || undefined),
+      salonId: salon.id,
       serviceIds: [selectedService],
       startTime: startTime,
     });
@@ -198,9 +194,10 @@ export default function BookingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            {/* Step 1: Select Service */}
+            {/* Step 1: Service FIRST, then Professional dynamically */}
             {step === 1 && (
               <Card>
+                {/* Service Selection */}
                 <h2 className="text-xl font-semibold text-coffee-800 mb-6">
                   Choisissez une prestation
                 </h2>
@@ -235,7 +232,7 @@ export default function BookingPage() {
                               >
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <h3 className="font-medium text-coffee-800">{service.name}</h3>
+                                    <h4 className="font-medium text-coffee-800">{service.name}</h4>
                                     <p className="text-sm text-coffee-500">{service.durationMinutes} min</p>
                                   </div>
                                   <span className="font-semibold text-cream-700">
@@ -265,7 +262,7 @@ export default function BookingPage() {
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <h3 className="font-medium text-coffee-800">{service.name}</h3>
+                                <h4 className="font-medium text-coffee-800">{service.name}</h4>
                                 <p className="text-sm text-coffee-500">{service.durationMinutes} min</p>
                               </div>
                               <span className="font-semibold text-cream-700">
@@ -277,71 +274,87 @@ export default function BookingPage() {
                       </div>
                     </div>
                   ))}
+
+                  {(!categoriesData || categoriesData.length === 0) && (
+                    <p className="text-coffee-500 text-center py-4">
+                      Aucune prestation disponible.
+                    </p>
+                  )}
                 </div>
 
-                {/* Professional Selection - filtered by selected service */}
-                {salon.professionals && salon.professionals.length > 0 && (() => {
-                  // Filter professionals who offer the selected service
-                  const availablePros = selectedService
-                    ? salon.professionals.filter((pro: any) =>
-                        pro.services?.some((s: any) => s.serviceId === selectedService)
-                      )
-                    : salon.professionals;
-
-                  if (availablePros.length === 0) return null;
-
-                  return (
-                    <div className="mt-8">
-                      <h3 className="text-lg font-medium text-coffee-800 mb-4">
-                        Avec qui ?
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        {availablePros.length > 1 && (
-                          <div
-                            onClick={() => setSelectedProfessional(null)}
-                            className={`p-4 rounded-xl cursor-pointer transition border-2 ${
-                              !selectedProfessional
-                                ? 'border-cream-500 bg-cream-50'
-                                : 'border-transparent bg-sand-50 hover:bg-sand-100'
-                            }`}
-                          >
-                            <p className="font-medium text-coffee-800">Indifférent</p>
+                {/* Professional Selection — appears dynamically after service is chosen */}
+                {selectedService && availableProsForService.length > 0 && (
+                  <div className="mt-8">
+                    <h2 className="text-xl font-semibold text-coffee-800 mb-4">
+                      Avec qui ?
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* "Peu importe" option */}
+                      <div
+                        onClick={() => setSelectedProfessional('peu_importe')}
+                        className={`p-4 rounded-xl cursor-pointer transition border-2 ${
+                          isPeuImporte
+                            ? 'border-cream-500 bg-cream-50'
+                            : 'border-transparent bg-sand-50 hover:bg-sand-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-cream-200 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-cream-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="font-medium text-coffee-800">Peu importe</p>
                             <p className="text-sm text-coffee-500">Premier disponible</p>
                           </div>
-                        )}
-                        {availablePros.map((pro: any) => (
-                          <div
-                            key={pro.id}
-                            onClick={() => setSelectedProfessional(pro.id)}
-                            className={`p-4 rounded-xl cursor-pointer transition border-2 ${
-                              selectedProfessional === pro.id
-                                ? 'border-cream-500 bg-cream-50'
-                                : 'border-transparent bg-sand-50 hover:bg-sand-100'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
+                        </div>
+                      </div>
+
+                      {/* Individual professionals who offer this service */}
+                      {availableProsForService.map((pro: any) => (
+                        <div
+                          key={pro.id}
+                          onClick={() => setSelectedProfessional(pro.id)}
+                          className={`p-4 rounded-xl cursor-pointer transition border-2 ${
+                            selectedProfessional === pro.id
+                              ? 'border-cream-500 bg-cream-50'
+                              : 'border-transparent bg-sand-50 hover:bg-sand-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {pro.user.avatar ? (
+                              <img
+                                src={pro.user.avatar}
+                                alt={`${pro.user.firstName} ${pro.user.lastName}`}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
                               <div className="w-10 h-10 rounded-full bg-cream-200 flex items-center justify-center">
                                 <span className="text-cream-700 font-medium text-sm">
                                   {pro.user.firstName?.charAt(0)}{pro.user.lastName?.charAt(0)}
                                 </span>
                               </div>
-                              <div>
-                                <p className="font-medium text-coffee-800">
-                                  {pro.user.firstName} {pro.user.lastName}
-                                </p>
-                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-coffee-800">
+                                {pro.user.firstName} {pro.user.lastName}
+                              </p>
+                              {pro.specialties && (
+                                <p className="text-sm text-coffee-500">{pro.specialties}</p>
+                              )}
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </div>
-                  );
-                })()}
+                  </div>
+                )}
 
                 <div className="mt-8">
                   <Button
                     fullWidth
-                    disabled={!selectedService}
+                    disabled={!selectedService || !selectedProfessional}
                     onClick={() => setStep(2)}
                   >
                     Continuer
@@ -450,14 +463,17 @@ export default function BookingPage() {
                     </p>
                   </div>
 
-                  {selectedProfessionalData && (
-                    <div className="p-4 bg-sand-50 rounded-xl">
-                      <p className="text-sm text-coffee-500">Professionnel</p>
-                      <p className="font-medium text-coffee-800">
-                        {selectedProfessionalData.user.firstName} {selectedProfessionalData.user.lastName}
-                      </p>
-                    </div>
-                  )}
+                  <div className="p-4 bg-sand-50 rounded-xl">
+                    <p className="text-sm text-coffee-500">Professionnel</p>
+                    <p className="font-medium text-coffee-800">
+                      {isPeuImporte
+                        ? 'Peu importe (premier disponible)'
+                        : selectedProfessionalData
+                        ? `${selectedProfessionalData.user.firstName} ${selectedProfessionalData.user.lastName}`
+                        : '-'
+                      }
+                    </p>
+                  </div>
 
                   <div className="p-4 bg-sand-50 rounded-xl">
                     <p className="text-sm text-coffee-500">Date et heure</p>
@@ -523,11 +539,16 @@ export default function BookingPage() {
                   </div>
                 )}
 
-                {selectedProfessionalData && (
+                {selectedProfessional && (
                   <div>
                     <p className="text-sm text-coffee-500">Professionnel</p>
                     <p className="font-medium text-coffee-800">
-                      {selectedProfessionalData.user.firstName} {selectedProfessionalData.user.lastName}
+                      {isPeuImporte
+                        ? 'Peu importe'
+                        : selectedProfessionalData
+                        ? `${selectedProfessionalData.user.firstName} ${selectedProfessionalData.user.lastName}`
+                        : '-'
+                      }
                     </p>
                   </div>
                 )}
@@ -590,7 +611,6 @@ export default function BookingPage() {
           isOpen={showPaymentModal}
           onClose={() => {
             setShowPaymentModal(false);
-            // If user closes without paying, redirect to confirmation anyway
             router.push(`/booking/confirmation?id=${createdAppointmentId}`);
           }}
           appointmentId={createdAppointmentId}

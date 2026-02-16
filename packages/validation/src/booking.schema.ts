@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 // Create booking schema
 export const createBookingSchema = z.object({
-  professionalId: z.string().cuid('Invalid professional ID'),
+  professionalId: z.string().cuid('Invalid professional ID').optional(),
+  salonId: z.string().cuid('Invalid salon ID'),
   serviceIds: z
     .array(z.string().cuid('Invalid service ID'))
     .min(1, 'At least one service is required'),
