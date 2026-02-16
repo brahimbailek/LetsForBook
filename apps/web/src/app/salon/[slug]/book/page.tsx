@@ -23,7 +23,7 @@
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button, Card, Header, Badge } from '@/components/ui';
 import { PaymentModal } from '@/components/payment';
 
@@ -200,6 +200,14 @@ export default function BookingPage() {
     }
     return ids;
   }, [salon]);
+
+  // Si le service pré-sélectionné (via URL) n'est proposé par aucun pro → le désélectionner
+  useEffect(() => {
+    if (selectedService && offeredServiceIds.size > 0 && !offeredServiceIds.has(selectedService)) {
+      setSelectedService(null);
+      setSelectedProfessional(null);
+    }
+  }, [selectedService, offeredServiceIds]);
 
   /**
    * Soumet la réservation au backend.
