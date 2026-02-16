@@ -3,16 +3,13 @@
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
+// useState removed — salon page is now read-only (no service/pro selection)
 import { Button, Card, Header } from '@/components/ui';
 
 export default function SalonDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params['slug'] as string;
-
-  const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [selectedProfessional, setSelectedProfessional] = useState<string | null>(null);
 
   const { data: salon, isLoading, error } = trpc.salon.getBySlug.useQuery(
     { slug },
@@ -81,12 +78,6 @@ export default function SalonDetailPage() {
   const averageRating = salon.reviews && salon.reviews.length > 0
     ? (salon.reviews.reduce((sum, r) => sum + r.rating, 0) / salon.reviews.length).toFixed(1)
     : null;
-
-  const handleBookService = (serviceId: string) => {
-    setSelectedService(serviceId);
-    // Navigate to booking page with service pre-selected
-    router.push(`/salon/${slug}/book?service=${serviceId}${selectedProfessional ? `&professional=${selectedProfessional}` : ''}`);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white">
@@ -229,8 +220,7 @@ export default function SalonDetailPage() {
                           {subCat.services?.map((service: any) => (
                             <div
                               key={service.id}
-                              onClick={() => handleBookService(service.id)}
-                              className="flex items-center justify-between p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition cursor-pointer"
+                              className="flex items-center justify-between p-4 bg-sand-50 rounded-xl"
                             >
                               <div className="flex-1">
                                 <h4 className="font-medium text-coffee-800">{service.name}</h4>
@@ -252,8 +242,7 @@ export default function SalonDetailPage() {
                       {category.services?.map((service) => (
                         <div
                           key={service.id}
-                          onClick={() => handleBookService(service.id)}
-                          className="flex items-center justify-between p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition cursor-pointer"
+                          className="flex items-center justify-between p-4 bg-sand-50 rounded-xl"
                         >
                           <div className="flex-1">
                             <h4 className="font-medium text-coffee-800">{service.name}</h4>
@@ -286,12 +275,7 @@ export default function SalonDetailPage() {
                   {salon.professionals.map((pro) => (
                     <div
                       key={pro.id}
-                      onClick={() => setSelectedProfessional(selectedProfessional === pro.id ? null : pro.id)}
-                      className={`p-4 rounded-xl cursor-pointer transition ${
-                        selectedProfessional === pro.id
-                          ? 'bg-cream-100 border-2 border-cream-500'
-                          : 'bg-sand-50 hover:bg-sand-100 border-2 border-transparent'
-                      }`}
+                      className="p-4 rounded-xl bg-sand-50"
                     >
                       <div className="flex items-center gap-3">
                         {pro.user.avatar ? (
@@ -364,36 +348,14 @@ export default function SalonDetailPage() {
             {/* Quick Book Card */}
             <Card className="sticky top-24">
               <h3 className="text-lg font-semibold text-coffee-800 mb-4">Réserver</h3>
-
-              {selectedService ? (
-                <div className="mb-4 p-3 bg-cream-50 rounded-lg">
-                  <p className="text-sm text-coffee-600">Service sélectionné</p>
-                  <p className="font-medium text-coffee-800">
-                    {salon.services?.find(s => s.id === selectedService)?.name}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm text-coffee-500 mb-4">
-                  Sélectionnez une prestation ci-dessus pour réserver
-                </p>
-              )}
-
-              {selectedProfessional && (
-                <div className="mb-4 p-3 bg-cream-50 rounded-lg">
-                  <p className="text-sm text-coffee-600">Professionnel sélectionné</p>
-                  <p className="font-medium text-coffee-800">
-                    {salon.professionals?.find(p => p.id === selectedProfessional)?.user.firstName}{' '}
-                    {salon.professionals?.find(p => p.id === selectedProfessional)?.user.lastName}
-                  </p>
-                </div>
-              )}
-
+              <p className="text-sm text-coffee-500 mb-4">
+                Prenez rendez-vous en quelques clics
+              </p>
               <Button
                 fullWidth
-                disabled={!selectedService}
-                onClick={() => selectedService && handleBookService(selectedService)}
+                onClick={() => router.push(`/salon/${slug}/book`)}
               >
-                Choisir un créneau
+                Prendre rendez-vous
               </Button>
             </Card>
 
