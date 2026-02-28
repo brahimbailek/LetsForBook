@@ -245,17 +245,23 @@ export default function SalonDetailPage() {
                           {subCat.services.map((service: any) => (
                             <div
                               key={service.id}
-                              className="flex items-center justify-between p-4 bg-sand-50 rounded-xl"
+                              onClick={() => router.push(`/salon/${slug}/book?service=${service.id}`)}
+                              className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 hover:border-cream-300 border-2 border-transparent rounded-xl cursor-pointer transition-all group"
                             >
                               <div className="flex-1">
-                                <h4 className="font-medium text-coffee-800">{service.name}</h4>
+                                <h4 className="font-medium text-coffee-800 group-hover:text-cream-700 transition-colors">{service.name}</h4>
                                 <p className="text-sm text-coffee-500">
                                   {service.durationMinutes} min
                                 </p>
                               </div>
-                              <span className="font-semibold text-cream-700">
+                              <div className="flex items-center gap-3">
+                                <span className="font-semibold text-cream-700">
                                   {(service.price / 100).toFixed(2)} €
                                 </span>
+                                <span className="text-xs font-medium text-white bg-cream-600 group-hover:bg-cream-700 px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all">
+                                  Réserver
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -267,17 +273,23 @@ export default function SalonDetailPage() {
                       {filteredDirectServices.map((service: any) => (
                         <div
                           key={service.id}
-                          className="flex items-center justify-between p-4 bg-sand-50 rounded-xl"
+                          onClick={() => router.push(`/salon/${slug}/book?service=${service.id}`)}
+                          className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 hover:border-cream-300 border-2 border-transparent rounded-xl cursor-pointer transition-all group"
                         >
                           <div className="flex-1">
-                            <h4 className="font-medium text-coffee-800">{service.name}</h4>
+                            <h4 className="font-medium text-coffee-800 group-hover:text-cream-700 transition-colors">{service.name}</h4>
                             <p className="text-sm text-coffee-500">
                               {service.durationMinutes} min
                             </p>
                           </div>
-                          <span className="font-semibold text-cream-700">
-                            {(service.price / 100).toFixed(2)} €
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="font-semibold text-cream-700">
+                              {(service.price / 100).toFixed(2)} €
+                            </span>
+                            <span className="text-xs font-medium text-white bg-cream-600 group-hover:bg-cream-700 px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all">
+                              Réserver
+                            </span>
+                          </div>
                         </div>
                       ))}
                     </div>

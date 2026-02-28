@@ -13,19 +13,23 @@
  */
 
 import { trpc } from '@/lib/trpc/client';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Button, Card, Header, Badge } from '@/components/ui';
 import { PaymentModal } from '@/components/payment';
 
 export default function BookingPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slug = params['slug'] as string;
 
+  // Pré-sélection du service via query param ?service=<id>
+  const preselectedService = searchParams.get('service');
+
   // --- État du flow de réservation ---
-  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<string | null>(preselectedService);
   // null = pas encore choisi, 'peu_importe' = n'importe quel pro, CUID = pro spécifique
   const [selectedProfessional, setSelectedProfessional] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -41,10 +45,17 @@ export default function BookingPage() {
   const proSectionRef = useRef<HTMLDivElement>(null);
   const dateSectionRef = useRef<HTMLDivElement>(null);
 
+  // Si service pré-sélectionné via URL, scroll vers les pros une fois le salon chargé
   const { data: salon, isLoading } = trpc.salon.getBySlug.useQuery(
     { slug },
     { enabled: !!slug }
   );
+
+  useEffect(() => {
+    if (preselectedService && salon && proSectionRef.current) {
+      setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    }
+  }, [preselectedService, salon]);
 
   const { data: availability, isLoading: isLoadingAvailability } = trpc.availability.getSlots.useQuery(
     {
