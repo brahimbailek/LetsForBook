@@ -36,6 +36,18 @@ export default function SalonDetailPage() {
     },
   });
 
+  // Must be before any early returns (Rules of Hooks)
+  const offeredServiceIds = useMemo(() => {
+    if (!salon?.professionals) return new Set<string>();
+    const ids = new Set<string>();
+    for (const pro of salon.professionals) {
+      for (const ps of (pro as any).services || []) {
+        ids.add(ps.serviceId);
+      }
+    }
+    return ids;
+  }, [salon]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white">
@@ -78,18 +90,6 @@ export default function SalonDetailPage() {
   const averageRating = salon.reviews && salon.reviews.length > 0
     ? (salon.reviews.reduce((sum, r) => sum + r.rating, 0) / salon.reviews.length).toFixed(1)
     : null;
-
-  // IDs des services proposés par au moins un pro — les autres sont masqués
-  const offeredServiceIds = useMemo(() => {
-    if (!salon?.professionals) return new Set<string>();
-    const ids = new Set<string>();
-    for (const pro of salon.professionals) {
-      for (const ps of (pro as any).services || []) {
-        ids.add(ps.serviceId);
-      }
-    }
-    return ids;
-  }, [salon]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white">
