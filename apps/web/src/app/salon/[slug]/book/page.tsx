@@ -52,17 +52,25 @@ export default function BookingPage() {
     { enabled: !!slug }
   );
 
+  // Quand le salon est chargé, on active automatiquement le date picker si service+pro déjà connus
   useEffect(() => {
     if (!salon) return;
     if (preselectedService && preselectedPro) {
-      // Service + pro déjà sélectionnés → on saute directement au date picker
       setShowDatePicker(true);
-      setTimeout(() => dateSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     } else if (preselectedService) {
       setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salon]);
+
+  // Scroll vers la section date dès qu'elle devient visible (après que React a rendu le DOM)
+  useEffect(() => {
+    if (!showDatePicker) return;
+    const timer = setTimeout(() => {
+      dateSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [showDatePicker]);
 
   const { data: availability, isLoading: isLoadingAvailability } = trpc.availability.getSlots.useQuery(
     {

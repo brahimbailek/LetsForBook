@@ -312,7 +312,7 @@ export default function SalonDetailPage() {
                           ))}
                           {prosForService.length >= 2 && (
                             <div
-                              onClick={() => router.push(`/salon/${slug}/book?service=${selectedService}`)}
+                              onClick={() => router.push(`/salon/${slug}/book?service=${selectedService}&pro=peu_importe`)}
                               className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 border-2 border-transparent hover:border-cream-400 rounded-xl cursor-pointer transition-all group"
                             >
                               <div className="flex items-center gap-3">
