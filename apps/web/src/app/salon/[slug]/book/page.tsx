@@ -25,13 +25,14 @@ export default function BookingPage() {
   const searchParams = useSearchParams();
   const slug = params['slug'] as string;
 
-  // Pré-sélection du service via query param ?service=<id>
+  // Pré-sélection via query params ?service=<id>&pro=<id>
   const preselectedService = searchParams.get('service');
+  const preselectedPro = searchParams.get('pro');
 
   // --- État du flow de réservation ---
   const [selectedService, setSelectedService] = useState<string | null>(preselectedService);
   // null = pas encore choisi, 'peu_importe' = n'importe quel pro, CUID = pro spécifique
-  const [selectedProfessional, setSelectedProfessional] = useState<string | null>(null);
+  const [selectedProfessional, setSelectedProfessional] = useState<string | null>(preselectedPro);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -52,10 +53,16 @@ export default function BookingPage() {
   );
 
   useEffect(() => {
-    if (preselectedService && salon && proSectionRef.current) {
+    if (!salon) return;
+    if (preselectedService && preselectedPro) {
+      // Service + pro déjà sélectionnés → on saute directement au date picker
+      setShowDatePicker(true);
+      setTimeout(() => dateSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    } else if (preselectedService) {
       setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     }
-  }, [preselectedService, salon]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [salon]);
 
   const { data: availability, isLoading: isLoadingAvailability } = trpc.availability.getSlots.useQuery(
     {

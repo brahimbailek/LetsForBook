@@ -3,7 +3,7 @@
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { Button, Card, Header } from '@/components/ui';
 
 export default function SalonDetailPage() {
@@ -35,6 +35,14 @@ export default function SalonDetailPage() {
       utils.salon.getFavorites.invalidate();
     },
   });
+
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const prosSectionRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectService = (serviceId: string) => {
+    setSelectedService(serviceId);
+    setTimeout(() => prosSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  };
 
   // Must be before any early returns (Rules of Hooks)
   const offeredServiceIds = useMemo(() => {
@@ -245,23 +253,20 @@ export default function SalonDetailPage() {
                           {subCat.services.map((service: any) => (
                             <div
                               key={service.id}
-                              onClick={() => router.push(`/salon/${slug}/book?service=${service.id}`)}
-                              className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 hover:border-cream-300 border-2 border-transparent rounded-xl cursor-pointer transition-all group"
+                              onClick={() => handleSelectService(service.id)}
+                              className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all border-2 ${
+                                selectedService === service.id
+                                  ? 'border-cream-500 bg-cream-50'
+                                  : 'border-transparent bg-sand-50 hover:bg-sand-100'
+                              }`}
                             >
                               <div className="flex-1">
-                                <h4 className="font-medium text-coffee-800 group-hover:text-cream-700 transition-colors">{service.name}</h4>
-                                <p className="text-sm text-coffee-500">
-                                  {service.durationMinutes} min
-                                </p>
+                                <h4 className="font-medium text-coffee-800">{service.name}</h4>
+                                <p className="text-sm text-coffee-500">{service.durationMinutes} min</p>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <span className="font-semibold text-cream-700">
-                                  {(service.price / 100).toFixed(2)} €
-                                </span>
-                                <span className="text-xs font-medium text-white bg-cream-600 group-hover:bg-cream-700 px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all">
-                                  Réserver
-                                </span>
-                              </div>
+                              <span className="font-semibold text-cream-700">
+                                {(service.price / 100).toFixed(2)} €
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -273,23 +278,20 @@ export default function SalonDetailPage() {
                       {filteredDirectServices.map((service: any) => (
                         <div
                           key={service.id}
-                          onClick={() => router.push(`/salon/${slug}/book?service=${service.id}`)}
-                          className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 hover:border-cream-300 border-2 border-transparent rounded-xl cursor-pointer transition-all group"
+                          onClick={() => handleSelectService(service.id)}
+                          className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all border-2 ${
+                            selectedService === service.id
+                              ? 'border-cream-500 bg-cream-50'
+                              : 'border-transparent bg-sand-50 hover:bg-sand-100'
+                          }`}
                         >
                           <div className="flex-1">
-                            <h4 className="font-medium text-coffee-800 group-hover:text-cream-700 transition-colors">{service.name}</h4>
-                            <p className="text-sm text-coffee-500">
-                              {service.durationMinutes} min
-                            </p>
+                            <h4 className="font-medium text-coffee-800">{service.name}</h4>
+                            <p className="text-sm text-coffee-500">{service.durationMinutes} min</p>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-semibold text-cream-700">
-                              {(service.price / 100).toFixed(2)} €
-                            </span>
-                            <span className="text-xs font-medium text-white bg-cream-600 group-hover:bg-cream-700 px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all">
-                              Réserver
-                            </span>
-                          </div>
+                          <span className="font-semibold text-cream-700">
+                            {(service.price / 100).toFixed(2)} €
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -305,16 +307,61 @@ export default function SalonDetailPage() {
               </div>
             </Card>
 
-            {/* Professionals */}
-            {salon.professionals && salon.professionals.length > 0 && (
+            {/* Section pros — filtrés par service sélectionné */}
+            {selectedService && (() => {
+              const prosForService = (salon.professionals || []).filter((pro: any) =>
+                pro.services?.some((s: any) => s.serviceId === selectedService)
+              );
+              if (prosForService.length === 0) return null;
+              return (
+                <Card>
+                  <div ref={prosSectionRef}>
+                    <h2 className="text-xl font-semibold text-coffee-800 mb-2">Avec qui ?</h2>
+                    <p className="text-sm text-coffee-500 mb-6">Choisissez votre professionnel</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {prosForService.map((pro: any) => (
+                        <div
+                          key={pro.id}
+                          onClick={() => router.push(`/salon/${slug}/book?service=${selectedService}&pro=${pro.id}`)}
+                          className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 border-2 border-transparent hover:border-cream-400 rounded-xl cursor-pointer transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            {pro.user.avatar ? (
+                              <img
+                                src={pro.user.avatar}
+                                alt={`${pro.user.firstName} ${pro.user.lastName}`}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-cream-200 flex items-center justify-center shrink-0">
+                                <span className="text-cream-700 font-medium">
+                                  {pro.user.firstName?.charAt(0)}{pro.user.lastName?.charAt(0)}
+                                </span>
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-coffee-800">{pro.user.firstName} {pro.user.lastName}</p>
+                              <p className="text-sm text-coffee-500">{pro.specialties || 'Professionnel'}</p>
+                            </div>
+                          </div>
+                          <svg className="w-5 h-5 text-cream-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })()}
+
+            {/* Notre équipe — visible uniquement si aucun service sélectionné */}
+            {!selectedService && salon.professionals && salon.professionals.length > 0 && (
               <Card>
                 <h2 className="text-xl font-semibold text-coffee-800 mb-6">Notre équipe</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {salon.professionals.map((pro) => (
-                    <div
-                      key={pro.id}
-                      className="p-4 rounded-xl bg-sand-50"
-                    >
+                    <div key={pro.id} className="p-4 rounded-xl bg-sand-50">
                       <div className="flex items-center gap-3">
                         {pro.user.avatar ? (
                           <img
@@ -330,9 +377,7 @@ export default function SalonDetailPage() {
                           </div>
                         )}
                         <div>
-                          <p className="font-medium text-coffee-800">
-                            {pro.user.firstName} {pro.user.lastName}
-                          </p>
+                          <p className="font-medium text-coffee-800">{pro.user.firstName} {pro.user.lastName}</p>
                           <p className="text-sm text-coffee-500">{pro.specialties || 'Professionnel'}</p>
                         </div>
                       </div>
