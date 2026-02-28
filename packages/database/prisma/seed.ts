@@ -292,16 +292,16 @@ async function main() {
       email: 'test-pro2@letsforbook.fr',
       firstName: 'Marc',
       lastName: 'Test',
-      bio: 'Esthéticien test - Expert soins visage et manucure',
-      specialties: ['Soin visage', 'Manucure', 'Pédicure'],
+      bio: 'Professionnel polyvalent test - Coiffure et manucure',
+      specialties: ['Coupe femme', 'Manucure', 'Massage'],
       experience: 5,
     },
     {
       email: 'test-pro3@letsforbook.fr',
       firstName: 'Julie',
       lastName: 'Test',
-      bio: 'Masseuse test - Massages relaxants et thérapeutiques',
-      specialties: ['Massage suédois', 'Massage aux pierres chaudes'],
+      bio: 'Esthéticienne et masseuse test',
+      specialties: ['Manucure', 'Extension cils', 'Massage suédois'],
       experience: 10,
     },
   ];
@@ -1165,22 +1165,98 @@ async function main() {
   // ============================================
   let professionalServicesCount = 0;
 
-  // Professionnels normaux
+  // Mapping spécialité → catégories de services correspondantes
+  const specialtyToCategoryMap: Record<string, string[]> = {
+    'Coupe femme':              ['Coiffure Femme', 'Coiffure Homme', 'Coiffure Enfant'],
+    'Coupe':                    ['Coiffure Femme', 'Coiffure Homme', 'Coiffure Enfant'],
+    'Brushing':                 ['Coiffure Femme'],
+    'Visagisme':                ['Coiffure Femme'],
+    'Coloration':               ['Coloration'],
+    'Balayage':                 ['Coloration'],
+    'Coupe homme':              ['Coiffure Homme', 'Barbier'],
+    'Barbe':                    ['Barbier'],
+    'Rasage':                   ['Barbier'],
+    'Taille barbe':             ['Barbier'],
+    'Soin visage':              ['Beauté', 'Bien-être & Spa'],
+    'Massage':                  ['Bien-être & Spa'],
+    'Massage suédois':          ['Bien-être & Spa'],
+    'Massage aux pierres chaudes': ['Bien-être & Spa'],
+    'Deep tissue':              ['Bien-être & Spa'],
+    'Massage thaï':             ['Bien-être & Spa'],
+    'Réflexologie':             ['Bien-être & Spa'],
+    'Soins corps':              ['Bien-être & Spa'],
+    'Hammam':                   ['Bien-être & Spa'],
+    'Manucure':                 ['Beauté'],
+    'Pédicure':                 ['Beauté'],
+    'Gel':                      ['Beauté'],
+    'Gel UV':                   ['Beauté'],
+    'Nail art':                 ['Beauté'],
+    'Microblading':             ['Beauté'],
+    'Sourcils':                 ['Beauté'],
+    'Réaliste':                 ['Tatouage & Piercing'],
+    'Portrait':                 ['Tatouage & Piercing'],
+    'Old school':               ['Tatouage & Piercing'],
+    'Japonais':                 ['Tatouage & Piercing'],
+    'Géométrique':              ['Tatouage & Piercing'],
+    'Minimaliste':              ['Tatouage & Piercing'],
+    'Piercing':                 ['Tatouage & Piercing'],
+    'Bijoux':                   ['Tatouage & Piercing'],
+    'HIIT':                     ['Sport & Fitness'],
+    'Musculation':              ['Sport & Fitness'],
+    'CrossFit':                 ['Sport & Fitness'],
+    'Haltérophilie':            ['Sport & Fitness'],
+    'Hatha':                    ['Sport & Fitness'],
+    'Vinyasa':                  ['Sport & Fitness'],
+    'Diagnostic':               ['Automobile'],
+    'Réparation':               ['Automobile'],
+    'Pneus':                    ['Automobile'],
+    'Géométrie':                ['Automobile'],
+  };
+
+  // Reverse map : categoryId → nom de catégorie (pour filtrer les services)
+  const categoryIdToName: Record<string, string> = {};
+  for (const catMap of Object.values(salonCategoryCache)) {
+    for (const [name, id] of Object.entries(catMap)) {
+      categoryIdToName[id] = name;
+    }
+  }
+  // Sous-catégories du salon test → nom de la catégorie parente
+  categoryIdToName[testSubCatCoupes.id] = 'Coiffure Femme';
+  categoryIdToName[testSubCatSoinsCapillaires.id] = 'Coiffure Femme';
+  categoryIdToName[testSubCatManucure.id] = 'Beauté';
+  categoryIdToName[testSubCatRegard.id] = 'Beauté';
+
+  function getServicesForPro<T extends { salonId: string; categoryId: string }>(
+    specialties: string[],
+    salonServices: T[]
+  ): T[] {
+    const targetCategories = new Set<string>();
+    for (const specialty of specialties) {
+      for (const cat of specialtyToCategoryMap[specialty] || []) {
+        targetCategories.add(cat);
+      }
+    }
+    if (targetCategories.size === 0) return salonServices;
+    const matched = salonServices.filter((s) => {
+      const catName = categoryIdToName[s.categoryId];
+      return catName && targetCategories.has(catName);
+    });
+    // Fallback : si aucun service ne correspond, on prend tout le salon
+    return matched.length > 0 ? matched : salonServices;
+  }
+
+  // Professionnels normaux — assignation basée sur les spécialités
   for (const pro of professionals) {
     if (!pro.professionalProfile) continue;
+    const salonServices = services.filter((s) => s.salonId === pro.professionalProfile!.salonId);
+    const specialties = pro.professionalProfile.specialties as string[];
+    const toAssign = getServicesForPro(specialties, salonServices);
 
-    const salonServices = services.filter(
-      (s) => s.salonId === pro.professionalProfile!.salonId
-    );
-
-    const numServices = Math.min(salonServices.length, Math.floor(Math.random() * 3) + 2);
-    const shuffled = salonServices.sort(() => 0.5 - Math.random());
-
-    for (let i = 0; i < numServices; i++) {
+    for (const service of toAssign) {
       await prisma.professionalService.create({
         data: {
           professionalId: pro.professionalProfile!.id,
-          serviceId: shuffled[i]!.id,
+          serviceId: service.id,
           active: true,
         },
       });
@@ -1188,16 +1264,37 @@ async function main() {
     }
   }
 
-  // Professionnels test
-  for (const testPro of testProfessionals) {
-    if (!testPro.professionalProfile) continue;
+  // Professionnels test — assignation EXPLICITE pour une couverture optimale des tests
+  // Objectif : certains services partagés (→ test "Peu importe"), d'autres uniques (→ test 1 pro)
+  const testServiceByName = Object.fromEntries(testServices.map((s) => [s.name, s]));
+  const [sophieTestPro, marcTestPro, julieTestPro] = testProfessionals;
 
-    const testSalonServices = testServices;
+  const testProExplicitAssignments: Array<{ pro: typeof sophieTestPro; serviceNames: string[] }> = [
+    {
+      pro: sophieTestPro,
+      // Sophie : spécialiste coiffure + coloration (services UNIQUES + partagés avec Marc)
+      serviceNames: ['Coupe Femme', 'Coupe + Brushing', 'Brushing', 'Soin Kératine', 'Coupe Homme', 'Coupe Enfant', 'Coloration Complète', 'Balayage'],
+    },
+    {
+      pro: marcTestPro,
+      // Marc : polyvalent — partage Coupe avec Sophie, partage Manucure+Massage avec Julie
+      serviceNames: ['Coupe Femme', 'Coupe + Brushing', 'Manucure Gel', 'Semi-Permanent', 'Massage Relaxant'],
+    },
+    {
+      pro: julieTestPro,
+      // Julie : esthéticienne/masseuse — partage Manucure+Massage avec Marc (service UNIQUE : Extension Cils)
+      serviceNames: ['Manucure Gel', 'Extension Cils', 'Massage Relaxant'],
+    },
+  ];
 
-    for (const service of testSalonServices) {
+  for (const { pro, serviceNames } of testProExplicitAssignments) {
+    if (!pro.professionalProfile) continue;
+    for (const name of serviceNames) {
+      const service = testServiceByName[name];
+      if (!service) { console.warn(`⚠️  Service test introuvable : "${name}"`); continue; }
       await prisma.professionalService.create({
         data: {
-          professionalId: testPro.professionalProfile!.id,
+          professionalId: pro.professionalProfile.id,
           serviceId: service.id,
           active: true,
         },
