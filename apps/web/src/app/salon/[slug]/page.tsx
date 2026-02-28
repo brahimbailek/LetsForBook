@@ -3,7 +3,7 @@
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useMemo, useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Button, Card, Header } from '@/components/ui';
 
 export default function SalonDetailPage() {
@@ -22,12 +22,6 @@ export default function SalonDetailPage() {
     { enabled: !!salon?.id && !!user }
   );
 
-  // Fetch categories with hierarchy - must be before any early returns (Rules of Hooks)
-  const { data: categoriesData } = trpc.category.getBySalonId.useQuery(
-    { salonId: salon?.id || '' },
-    { enabled: !!salon?.id }
-  );
-
   const utils = trpc.useUtils();
   const toggleFavoriteMutation = trpc.salon.toggleFavorite.useMutation({
     onSuccess: () => {
@@ -40,20 +34,29 @@ export default function SalonDetailPage() {
   const prosSectionRef = useRef<HTMLDivElement>(null);
 
   const handleSelectService = (serviceId: string) => {
+    if (selectedService === serviceId) {
+      setSelectedService(null);
+      return;
+    }
     setSelectedService(serviceId);
     setTimeout(() => prosSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
-  // Must be before any early returns (Rules of Hooks)
-  const offeredServiceIds = useMemo(() => {
-    if (!salon?.professionals) return new Set<string>();
-    const ids = new Set<string>();
-    for (const pro of salon.professionals) {
-      for (const ps of (pro as any).services || []) {
-        ids.add(ps.serviceId);
+  // Grouper les services du salon par catégorie (source de vérité = salon.services dans getBySlug)
+  const servicesByCategory = useMemo(() => {
+    if (!salon?.services) return [];
+    const groups = new Map<string, { category: any; services: any[] }>();
+    for (const service of (salon.services as any[])) {
+      const catId = service.category.id;
+      if (!groups.has(catId)) {
+        groups.set(catId, { category: service.category, services: [] });
       }
+      groups.get(catId)!.services.push(service);
     }
-    return ids;
+    for (const group of groups.values()) {
+      group.services.sort((a: any, b: any) => a.order - b.order);
+    }
+    return Array.from(groups.values());
   }, [salon]);
 
   if (isLoading) {
@@ -222,60 +225,14 @@ export default function SalonDetailPage() {
             <Card>
               <h2 className="text-xl font-semibold text-coffee-800 mb-6">Nos prestations</h2>
               <div className="space-y-6">
-                {categoriesData?.map((category) => {
-                  // Filtrer : ne garder que les services proposés par au moins un pro
-                  const filteredChildren = ((category as any).children || [])
-                    .map((subCat: any) => ({
-                      ...subCat,
-                      services: (subCat.services || []).filter((s: any) => offeredServiceIds.has(s.id)),
-                    }))
-                    .filter((subCat: any) => subCat.services.length > 0);
-
-                  const filteredDirectServices = (category.services || []).filter((s: any) => offeredServiceIds.has(s.id));
-
-                  if (filteredChildren.length === 0 && filteredDirectServices.length === 0) return null;
-
-                  return (
+                {servicesByCategory.map(({ category, services }) => (
                   <div key={category.id}>
                     <h3 className="text-lg font-medium text-coffee-700 mb-3 pb-2 border-b border-sand-200 flex items-center gap-2">
                       {category.icon && <span>{category.icon}</span>}
                       {category.name}
                     </h3>
-
-                    {/* Sub-categories */}
-                    {filteredChildren.map((subCat: any) => (
-                      <div key={subCat.id} className="ml-4 mb-4">
-                        <h4 className="text-sm font-semibold text-coffee-600 mb-2 flex items-center gap-1.5">
-                          {subCat.icon && <span>{subCat.icon}</span>}
-                          {subCat.name}
-                        </h4>
-                        <div className="space-y-3">
-                          {subCat.services.map((service: any) => (
-                            <div
-                              key={service.id}
-                              onClick={() => handleSelectService(service.id)}
-                              className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all border-2 ${
-                                selectedService === service.id
-                                  ? 'border-cream-500 bg-cream-50'
-                                  : 'border-transparent bg-sand-50 hover:bg-sand-100'
-                              }`}
-                            >
-                              <div className="flex-1">
-                                <h4 className="font-medium text-coffee-800">{service.name}</h4>
-                                <p className="text-sm text-coffee-500">{service.durationMinutes} min</p>
-                              </div>
-                              <span className="font-semibold text-cream-700">
-                                {(service.price / 100).toFixed(2)} €
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Direct services (not in sub-categories) */}
                     <div className="space-y-3">
-                      {filteredDirectServices.map((service: any) => (
+                      {services.map((service: any) => (
                         <div
                           key={service.id}
                           onClick={() => handleSelectService(service.id)}
@@ -296,10 +253,9 @@ export default function SalonDetailPage() {
                       ))}
                     </div>
                   </div>
-                  );
-                })}
+                ))}
 
-                {(!categoriesData || categoriesData.length === 0) && (
+                {servicesByCategory.length === 0 && (
                   <p className="text-coffee-500 text-center py-8">
                     Aucune prestation disponible pour le moment.
                   </p>
