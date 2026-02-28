@@ -382,7 +382,7 @@ export default function DashboardPage() {
                       Voir mon agenda
                     </Button>
                     <Button variant="outline" fullWidth onClick={() => setActiveTab('my-availability')}>
-                      Gérer mes disponibilités
+                      Mes disponibilités
                     </Button>
                     <Button variant="outline" fullWidth onClick={() => setActiveTab('my-services')}>
                       Voir mes prestations

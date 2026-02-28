@@ -3,7 +3,7 @@
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-// useState removed — salon page is now read-only (no service/pro selection)
+import { useMemo } from 'react';
 import { Button, Card, Header } from '@/components/ui';
 
 export default function SalonDetailPage() {
@@ -78,6 +78,18 @@ export default function SalonDetailPage() {
   const averageRating = salon.reviews && salon.reviews.length > 0
     ? (salon.reviews.reduce((sum, r) => sum + r.rating, 0) / salon.reviews.length).toFixed(1)
     : null;
+
+  // IDs des services proposés par au moins un pro — les autres sont masqués
+  const offeredServiceIds = useMemo(() => {
+    if (!salon?.professionals) return new Set<string>();
+    const ids = new Set<string>();
+    for (const pro of salon.professionals) {
+      for (const ps of (pro as any).services || []) {
+        ids.add(ps.serviceId);
+      }
+    }
+    return ids;
+  }, [salon]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white">
@@ -202,7 +214,20 @@ export default function SalonDetailPage() {
             <Card>
               <h2 className="text-xl font-semibold text-coffee-800 mb-6">Nos prestations</h2>
               <div className="space-y-6">
-                {categoriesData?.map((category) => (
+                {categoriesData?.map((category) => {
+                  // Filtrer : ne garder que les services proposés par au moins un pro
+                  const filteredChildren = ((category as any).children || [])
+                    .map((subCat: any) => ({
+                      ...subCat,
+                      services: (subCat.services || []).filter((s: any) => offeredServiceIds.has(s.id)),
+                    }))
+                    .filter((subCat: any) => subCat.services.length > 0);
+
+                  const filteredDirectServices = (category.services || []).filter((s: any) => offeredServiceIds.has(s.id));
+
+                  if (filteredChildren.length === 0 && filteredDirectServices.length === 0) return null;
+
+                  return (
                   <div key={category.id}>
                     <h3 className="text-lg font-medium text-coffee-700 mb-3 pb-2 border-b border-sand-200 flex items-center gap-2">
                       {category.icon && <span>{category.icon}</span>}
@@ -210,14 +235,14 @@ export default function SalonDetailPage() {
                     </h3>
 
                     {/* Sub-categories */}
-                    {(category as any).children?.map((subCat: any) => (
+                    {filteredChildren.map((subCat: any) => (
                       <div key={subCat.id} className="ml-4 mb-4">
                         <h4 className="text-sm font-semibold text-coffee-600 mb-2 flex items-center gap-1.5">
                           {subCat.icon && <span>{subCat.icon}</span>}
                           {subCat.name}
                         </h4>
                         <div className="space-y-3">
-                          {subCat.services?.map((service: any) => (
+                          {subCat.services.map((service: any) => (
                             <div
                               key={service.id}
                               className="flex items-center justify-between p-4 bg-sand-50 rounded-xl"
@@ -239,7 +264,7 @@ export default function SalonDetailPage() {
 
                     {/* Direct services (not in sub-categories) */}
                     <div className="space-y-3">
-                      {category.services?.map((service) => (
+                      {filteredDirectServices.map((service: any) => (
                         <div
                           key={service.id}
                           className="flex items-center justify-between p-4 bg-sand-50 rounded-xl"
@@ -257,7 +282,8 @@ export default function SalonDetailPage() {
                       ))}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
 
                 {(!categoriesData || categoriesData.length === 0) && (
                   <p className="text-coffee-500 text-center py-8">
