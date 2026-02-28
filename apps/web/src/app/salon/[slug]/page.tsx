@@ -349,6 +349,27 @@ export default function SalonDetailPage() {
                           </svg>
                         </div>
                       ))}
+                      {prosForService.length >= 2 && (
+                        <div
+                          onClick={() => router.push(`/salon/${slug}/book?service=${selectedService}`)}
+                          className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 border-2 border-transparent hover:border-cream-400 rounded-xl cursor-pointer transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-sand-200 flex items-center justify-center shrink-0">
+                              <svg className="w-6 h-6 text-coffee-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="font-medium text-coffee-800">Peu importe</p>
+                              <p className="text-sm text-coffee-500">Le premier professionnel disponible</p>
+                            </div>
+                          </div>
+                          <svg className="w-5 h-5 text-cream-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>
