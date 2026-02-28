@@ -203,10 +203,9 @@ export default function BookingPage() {
     setSelectedTime(null);
   };
 
-  // Quand on clique le CTA → ouvrir le date picker + scroll
+  // Quand on clique le CTA → ouvrir le date picker (le scroll est géré par le useEffect)
   const handleShowDatePicker = () => {
     setShowDatePicker(true);
-    setTimeout(() => dateSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
   const handleBooking = async () => {
