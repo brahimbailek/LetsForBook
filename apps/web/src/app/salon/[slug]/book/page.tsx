@@ -45,6 +45,7 @@ export default function BookingPage() {
   // Refs pour le scroll automatique entre les sections
   const proSectionRef = useRef<HTMLDivElement>(null);
   const dateSectionRef = useRef<HTMLDivElement>(null);
+  const bookingSectionRef = useRef<HTMLDivElement>(null);
 
   const { data: salon, isLoading } = trpc.salon.getBySlug.useQuery(
     { slug },
@@ -63,6 +64,18 @@ export default function BookingPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salon]);
+
+  // Scroll vers le bouton Réserver dès qu'un horaire est sélectionné
+  useEffect(() => {
+    if (!selectedTime) return;
+    const timer = setTimeout(() => {
+      const el = bookingSectionRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [selectedTime]);
 
   // Scroll vers la section date dès que showDatePicker devient true
   useEffect(() => {
@@ -189,8 +202,16 @@ export default function BookingPage() {
     return ids;
   }, [salon]);
 
-  // Quand on sélectionne un service → reset pro + date picker
+  // Quand on sélectionne un service → reset pro + date picker (reclique = désélection)
   const handleSelectService = (serviceId: string) => {
+    if (selectedService === serviceId) {
+      setSelectedService(null);
+      setSelectedProfessional(null);
+      setShowDatePicker(false);
+      setSelectedDate('');
+      setSelectedTime(null);
+      return;
+    }
     setSelectedService(serviceId);
     setSelectedProfessional(null);
     setShowDatePicker(false);
@@ -506,7 +527,7 @@ export default function BookingPage() {
 
                   {/* Bouton "Réserver" — apparaît quand un créneau est sélectionné */}
                   {selectedTime && (
-                    <div className="mt-8">
+                    <div className="mt-8" ref={bookingSectionRef}>
                       <div className="p-4 bg-cream-50 border border-cream-200 rounded-xl mb-4">
                         <p className="text-sm text-coffee-600">
                           En confirmant, vous acceptez les conditions d'annulation du salon
