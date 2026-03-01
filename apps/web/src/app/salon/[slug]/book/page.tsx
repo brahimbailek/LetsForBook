@@ -29,17 +29,11 @@ export default function BookingPage() {
   const preselectedService = searchParams.get('service');
   const preselectedPro = searchParams.get('pro');
 
-  // Arrivée directe depuis la page salon avec service+pro déjà connus
-  const isDirectBooking = !!preselectedService && !!preselectedPro;
-
   // --- État du flow de réservation ---
   const [selectedService, setSelectedService] = useState<string | null>(preselectedService);
   // null = pas encore choisi, 'peu_importe' = n'importe quel pro, CUID = pro spécifique
   const [selectedProfessional, setSelectedProfessional] = useState<string | null>(preselectedPro);
-  // En mode direct booking, le date picker est ouvert d'emblée
-  const [showDatePicker, setShowDatePicker] = useState(isDirectBooking);
-  // En mode direct booking, on masque le formulaire complet (sauf si l'user clique "Modifier")
-  const [showModifyForm, setShowModifyForm] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isBooking, setIsBooking] = useState(false);
@@ -57,7 +51,14 @@ export default function BookingPage() {
     { enabled: !!slug }
   );
 
-  // Scroll vers la section date uniquement quand l'user l'ouvre manuellement (pas au premier rendu)
+  // Quand le salon charge avec un service+pro pré-sélectionnés → scroll vers la section "Avec qui?"
+  useEffect(() => {
+    if (!salon || !preselectedService) return;
+    setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [salon]);
+
+  // Scroll vers la section date quand le CTA est cliqué (pas au premier rendu)
   const mountedRef = useRef(false);
   useEffect(() => {
     if (!mountedRef.current) {
@@ -271,44 +272,8 @@ export default function BookingPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Résumé compact — affiché quand on arrive depuis la page salon avec service+pro */}
-            {isDirectBooking && !showModifyForm && (
-              <Card>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    {isLoading ? (
-                      <div className="space-y-2">
-                        <div className="h-5 w-40 bg-sand-200 rounded animate-pulse" />
-                        <div className="h-4 w-28 bg-sand-200 rounded animate-pulse" />
-                      </div>
-                    ) : (
-                      <>
-                        <p className="font-semibold text-coffee-800 text-lg">{selectedServiceData?.name}</p>
-                        <p className="text-sm text-coffee-500 mt-0.5">
-                          {selectedServiceData?.durationMinutes} min
-                          {' · '}
-                          {isPeuImporte
-                            ? 'Premier disponible'
-                            : proDisplayNames.get(selectedProfessional!) || '—'}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowModifyForm(true);
-                      setShowDatePicker(false);
-                    }}
-                    className="flex-shrink-0 text-sm text-cream-600 hover:text-cream-700 underline underline-offset-2"
-                  >
-                    Modifier
-                  </button>
-                </div>
-              </Card>
-            )}
-
-            {/* Section 1 : Prestations (masquée en mode direct booking) */}
-            {(!isDirectBooking || showModifyForm) && <Card>
+            {/* Section 1 : Prestations */}
+            <Card>
               <h2 className="text-xl font-semibold text-coffee-800 mb-6">
                 Choisissez une prestation
               </h2>
@@ -399,10 +364,10 @@ export default function BookingPage() {
                   </p>
                 )}
               </div>
-            </Card>}
+            </Card>
 
-            {/* Section 2 : Choix du professionnel (masquée en mode direct booking) */}
-            {selectedService && availableProsForService.length > 0 && (!isDirectBooking || showModifyForm) && (
+            {/* Section 2 : Choix du professionnel */}
+            {selectedService && availableProsForService.length > 0 && (
               <Card>
                 <div ref={proSectionRef}>
                   <h2 className="text-xl font-semibold text-coffee-800 mb-4">
