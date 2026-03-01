@@ -45,7 +45,16 @@ export default function BookingPage() {
   // Refs pour le scroll automatique entre les sections
   const proSectionRef = useRef<HTMLDivElement>(null);
   const dateSectionRef = useRef<HTMLDivElement>(null);
+  const timeSectionRef = useRef<HTMLDivElement>(null);
   const bookingSectionRef = useRef<HTMLDivElement>(null);
+  // true = le scroll vers la date doit s'exécuter (déclenché par l'user, pas par le chargement initial)
+  const scrollToDateRef = useRef(false);
+
+  const scrollTo = (el: HTMLDivElement | null) => {
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 80;
+    window.scrollTo({ top, behavior: 'smooth' });
+  };
 
   const { data: salon, isLoading } = trpc.salon.getBySlug.useQuery(
     { slug },
@@ -56,38 +65,35 @@ export default function BookingPage() {
   useEffect(() => {
     if (!salon || !preselectedService) return;
     if (preselectedPro) {
-      // Service + pro déjà connus → ouvre le date picker (le scroll est géré par l'effet showDatePicker)
+      // Ouvre le date picker sans scroll (la page vient de charger, pas besoin)
       setShowDatePicker(true);
     } else {
-      // Service seul → scroll vers la section "Avec qui?"
       setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salon]);
 
-  // Scroll vers le bouton Réserver dès qu'un horaire est sélectionné
+  // Scroll vers la section date — uniquement si déclenché par l'user (pas au chargement)
   useEffect(() => {
-    if (!selectedTime) return;
-    const timer = setTimeout(() => {
-      const el = bookingSectionRef.current;
-      if (!el) return;
-      const top = el.getBoundingClientRect().top + window.scrollY - 80;
-      window.scrollTo({ top, behavior: 'smooth' });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [selectedTime]);
-
-  // Scroll vers la section date dès que showDatePicker devient true
-  useEffect(() => {
-    if (!showDatePicker) return;
-    const timer = setTimeout(() => {
-      const el = dateSectionRef.current;
-      if (!el) return;
-      const top = el.getBoundingClientRect().top + window.scrollY - 80;
-      window.scrollTo({ top, behavior: 'smooth' });
-    }, 150);
+    if (!showDatePicker || !scrollToDateRef.current) return;
+    scrollToDateRef.current = false;
+    const timer = setTimeout(() => scrollTo(dateSectionRef.current), 150);
     return () => clearTimeout(timer);
   }, [showDatePicker]);
+
+  // Scroll vers les horaires après choix d'une date
+  useEffect(() => {
+    if (!selectedDate) return;
+    const timer = setTimeout(() => scrollTo(timeSectionRef.current), 150);
+    return () => clearTimeout(timer);
+  }, [selectedDate]);
+
+  // Scroll vers le bouton Réserver après choix d'un horaire
+  useEffect(() => {
+    if (!selectedTime) return;
+    const timer = setTimeout(() => scrollTo(bookingSectionRef.current), 100);
+    return () => clearTimeout(timer);
+  }, [selectedTime]);
 
   const { data: availability, isLoading: isLoadingAvailability } = trpc.availability.getSlots.useQuery(
     {
@@ -220,8 +226,9 @@ export default function BookingPage() {
     setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
-  // Quand on sélectionne un pro → ouvre le date picker + scroll vers le bas
+  // Quand on sélectionne un pro → ouvre le date picker + autorise le scroll vers la date
   const handleSelectProfessional = (proId: string) => {
+    scrollToDateRef.current = true;
     setSelectedProfessional(proId);
     setShowDatePicker(true);
     setSelectedDate('');
@@ -490,7 +497,7 @@ export default function BookingPage() {
 
                   {/* Sélection de l'heure */}
                   {selectedDate && (
-                    <div>
+                    <div ref={timeSectionRef}>
                       <h3 className="text-lg font-medium text-coffee-800 mb-4">Horaires disponibles</h3>
                       {isLoadingAvailability ? (
                         <div className="grid grid-cols-4 gap-2">
