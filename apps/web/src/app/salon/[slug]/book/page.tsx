@@ -195,17 +195,12 @@ export default function BookingPage() {
     setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
-  // Quand on sélectionne un pro → reset date picker (bouton CTA s'affiche)
+  // Quand on sélectionne un pro → ouvre le date picker + scroll vers le bas
   const handleSelectProfessional = (proId: string) => {
     setSelectedProfessional(proId);
-    setShowDatePicker(false);
+    setShowDatePicker(true);
     setSelectedDate('');
     setSelectedTime(null);
-  };
-
-  // Quand on clique le CTA → ouvrir le date picker (le scroll est géré par le useEffect)
-  const handleShowDatePicker = () => {
-    setShowDatePicker(true);
   };
 
   const handleBooking = async () => {
@@ -431,20 +426,6 @@ export default function BookingPage() {
                     ))}
                   </div>
 
-                  {/* CTA — apparaît quand un pro est sélectionné */}
-                  {selectedProfessional && !showDatePicker && (
-                    <div className="mt-6 pt-6 border-t border-sand-200">
-                      <button
-                        onClick={handleShowDatePicker}
-                        className="w-full py-4 px-6 bg-cream-600 hover:bg-cream-700 text-white font-semibold text-lg rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-3"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Choisir mon créneau
-                      </button>
-                    </div>
-                  )}
                 </div>
               </Card>
             )}
