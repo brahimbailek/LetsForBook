@@ -15,8 +15,7 @@
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { flushSync } from 'react-dom';
+import { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { Button, Card, Header, Badge } from '@/components/ui';
 import { PaymentModal } from '@/components/payment';
 
@@ -49,6 +48,8 @@ export default function BookingPage() {
   const dateSectionRef = useRef<HTMLDivElement>(null);
   const timeSectionRef = useRef<HTMLDivElement>(null);
   const bookingSectionRef = useRef<HTMLDivElement>(null);
+  // Flag : scroll vers la section date demandé par l'user (pas au chargement initial)
+  const scrollToDateRequested = useRef(false);
 
   const scrollTo = (el: HTMLDivElement | null) => {
     if (!el) return;
@@ -60,6 +61,14 @@ export default function BookingPage() {
     { slug },
     { enabled: !!slug }
   );
+
+  // Après chaque rendu : si l'user vient de choisir un pro, on scroll vers la section date
+  // useLayoutEffect fire APRÈS le commit DOM (layout à jour) mais AVANT le paint → pas de timing
+  useLayoutEffect(() => {
+    if (!scrollToDateRequested.current || !dateSectionRef.current) return;
+    scrollToDateRequested.current = false;
+    dateSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   // Scroll vers le date picker au premier rendu si service+pro pré-sélectionnés
   useEffect(() => {
@@ -222,15 +231,11 @@ export default function BookingPage() {
 
   // Quand on sélectionne un pro → ouvre le date picker + scroll vers la date
   const handleSelectProfessional = (proId: string) => {
-    // flushSync force React à rendre synchroniquement : la section date est dans le DOM
-    // avant qu'on appelle scrollTo, même si c'est le premier clic (showDatePicker était false)
-    flushSync(() => {
-      setSelectedProfessional(proId);
-      setShowDatePicker(true);
-      setSelectedDate('');
-      setSelectedTime(null);
-    });
-    scrollTo(dateSectionRef.current);
+    scrollToDateRequested.current = true;
+    setSelectedProfessional(proId);
+    setShowDatePicker(true);
+    setSelectedDate('');
+    setSelectedTime(null);
   };
 
   const handleBooking = async () => {
