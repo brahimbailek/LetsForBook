@@ -34,7 +34,8 @@ export default function BookingPage() {
   const [selectedService, setSelectedService] = useState<string | null>(preselectedService);
   // null = pas encore choisi, 'peu_importe' = n'importe quel pro, CUID = pro spécifique
   const [selectedProfessional, setSelectedProfessional] = useState<string | null>(preselectedPro);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  // Si service+pro déjà dans l'URL, ouvrir directement le date picker
+  const [showDatePicker, setShowDatePicker] = useState(!!(preselectedService && preselectedPro));
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isBooking, setIsBooking] = useState(false);
@@ -60,15 +61,17 @@ export default function BookingPage() {
     { enabled: !!slug }
   );
 
-  // Quand le salon charge avec params pré-sélectionnés dans l'URL
+  // Scroll vers le date picker au premier rendu si service+pro pré-sélectionnés
   useEffect(() => {
-    if (!salon || !preselectedService) return;
-    if (preselectedPro) {
-      setShowDatePicker(true);
-      setTimeout(() => scrollTo(dateSectionRef.current), 300);
-    } else {
-      setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
-    }
+    if (!preselectedService || !preselectedPro) return;
+    scrollTo(dateSectionRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Quand le salon charge sans pro pré-sélectionné → scroll vers les pros
+  useEffect(() => {
+    if (!salon || !preselectedService || preselectedPro) return;
+    setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salon]);
 
