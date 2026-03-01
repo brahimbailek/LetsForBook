@@ -32,6 +32,7 @@ export default function SalonDetailPage() {
 
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const prosSectionRef = useRef<HTMLDivElement>(null);
+  const servicesSectionRef = useRef<HTMLDivElement>(null);
 
   const handleSelectService = (serviceId: string) => {
     if (selectedService === serviceId) {
@@ -223,6 +224,7 @@ export default function SalonDetailPage() {
 
             {/* Services */}
             <Card>
+              <div ref={servicesSectionRef}>
               <h2 className="text-xl font-semibold text-coffee-800 mb-6">Nos prestations</h2>
               <div className="space-y-6">
                 {servicesByCategory.map(({ category, services }) => (
@@ -260,6 +262,7 @@ export default function SalonDetailPage() {
                     Aucune prestation disponible pour le moment.
                   </p>
                 )}
+              </div>
               </div>
             </Card>
 
@@ -420,7 +423,7 @@ export default function SalonDetailPage() {
               </p>
               <Button
                 fullWidth
-                onClick={() => router.push(`/salon/${slug}/book`)}
+                onClick={() => servicesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               >
                 Prendre rendez-vous
               </Button>

@@ -64,17 +64,15 @@ export default function BookingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salon]);
 
-  // Scroll vers la section date quand le CTA est cliqué (pas au premier rendu)
-  const mountedRef = useRef(false);
+  // Scroll vers la section date dès que showDatePicker devient true
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
     if (!showDatePicker) return;
     const timer = setTimeout(() => {
-      dateSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+      const el = dateSectionRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }, 150);
     return () => clearTimeout(timer);
   }, [showDatePicker]);
 
