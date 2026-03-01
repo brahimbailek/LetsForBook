@@ -64,8 +64,8 @@ export default function BookingPage() {
   useEffect(() => {
     if (!salon || !preselectedService) return;
     if (preselectedPro) {
-      // Ouvre le date picker sans scroll (la page vient de charger, pas besoin)
       setShowDatePicker(true);
+      setTimeout(() => scrollTo(dateSectionRef.current), 300);
     } else {
       setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     }
