@@ -16,6 +16,7 @@ import { trpc } from '@/lib/trpc/client';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { Button, Card, Header, Badge } from '@/components/ui';
 import { PaymentModal } from '@/components/payment';
 
@@ -218,11 +219,15 @@ export default function BookingPage() {
 
   // Quand on sélectionne un pro → ouvre le date picker + scroll vers la date
   const handleSelectProfessional = (proId: string) => {
-    setSelectedProfessional(proId);
-    setShowDatePicker(true);
-    setSelectedDate('');
-    setSelectedTime(null);
-    setTimeout(() => scrollTo(dateSectionRef.current), 300);
+    // flushSync force React à rendre synchroniquement : la section date est dans le DOM
+    // avant qu'on appelle scrollTo, même si c'est le premier clic (showDatePicker était false)
+    flushSync(() => {
+      setSelectedProfessional(proId);
+      setShowDatePicker(true);
+      setSelectedDate('');
+      setSelectedTime(null);
+    });
+    scrollTo(dateSectionRef.current);
   };
 
   const handleBooking = async () => {
