@@ -15,7 +15,7 @@
 import { trpc } from '@/lib/trpc/client';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Button, Card, Header, Badge } from '@/components/ui';
 import { PaymentModal } from '@/components/payment';
 
@@ -48,8 +48,6 @@ export default function BookingPage() {
   const dateSectionRef = useRef<HTMLDivElement>(null);
   const timeSectionRef = useRef<HTMLDivElement>(null);
   const bookingSectionRef = useRef<HTMLDivElement>(null);
-  // Flag : scroll vers la section date demandé par l'user (pas au chargement initial)
-  const scrollToDateRequested = useRef(false);
 
   const scrollTo = (el: HTMLDivElement | null) => {
     if (!el) return;
@@ -61,14 +59,6 @@ export default function BookingPage() {
     { slug },
     { enabled: !!slug }
   );
-
-  // Après chaque rendu : si l'user vient de choisir un pro, on scroll vers la section date
-  // useLayoutEffect fire APRÈS le commit DOM (layout à jour) mais AVANT le paint → pas de timing
-  useLayoutEffect(() => {
-    if (!scrollToDateRequested.current || !dateSectionRef.current) return;
-    scrollToDateRequested.current = false;
-    dateSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
 
   // Scroll vers le date picker au premier rendu si service+pro pré-sélectionnés
   useEffect(() => {
@@ -229,9 +219,8 @@ export default function BookingPage() {
     setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
-  // Quand on sélectionne un pro → ouvre le date picker + scroll vers la date
+  // Quand on sélectionne un pro → ouvre le date picker
   const handleSelectProfessional = (proId: string) => {
-    scrollToDateRequested.current = true;
     setSelectedProfessional(proId);
     setShowDatePicker(true);
     setSelectedDate('');
