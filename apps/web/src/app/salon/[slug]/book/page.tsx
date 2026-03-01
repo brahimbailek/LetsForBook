@@ -47,8 +47,6 @@ export default function BookingPage() {
   const dateSectionRef = useRef<HTMLDivElement>(null);
   const timeSectionRef = useRef<HTMLDivElement>(null);
   const bookingSectionRef = useRef<HTMLDivElement>(null);
-  // true = le scroll vers la date doit s'exécuter (déclenché par l'user, pas par le chargement initial)
-  const scrollToDateRef = useRef(false);
 
   const scrollTo = (el: HTMLDivElement | null) => {
     if (!el) return;
@@ -72,14 +70,6 @@ export default function BookingPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salon]);
-
-  // Scroll vers la section date — uniquement si déclenché par l'user (pas au chargement)
-  useEffect(() => {
-    if (!showDatePicker || !scrollToDateRef.current) return;
-    scrollToDateRef.current = false;
-    const timer = setTimeout(() => scrollTo(dateSectionRef.current), 150);
-    return () => clearTimeout(timer);
-  }, [showDatePicker]);
 
   // Scroll vers les horaires après choix d'une date
   useEffect(() => {
@@ -226,13 +216,13 @@ export default function BookingPage() {
     setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
-  // Quand on sélectionne un pro → ouvre le date picker + autorise le scroll vers la date
+  // Quand on sélectionne un pro → ouvre le date picker + scroll vers la date
   const handleSelectProfessional = (proId: string) => {
-    scrollToDateRef.current = true;
     setSelectedProfessional(proId);
     setShowDatePicker(true);
     setSelectedDate('');
     setSelectedTime(null);
+    setTimeout(() => scrollTo(dateSectionRef.current), 300);
   };
 
   const handleBooking = async () => {
@@ -401,30 +391,6 @@ export default function BookingPage() {
                     Avec qui ?
                   </h2>
                   <div className="grid grid-cols-2 gap-3">
-                    {/* "Peu importe" — uniquement si 2+ pros proposent ce service */}
-                    {availableProsForService.length >= 2 && (
-                      <div
-                        onClick={() => handleSelectProfessional('peu_importe')}
-                        className={`p-4 rounded-xl cursor-pointer transition border-2 ${
-                          isPeuImporte
-                            ? 'border-cream-500 bg-cream-50'
-                            : 'border-transparent bg-sand-50 hover:bg-sand-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-cream-200 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-cream-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="font-medium text-coffee-800">Peu importe</p>
-                            <p className="text-sm text-coffee-500">Premier disponible</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
                     {/* Professionnels individuels */}
                     {availableProsForService.map((pro: any) => (
                       <div
@@ -456,6 +422,30 @@ export default function BookingPage() {
                         </div>
                       </div>
                     ))}
+
+                    {/* "Peu importe" en dernière option — uniquement si 2+ pros proposent ce service */}
+                    {availableProsForService.length >= 2 && (
+                      <div
+                        onClick={() => handleSelectProfessional('peu_importe')}
+                        className={`p-4 rounded-xl cursor-pointer transition border-2 ${
+                          isPeuImporte
+                            ? 'border-cream-500 bg-cream-50'
+                            : 'border-transparent bg-sand-50 hover:bg-sand-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-cream-200 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-cream-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="font-medium text-coffee-800">Peu importe</p>
+                            <p className="text-sm text-coffee-500">Premier disponible</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                 </div>
