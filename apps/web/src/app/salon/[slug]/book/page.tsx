@@ -51,10 +51,16 @@ export default function BookingPage() {
     { enabled: !!slug }
   );
 
-  // Quand le salon charge avec un service+pro pré-sélectionnés → scroll vers la section "Avec qui?"
+  // Quand le salon charge avec params pré-sélectionnés dans l'URL
   useEffect(() => {
     if (!salon || !preselectedService) return;
-    setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    if (preselectedPro) {
+      // Service + pro déjà connus → ouvre le date picker (le scroll est géré par l'effet showDatePicker)
+      setShowDatePicker(true);
+    } else {
+      // Service seul → scroll vers la section "Avec qui?"
+      setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salon]);
 
