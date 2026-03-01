@@ -48,6 +48,8 @@ export default function BookingPage() {
   const dateSectionRef = useRef<HTMLDivElement>(null);
   const timeSectionRef = useRef<HTMLDivElement>(null);
   const bookingSectionRef = useRef<HTMLDivElement>(null);
+  // Timer du scroll vers "Avec qui?" — annulé si l'user clique un pro avant qu'il fire
+  const serviceScrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollTo = (el: HTMLDivElement | null) => {
     if (!el) return;
@@ -216,11 +218,20 @@ export default function BookingPage() {
     setShowDatePicker(false);
     setSelectedDate('');
     setSelectedTime(null);
-    setTimeout(() => proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    if (serviceScrollTimer.current) clearTimeout(serviceScrollTimer.current);
+    serviceScrollTimer.current = setTimeout(() => {
+      proSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      serviceScrollTimer.current = null;
+    }, 100);
   };
 
   // Quand on sélectionne un pro → ouvre le date picker
+  // On annule aussi le scroll vers "Avec qui?" s'il était encore en attente
   const handleSelectProfessional = (proId: string) => {
+    if (serviceScrollTimer.current) {
+      clearTimeout(serviceScrollTimer.current);
+      serviceScrollTimer.current = null;
+    }
     setSelectedProfessional(proId);
     setShowDatePicker(true);
     setSelectedDate('');
