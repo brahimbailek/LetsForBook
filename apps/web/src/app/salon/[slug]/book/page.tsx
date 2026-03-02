@@ -228,7 +228,7 @@ export default function BookingPage() {
     }, 100);
   };
 
-  // Quand on sélectionne un pro → ouvre le date picker
+  // Quand on sélectionne un pro → ouvre le date picker + scroll vers la section date
   // On annule aussi le scroll vers "Avec qui?" s'il était encore en attente
   const handleSelectProfessional = (proId: string) => {
     if (serviceScrollTimer.current) {
@@ -239,6 +239,8 @@ export default function BookingPage() {
     setShowDatePicker(true);
     setSelectedDate('');
     setSelectedTime(null);
+    // Scroll vers la section date — setTimeout laisse React updater le DOM d'abord
+    setTimeout(() => scrollTo(dateSectionRef.current), 150);
   };
 
   const handleBooking = async () => {
