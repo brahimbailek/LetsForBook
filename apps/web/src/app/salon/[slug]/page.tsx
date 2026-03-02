@@ -286,7 +286,7 @@ export default function SalonDetailPage() {
                           {prosForService.map((pro: any) => (
                             <div
                               key={pro.id}
-                              onClick={() => router.push(`/salon/${slug}/book?service=${selectedService}&pro=${pro.id}`)}
+                              // onClick={() => router.push(`/salon/${slug}/book?service=${selectedService}&pro=${pro.id}`)}
                               className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 border-2 border-transparent hover:border-cream-400 rounded-xl cursor-pointer transition-all group"
                             >
                               <div className="flex items-center gap-3">
