@@ -62,12 +62,18 @@ export default function BookingPage() {
     { enabled: !!slug }
   );
 
-  // Scroll vers le date picker au premier rendu si service+pro pré-sélectionnés
+  // Ref pour ne faire ce scroll qu'une seule fois
+  const initialScrollDone = useRef(false);
+
+  // Scroll vers le date picker dès que le salon charge — si service+pro pré-sélectionnés
+  // (useEffect([]) ne suffit pas : dateSectionRef.current est null pendant le skeleton)
   useEffect(() => {
-    if (!preselectedService || !preselectedPro) return;
-    scrollTo(dateSectionRef.current);
+    if (!preselectedService || !preselectedPro || !salon || initialScrollDone.current) return;
+    initialScrollDone.current = true;
+    const timer = setTimeout(() => scrollTo(dateSectionRef.current), 300);
+    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [salon]);
 
   // Quand le salon charge sans pro pré-sélectionné → scroll vers les pros
   useEffect(() => {
