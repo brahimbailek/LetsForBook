@@ -62,18 +62,15 @@ export default function BookingPage() {
     { enabled: !!slug }
   );
 
-  // Ref pour ne faire ce scroll qu'une seule fois
-  const initialScrollDone = useRef(false);
-
-  // Scroll vers le date picker dès que le salon charge — si service+pro pré-sélectionnés
-  // (useEffect([]) ne suffit pas : dateSectionRef.current est null pendant le skeleton)
+  // Scroll vers le date picker dès que salon?.id est disponible — si service+pro pré-sélectionnés
+  // Écoute salon?.id (primitif stable) et non [salon] (objet qui change à chaque refetch)
+  // Pas de ref guard : Strict Mode annule le 1er timer via cleanup, le 2nd fire scroll correctement
   useEffect(() => {
-    if (!preselectedService || !preselectedPro || !salon || initialScrollDone.current) return;
-    initialScrollDone.current = true;
+    if (!preselectedService || !preselectedPro || !salon?.id) return;
     const timer = setTimeout(() => scrollTo(dateSectionRef.current), 300);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [salon]);
+  }, [salon?.id]);
 
   // Quand le salon charge sans pro pré-sélectionné → scroll vers les pros
   useEffect(() => {
