@@ -410,7 +410,7 @@ export default function BookingPage() {
                     {availableProsForService.map((pro: any) => (
                       <div
                         key={pro.id}
-                        onClick={() => handleSelectProfessional(pro.id)}
+                        // onClick={() => handleSelectProfessional(pro.id)}
                         className={`p-4 rounded-xl cursor-pointer transition border-2 ${
                           selectedProfessional === pro.id
                             ? 'border-cream-500 bg-cream-50'
