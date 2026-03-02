@@ -1,14 +1,13 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useRef, useMemo } from 'react';
 import { Button, Card, Header } from '@/components/ui';
 
 export default function SalonDetailPage() {
   const params = useParams();
-  // const router = useRouter();
   const slug = params['slug'] as string;
 
   const { data: salon, isLoading, error } = trpc.salon.getBySlug.useQuery(
