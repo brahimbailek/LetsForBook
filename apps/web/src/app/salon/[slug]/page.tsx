@@ -1,10 +1,11 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useRef, useMemo } from 'react';
 import { Button, Card, Header } from '@/components/ui';
+import { PaymentModal } from '@/components/payment/PaymentModal';
 
 export default function SalonDetailPage() {
   const params = useParams();
@@ -15,6 +16,7 @@ export default function SalonDetailPage() {
     { enabled: !!slug }
   );
 
+  const router = useRouter();
   const { data: user } = trpc.auth.me.useQuery();
   const { data: favoriteStatus } = trpc.salon.isFavorite.useQuery(
     { salonId: salon?.id || '' },
@@ -26,6 +28,30 @@ export default function SalonDetailPage() {
     onSuccess: () => {
       utils.salon.isFavorite.invalidate({ salonId: salon?.id || '' });
       utils.salon.getFavorites.invalidate();
+    },
+  });
+
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [createdAppointmentId, setCreatedAppointmentId] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  const requiresDeposit = salon?.depositRequired && salon?.depositPercentage && salon.depositPercentage > 0;
+
+  const createBookingMutation = trpc.booking.create.useMutation({
+    onSuccess: (data) => {
+      if (requiresDeposit) {
+        setCreatedAppointmentId(data.id);
+        setShowPaymentModal(true);
+      } else {
+        router.push(`/booking/confirmation?id=${data.id}`);
+      }
+    },
+    onError: (err) => {
+      if (err.data?.code === 'UNAUTHORIZED') {
+        router.push(`/login?redirect=/salon/${slug}`);
+        return;
+      }
+      setBookingError(err.message);
     },
   });
 
@@ -495,11 +521,27 @@ export default function SalonDetailPage() {
                           {((salon.services?.find((s: any) => s.id === selectedService) as any)?.price / 100).toFixed(2)} €
                         </span>
                       </div>
-                      <Link href={`/salon/${slug}/book?service=${selectedService}&pro=${selectedPro}&date=${selectedDate.toISOString().split('T')[0]}&time=${selectedTime}`}>
-                        <Button fullWidth className="py-3 text-base">
-                          Confirmer le rendez-vous
-                        </Button>
-                      </Link>
+                      {bookingError && (
+                        <p className="text-red-500 text-sm mb-2">{bookingError}</p>
+                      )}
+                      <Button
+                        fullWidth
+                        className="py-3 text-base"
+                        disabled={createBookingMutation.isPending}
+                        onClick={() => {
+                          setBookingError(null);
+                          const dateStr = selectedDate.toISOString().split('T')[0];
+                          const startTime = new Date(`${dateStr}T${selectedTime}:00`);
+                          createBookingMutation.mutate({
+                            salonId: salon.id,
+                            serviceIds: [selectedService!],
+                            professionalId: selectedPro === 'peu_importe' ? undefined : selectedPro!,
+                            startTime,
+                          });
+                        }}
+                      >
+                        {createBookingMutation.isPending ? 'Réservation en cours...' : 'Confirmer le rendez-vous'}
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -663,6 +705,24 @@ export default function SalonDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {createdAppointmentId && selectedService && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          appointmentId={createdAppointmentId}
+          salonName={salon.name}
+          services={(() => {
+            const svc = salon.services?.find((s: any) => s.id === selectedService) as any;
+            return svc ? [{ name: svc.name, price: svc.price, duration: svc.durationMinutes }] : [];
+          })()}
+          depositPercentage={salon.depositPercentage || 100}
+          onPaymentSuccess={() => {
+            router.push(`/booking/confirmation?id=${createdAppointmentId}`);
+          }}
+        />
+      )}
     </div>
   );
 }
