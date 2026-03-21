@@ -38,6 +38,7 @@ export default function SalonDetailPage() {
   const servicesSectionRef = useRef<HTMLDivElement>(null);
   const confirmProRef = useRef<HTMLDivElement>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const confirmBookingRef = useRef<HTMLDivElement>(null);
 
   const handleSelectService = (serviceId: string) => {
     if (selectedService === serviceId) {
@@ -457,7 +458,7 @@ export default function SalonDetailPage() {
                       {timeSlots.map((time) => (
                         <button
                           key={time}
-                          onClick={() => setSelectedTime(time)}
+                          onClick={() => { setSelectedTime(time); setTimeout(() => confirmBookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100); }}
                           className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all border-2 ${
                             selectedTime === time
                               ? 'border-cream-500 bg-cream-50 text-cream-700'
@@ -472,7 +473,7 @@ export default function SalonDetailPage() {
 
                   {/* Confirm booking button */}
                   {selectedTime && (
-                    <div className="mt-6 pt-4 border-t border-sand-200">
+                    <div ref={confirmBookingRef} className="mt-6 pt-4 border-t border-sand-200">
                       <div className="flex items-center justify-between mb-4">
                         <div className="text-sm text-coffee-600">
                           <p className="font-medium text-coffee-800">
