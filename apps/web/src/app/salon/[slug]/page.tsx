@@ -30,17 +30,69 @@ export default function SalonDetailPage() {
   });
 
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [selectedPro, setSelectedPro] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const prosSectionRef = useRef<HTMLDivElement>(null);
   const servicesSectionRef = useRef<HTMLDivElement>(null);
+  const confirmProRef = useRef<HTMLDivElement>(null);
+  const datePickerRef = useRef<HTMLDivElement>(null);
 
   const handleSelectService = (serviceId: string) => {
     if (selectedService === serviceId) {
       setSelectedService(null);
+      setSelectedPro(null);
+      setShowDatePicker(false);
+      setSelectedTime(null);
       return;
     }
     setSelectedService(serviceId);
+    setSelectedPro(null);
+    setShowDatePicker(false);
+    setSelectedTime(null);
     setTimeout(() => prosSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
+
+  const handleSelectPro = (proId: string) => {
+    if (selectedPro === proId) {
+      setSelectedPro(null);
+      setShowDatePicker(false);
+      setSelectedTime(null);
+      return;
+    }
+    setSelectedPro(proId);
+    setShowDatePicker(false);
+    setSelectedTime(null);
+    setTimeout(() => confirmProRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+  };
+
+  const handleConfirmPro = () => {
+    setShowDatePicker(true);
+    setTimeout(() => datePickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  };
+
+  // Generate dates for the next 14 days
+  const availableDates = useMemo(() => {
+    const dates: Date[] = [];
+    const today = new Date();
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      dates.push(d);
+    }
+    return dates;
+  }, []);
+
+  // Generate time slots (placeholder — later replaced by real availability)
+  const timeSlots = useMemo(() => {
+    const slots: string[] = [];
+    for (let h = 9; h <= 18; h++) {
+      slots.push(`${h.toString().padStart(2, '0')}:00`);
+      if (h < 18) slots.push(`${h.toString().padStart(2, '0')}:30`);
+    }
+    return slots;
+  }, []);
 
   // Grouper les services du salon par catégorie (source de vérité = salon.services dans getBySlug)
   const servicesByCategory = useMemo(() => {
@@ -285,8 +337,12 @@ export default function SalonDetailPage() {
                           {prosForService.map((pro: any) => (
                             <div
                               key={pro.id}
-                              // onClick={() => router.push(`/salon/${slug}/book?service=${selectedService}&pro=${pro.id}`)}
-                              className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 border-2 border-transparent hover:border-cream-400 rounded-xl cursor-pointer transition-all group"
+                              onClick={() => handleSelectPro(pro.id)}
+                              className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all group border-2 ${
+                                selectedPro === pro.id
+                                  ? 'border-cream-500 bg-cream-50'
+                                  : 'border-transparent bg-sand-50 hover:bg-cream-50 hover:border-cream-400'
+                              }`}
                             >
                               <div className="flex items-center gap-3">
                                 {pro.user.avatar ? (
@@ -314,8 +370,12 @@ export default function SalonDetailPage() {
                           ))}
                           {prosForService.length >= 2 && (
                             <div
-                              // onClick={() => router.push(`/salon/${slug}/book?service=${selectedService}&pro=peu_importe`)}
-                              className="flex items-center justify-between p-4 bg-sand-50 hover:bg-cream-50 border-2 border-transparent hover:border-cream-400 rounded-xl cursor-pointer transition-all group"
+                              onClick={() => handleSelectPro('peu_importe')}
+                              className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all group border-2 ${
+                                selectedPro === 'peu_importe'
+                                  ? 'border-cream-500 bg-cream-50'
+                                  : 'border-transparent bg-sand-50 hover:bg-cream-50 hover:border-cream-400'
+                              }`}
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded-full bg-sand-200 flex items-center justify-center shrink-0">
@@ -340,6 +400,110 @@ export default function SalonDetailPage() {
                 </Card>
               );
             })()}
+
+            {/* Bouton confirmation pro */}
+            {selectedService && selectedPro && !showDatePicker && (
+              <div ref={confirmProRef} className="flex justify-center">
+                <Button
+                  onClick={handleConfirmPro}
+                  className="px-8 py-3 text-base shadow-lg"
+                >
+                  Choisir un créneau
+                </Button>
+              </div>
+            )}
+
+            {/* Section choix date & heure */}
+            {showDatePicker && (
+              <Card>
+                <div ref={datePickerRef}>
+                  <h2 className="text-xl font-semibold text-coffee-800 mb-2">Quand ?</h2>
+                  <p className="text-sm text-coffee-500 mb-6">Choisissez la date et l'heure de votre rendez-vous</p>
+
+                  {/* Date selector */}
+                  <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+                    {availableDates.map((date) => {
+                      const isSelected = selectedDate.toDateString() === date.toDateString();
+                      const isToday = new Date().toDateString() === date.toDateString();
+                      const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short' });
+                      const dayNum = date.getDate();
+                      const monthName = date.toLocaleDateString('fr-FR', { month: 'short' });
+
+                      return (
+                        <button
+                          key={date.toISOString()}
+                          onClick={() => { setSelectedDate(date); setSelectedTime(null); }}
+                          className={`flex flex-col items-center min-w-[72px] px-3 py-3 rounded-xl transition-all border-2 ${
+                            isSelected
+                              ? 'border-cream-500 bg-cream-50 text-cream-700'
+                              : 'border-transparent bg-sand-50 hover:bg-sand-100 text-coffee-600'
+                          }`}
+                        >
+                          <span className="text-xs font-medium uppercase">{dayName}</span>
+                          <span className="text-xl font-bold">{dayNum}</span>
+                          <span className="text-xs">{monthName}</span>
+                          {isToday && <span className="text-[10px] text-cream-600 font-medium mt-0.5">Auj.</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Time slots */}
+                  <div className="mt-6">
+                    <h3 className="text-sm font-medium text-coffee-700 mb-3">
+                      Créneaux du {selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </h3>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                      {timeSlots.map((time) => (
+                        <button
+                          key={time}
+                          onClick={() => setSelectedTime(time)}
+                          className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all border-2 ${
+                            selectedTime === time
+                              ? 'border-cream-500 bg-cream-50 text-cream-700'
+                              : 'border-transparent bg-sand-50 hover:bg-sand-100 text-coffee-600'
+                          }`}
+                        >
+                          {time}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Confirm booking button */}
+                  {selectedTime && (
+                    <div className="mt-6 pt-4 border-t border-sand-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="text-sm text-coffee-600">
+                          <p className="font-medium text-coffee-800">
+                            {selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {selectedTime}
+                          </p>
+                          <p>
+                            {salon.services?.find((s: any) => s.id === selectedService)?.name}
+                            {' '}&middot;{' '}
+                            {selectedPro === 'peu_importe'
+                              ? 'Premier disponible'
+                              : (() => {
+                                  const pro = salon.professionals?.find((p: any) => p.id === selectedPro);
+                                  return pro ? `${pro.user.firstName} ${pro.user.lastName}` : '';
+                                })()
+                            }
+                          </p>
+                        </div>
+                        <span className="font-semibold text-cream-700">
+                          {((salon.services?.find((s: any) => s.id === selectedService) as any)?.price / 100).toFixed(2)} €
+                        </span>
+                      </div>
+                      <Link href={`/salon/${slug}/book?service=${selectedService}&pro=${selectedPro}&date=${selectedDate.toISOString().split('T')[0]}&time=${selectedTime}`}>
+                        <Button fullWidth className="py-3 text-base">
+                          Confirmer le rendez-vous
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
 
             {/* Notre équipe — visible uniquement si aucun service sélectionné */}
             {!selectedService && salon.professionals && salon.professionals.length > 0 && (
