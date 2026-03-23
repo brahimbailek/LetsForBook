@@ -228,7 +228,7 @@ export default function ProfilePage() {
                              booking.status === 'PENDING' ? 'En attente' : booking.status}
                           </span>
                           <p className="font-semibold text-cream-700 mt-2">
-                            {booking.services.reduce((sum, s) => sum + s.price, 0).toFixed(2)} €
+                            {(booking.services.reduce((sum, s) => sum + s.price, 0) / 100).toFixed(2)} €
                           </p>
                         </div>
                       </div>

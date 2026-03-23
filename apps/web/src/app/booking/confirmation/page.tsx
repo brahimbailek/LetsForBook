@@ -87,7 +87,7 @@ function BookingConfirmationContent() {
                 {booking.services.map(s => s.serviceName).join(', ')}
               </p>
               <p className="text-sm text-coffee-600">
-                {booking.services.reduce((sum, s) => sum + s.duration, 0)} min - {booking.services.reduce((sum, s) => sum + s.price, 0).toFixed(2)} €
+                {booking.services.reduce((sum, s) => sum + s.duration, 0)} min - {(booking.services.reduce((sum, s) => sum + s.price, 0) / 100).toFixed(2)} €
               </p>
             </div>
           </div>
