@@ -1,15 +1,24 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Button, Card, Header } from '@/components/ui';
 import { PaymentModal } from '@/components/payment/PaymentModal';
 
 export default function SalonDetailPage() {
   const params = useParams();
   const slug = params['slug'] as string;
+  const searchParams = useSearchParams();
+  const pendingBooking = useMemo(() => {
+    const service = searchParams.get('book_service');
+    const pro = searchParams.get('book_pro');
+    const date = searchParams.get('book_date');
+    const time = searchParams.get('book_time');
+    if (service && pro && date && time) return { service, pro, date, time };
+    return null;
+  }, [searchParams]);
 
   const { data: salon, isLoading, error } = trpc.salon.getBySlug.useQuery(
     { slug },
@@ -48,18 +57,35 @@ export default function SalonDetailPage() {
     },
     onError: (err) => {
       if (err.data?.code === 'UNAUTHORIZED') {
-        router.push(`/login?redirect=/salon/${slug}`);
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        const callbackUrl = `/salon/${slug}?book_service=${selectedService}&book_pro=${selectedPro}&book_date=${dateStr}&book_time=${selectedTime}`;
+        router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
         return;
       }
       setBookingError(err.message);
     },
   });
 
-  const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [selectedPro, setSelectedPro] = useState<string | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<string | null>(pendingBooking?.service ?? null);
+  const [selectedPro, setSelectedPro] = useState<string | null>(pendingBooking?.pro ?? null);
+  const [showDatePicker, setShowDatePicker] = useState(!!pendingBooking);
+  const [selectedDate, setSelectedDate] = useState<Date>(pendingBooking?.date ? new Date(pendingBooking.date + 'T00:00:00') : new Date());
+  const [selectedTime, setSelectedTime] = useState<string | null>(pendingBooking?.time ?? null);
+
+  // Auto-create booking after login redirect
+  const [autoBookingTriggered, setAutoBookingTriggered] = useState(false);
+  useEffect(() => {
+    if (pendingBooking && user && salon && !autoBookingTriggered && !createBookingMutation.isPending) {
+      setAutoBookingTriggered(true);
+      const startTime = new Date(`${pendingBooking.date}T${pendingBooking.time}:00`);
+      createBookingMutation.mutate({
+        salonId: salon.id,
+        serviceIds: [pendingBooking.service],
+        professionalId: pendingBooking.pro === 'peu_importe' ? undefined : pendingBooking.pro,
+        startTime,
+      });
+    }
+  }, [pendingBooking, user, salon]);
   const prosSectionRef = useRef<HTMLDivElement>(null);
   const servicesSectionRef = useRef<HTMLDivElement>(null);
   const confirmProRef = useRef<HTMLDivElement>(null);
