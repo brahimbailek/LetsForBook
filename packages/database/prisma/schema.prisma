@@ -230,6 +230,7 @@ model Salon {
   // Status
   verified    Boolean  @default(false)
   active      Boolean  @default(true)
+  published   Boolean  @default(false) // Visible publiquement uniquement après abonnement
 
   // Relationships
   professionals ProfessionalProfile[]

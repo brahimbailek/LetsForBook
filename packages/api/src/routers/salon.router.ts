@@ -37,6 +37,7 @@ export const salonRouter = router({
       const salons = await ctx.prisma.salon.findMany({
         where: {
           active: true,
+          published: true,
           name: { contains: query, mode: 'insensitive' },
         },
         select: {
@@ -80,6 +81,7 @@ export const salonRouter = router({
       const salons = await ctx.prisma.salon.findMany({
         where: {
           active: true,
+          published: true,
           city: { contains: query, mode: 'insensitive' },
         },
         select: {
@@ -111,6 +113,7 @@ export const salonRouter = router({
       const salons = await ctx.prisma.salon.findMany({
         where: {
           active: true,
+          published: true,
           ...(city ? { city } : {}),
         },
         take: limit,
@@ -156,6 +159,7 @@ export const salonRouter = router({
 
       const where: any = {
         active: true,
+        published: true,
       };
 
       // Text search - also search in services
@@ -463,6 +467,19 @@ export const salonRouter = router({
         });
       }
 
+      // Si le salon n'est pas publié, seuls le owner et ses pros peuvent y accéder
+      if (!salon.published) {
+        const userId = ctx.session?.user?.id;
+        const isOwner = userId && salon.ownerId === userId;
+        const isPro = userId && salon.professionals?.some((p) => p.user?.id === userId);
+        if (!isOwner && !isPro) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Salon not found',
+          });
+        }
+      }
+
       return salon;
     }),
 
@@ -486,6 +503,7 @@ export const salonRouter = router({
           ...input,
           slug,
           ownerId: ctx.user.id,
+          published: false,
         },
       });
 

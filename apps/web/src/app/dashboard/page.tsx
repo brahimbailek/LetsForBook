@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { Button, Card, Badge, Spinner } from '@/components/ui';
-import { AppointmentsList, SalonForm, ServiceForm, PrestationsManager } from '@/components/dashboard';
+import { AppointmentsList, SalonForm, ServiceForm, PrestationsManager, TeamManager } from '@/components/dashboard';
 
-type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'my-agenda' | 'my-services' | 'my-availability';
+type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'payments' | 'my-agenda' | 'my-services' | 'my-availability' | 'my-profile';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -111,6 +111,7 @@ export default function DashboardPage() {
         { id: 'my-agenda', label: 'Mon agenda', icon: '📅' },
         { id: 'my-services', label: 'Mes prestations', icon: '✂️' },
         { id: 'my-availability', label: 'Mes disponibilités', icon: '🕐' },
+        { id: 'my-profile', label: 'Mon profil', icon: '👤', separator: true },
       ]
     : [
         { id: 'overview', label: 'Vue d\'ensemble', icon: '📊' },
@@ -118,8 +119,10 @@ export default function DashboardPage() {
         { id: 'salons', label: 'Mes établissements', icon: '🏪' },
         { id: 'services', label: 'Prestations', icon: '✂️' },
         { id: 'team', label: 'Équipe', icon: '👥' },
+        { id: 'payments', label: 'Revenus', icon: '💰' },
         { id: 'my-agenda', label: 'Mon agenda', icon: '📅', separator: true },
         { id: 'my-availability', label: 'Mes disponibilités', icon: '🕐' },
+        { id: 'my-profile', label: 'Mon profil', icon: '👤' },
       ];
 
   const roleLabel = isSalonOwner ? 'Propriétaire' : 'Professionnel';
@@ -314,6 +317,9 @@ export default function DashboardPage() {
                           <Badge variant={salon.active ? 'success' : 'error'}>
                             {salon.active ? 'Actif' : 'Inactif'}
                           </Badge>
+                          {!(salon as any).published && (
+                            <Badge variant="warning">Non publié</Badge>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -457,9 +463,16 @@ export default function DashboardPage() {
                               <h3 className="text-lg font-semibold text-coffee-800">{salon.name}</h3>
                               <p className="text-sm text-coffee-500">{salon.city}</p>
                             </div>
-                            <Badge variant={salon.active ? 'success' : 'error'}>
-                              {salon.active ? 'Actif' : 'Inactif'}
-                            </Badge>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge variant={salon.active ? 'success' : 'error'}>
+                                {salon.active ? 'Actif' : 'Inactif'}
+                              </Badge>
+                              {!(salon as any).published && (
+                                <Badge variant="warning" size="sm">
+                                  Non publié
+                                </Badge>
+                              )}
+                            </div>
                           </div>
 
                           <div className="mt-2">
@@ -614,23 +627,12 @@ export default function DashboardPage() {
           {/* ===================== */}
           {activeTab === 'team' && isSalonOwner && (
             <div>
-              <div className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold text-coffee-800">Équipe</h1>
-                <Button>+ Inviter un collaborateur</Button>
-              </div>
+              <h1 className="text-3xl font-bold text-coffee-800 mb-8">Équipe</h1>
 
               {mySalons && mySalons.length > 0 ? (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {mySalons.map((salon) => (
-                    <Card key={salon.id}>
-                      <h2 className="text-lg font-semibold text-coffee-800 mb-4">{salon.name}</h2>
-                      <p className="text-coffee-500">
-                        {salon._count?.professionals || 0} professionnel(s)
-                      </p>
-                      <div className="mt-4">
-                        <Button variant="outline" size="sm">Gérer l'équipe</Button>
-                      </div>
-                    </Card>
+                    <TeamManager key={salon.id} salonId={salon.id} salonName={salon.name} />
                   ))}
                 </div>
               ) : (
@@ -662,6 +664,20 @@ export default function DashboardPage() {
                 readOnly={isProfessional}
               />
             </div>
+          )}
+
+          {/* =================== */}
+          {/* MON PROFIL - Both   */}
+          {/* =================== */}
+          {activeTab === 'my-profile' && (
+            <ProfileSection user={user} />
+          )}
+
+          {/* ========================== */}
+          {/* REVENUS - SALON_OWNER      */}
+          {/* ========================== */}
+          {activeTab === 'payments' && isSalonOwner && mySalons && (
+            <PaymentsSection salons={mySalons} />
           )}
 
         </main>
@@ -1021,6 +1037,377 @@ function AvailabilityManager({
           <p className="text-coffee-500 text-center py-4">
             Aucune exception programmée
           </p>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+// ==========================================
+// ProfileSection — Mon profil (both roles)
+// ==========================================
+function ProfileSection({ user }: { user: any }) {
+  const utils = trpc.useUtils();
+  const [profileForm, setProfileForm] = useState({
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    phone: user.phone || '',
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [profileSuccess, setProfileSuccess] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const updateProfileMutation = trpc.auth.updateProfile.useMutation({
+    onSuccess: () => {
+      utils.auth.me.invalidate();
+      setProfileSuccess(true);
+      setTimeout(() => setProfileSuccess(false), 3000);
+    },
+  });
+
+  const updatePasswordMutation = trpc.auth.updatePassword.useMutation({
+    onSuccess: () => {
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordSuccess(true);
+      setPasswordError(null);
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    },
+    onError: (err) => {
+      setPasswordError(err.message);
+    },
+  });
+
+  const handleUpdateProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateProfileMutation.mutate({
+      firstName: profileForm.firstName,
+      lastName: profileForm.lastName,
+      phone: profileForm.phone || undefined,
+    });
+  };
+
+  const handleUpdatePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('Les mots de passe ne correspondent pas.');
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError('Le mot de passe doit contenir au moins 8 caractères.');
+      return;
+    }
+    updatePasswordMutation.mutate({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+    });
+  };
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold text-coffee-800 mb-8">Mon profil</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Profile Info */}
+        <Card>
+          <h2 className="text-xl font-semibold text-coffee-800 mb-6">Informations personnelles</h2>
+          <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-coffee-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={user.email}
+                disabled
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm bg-sand-50 text-coffee-500"
+              />
+              <p className="text-xs text-coffee-400 mt-1">L'email ne peut pas être modifié.</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-coffee-700 mb-1">Prénom</label>
+                <input
+                  type="text"
+                  value={profileForm.firstName}
+                  onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cream-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-coffee-700 mb-1">Nom</label>
+                <input
+                  type="text"
+                  value={profileForm.lastName}
+                  onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                  className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cream-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-coffee-700 mb-1">Téléphone</label>
+              <input
+                type="tel"
+                value={profileForm.phone}
+                onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cream-500"
+                placeholder="+33 6 12 34 56 78"
+              />
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button type="submit" disabled={updateProfileMutation.isPending}>
+                {updateProfileMutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              </Button>
+              {profileSuccess && (
+                <span className="text-sm text-green-600 font-medium">Profil mis à jour !</span>
+              )}
+            </div>
+          </form>
+        </Card>
+
+        {/* Password */}
+        <Card>
+          <h2 className="text-xl font-semibold text-coffee-800 mb-6">Changer le mot de passe</h2>
+          <form onSubmit={handleUpdatePassword} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-coffee-700 mb-1">Mot de passe actuel</label>
+              <input
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cream-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-coffee-700 mb-1">Nouveau mot de passe</label>
+              <input
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cream-500"
+                required
+                minLength={8}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-coffee-700 mb-1">Confirmer le mot de passe</label>
+              <input
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cream-500"
+                required
+                minLength={8}
+              />
+            </div>
+
+            {passwordError && (
+              <p className="text-sm text-red-500">{passwordError}</p>
+            )}
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button type="submit" disabled={updatePasswordMutation.isPending}>
+                {updatePasswordMutation.isPending ? 'Modification...' : 'Modifier le mot de passe'}
+              </Button>
+              {passwordSuccess && (
+                <span className="text-sm text-green-600 font-medium">Mot de passe modifié !</span>
+              )}
+            </div>
+          </form>
+        </Card>
+      </div>
+
+      {/* Account Info */}
+      <Card className="mt-8">
+        <h2 className="text-xl font-semibold text-coffee-800 mb-4">Informations du compte</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+          <div>
+            <p className="text-coffee-500">Rôle</p>
+            <p className="font-medium text-coffee-800">
+              {user.role === 'SALON_OWNER' ? 'Propriétaire' : user.role === 'PROFESSIONAL' ? 'Professionnel' : user.role}
+            </p>
+          </div>
+          <div>
+            <p className="text-coffee-500">Inscrit le</p>
+            <p className="font-medium text-coffee-800">
+              {new Date(user.createdAt).toLocaleDateString('fr-FR')}
+            </p>
+          </div>
+          <div>
+            <p className="text-coffee-500">Email vérifié</p>
+            <p className="font-medium text-coffee-800">
+              {user.emailVerified ? 'Oui' : 'Non'}
+            </p>
+          </div>
+          <div>
+            <p className="text-coffee-500">ID</p>
+            <p className="font-medium text-coffee-800 font-mono text-xs">
+              {user.id.slice(-8).toUpperCase()}
+            </p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ==============================================
+// PaymentsSection — Revenus (SALON_OWNER only)
+// ==============================================
+function PaymentsSection({ salons }: { salons: any[] }) {
+  const [selectedSalonId, setSelectedSalonId] = useState(salons[0]?.id || '');
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    return { start, end };
+  });
+
+  const { data: stats, isLoading: statsLoading } = trpc.payment.getSalonPaymentStats.useQuery(
+    { salonId: selectedSalonId, startDate: dateRange.start, endDate: dateRange.end },
+    { enabled: !!selectedSalonId }
+  );
+
+  const { data: payments, isLoading: paymentsLoading } = trpc.payment.getSalonPayments.useQuery(
+    { salonId: selectedSalonId, limit: 20 },
+    { enabled: !!selectedSalonId }
+  );
+
+  const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+    PENDING: { label: 'En attente', color: 'bg-yellow-100 text-yellow-700' },
+    PAID: { label: 'Payé', color: 'bg-green-100 text-green-700' },
+    REFUNDED: { label: 'Remboursé', color: 'bg-blue-100 text-blue-700' },
+    FAILED: { label: 'Échoué', color: 'bg-red-100 text-red-700' },
+    CANCELLED: { label: 'Annulé', color: 'bg-gray-100 text-gray-700' },
+  };
+
+  const setMonth = (offset: number) => {
+    const now = new Date();
+    const month = now.getMonth() + offset;
+    const start = new Date(now.getFullYear(), month, 1);
+    const end = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59);
+    setDateRange({ start, end });
+  };
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold text-coffee-800 mb-8">Revenus</h1>
+
+      {/* Salon Selector */}
+      {salons.length > 1 && (
+        <div className="mb-6">
+          <div className="flex gap-2">
+            {salons.map((salon) => (
+              <Button
+                key={salon.id}
+                variant={selectedSalonId === salon.id ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedSalonId(salon.id)}
+              >
+                {salon.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Period Selector */}
+      <div className="flex gap-2 mb-6">
+        <Button variant="outline" size="sm" onClick={() => setMonth(-1)}>Mois dernier</Button>
+        <Button variant="primary" size="sm" onClick={() => setMonth(0)}>Ce mois</Button>
+        <span className="flex items-center text-sm text-coffee-600 ml-2">
+          {dateRange.start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+        </span>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+          <p className="text-green-100">Total encaissé</p>
+          <p className="text-3xl font-bold">
+            {statsLoading ? '...' : `${((stats as any)?.totalPaid / 100 || 0).toFixed(2)} €`}
+          </p>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
+          <p className="text-yellow-100">En attente</p>
+          <p className="text-3xl font-bold">
+            {statsLoading ? '...' : `${((stats as any)?.totalPending / 100 || 0).toFixed(2)} €`}
+          </p>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          <p className="text-blue-100">Remboursé</p>
+          <p className="text-3xl font-bold">
+            {statsLoading ? '...' : `${((stats as any)?.totalRefunded / 100 || 0).toFixed(2)} €`}
+          </p>
+        </Card>
+      </div>
+
+      {/* Payments List */}
+      <Card>
+        <h2 className="text-xl font-semibold text-coffee-800 mb-4">Derniers paiements</h2>
+
+        {paymentsLoading ? (
+          <div className="flex justify-center py-8">
+            <Spinner size="lg" />
+          </div>
+        ) : (payments as any)?.payments?.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-sand-200">
+                  <th className="text-left py-3 px-2 text-coffee-500 font-medium">Date</th>
+                  <th className="text-left py-3 px-2 text-coffee-500 font-medium">Client</th>
+                  <th className="text-left py-3 px-2 text-coffee-500 font-medium">Type</th>
+                  <th className="text-left py-3 px-2 text-coffee-500 font-medium">Statut</th>
+                  <th className="text-right py-3 px-2 text-coffee-500 font-medium">Montant</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(payments as any).payments.map((payment: any) => {
+                  const statusInfo = STATUS_LABELS[payment.status] || { label: payment.status, color: 'bg-gray-100 text-gray-700' };
+                  return (
+                    <tr key={payment.id} className="border-b border-sand-100 hover:bg-sand-50">
+                      <td className="py-3 px-2 text-coffee-800">
+                        {new Date(payment.createdAt).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="py-3 px-2 text-coffee-800">
+                        {payment.appointment?.client?.user?.firstName || '-'}{' '}
+                        {payment.appointment?.client?.user?.lastName || ''}
+                      </td>
+                      <td className="py-3 px-2">
+                        <span className="text-xs bg-cream-100 text-cream-700 px-2 py-0.5 rounded-full">
+                          {payment.type === 'DEPOSIT' ? 'Acompte' : 'Complet'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-right font-semibold text-coffee-800">
+                        {(payment.amount / 100).toFixed(2)} €
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-coffee-500 text-center py-8">Aucun paiement pour cette période.</p>
         )}
       </Card>
     </div>

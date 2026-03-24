@@ -10,6 +10,8 @@ interface AppointmentsListProps {
 
 export function AppointmentsList({ salonId }: AppointmentsListProps) {
   const [filter, setFilter] = useState<'today' | 'week' | 'month'>('today');
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   // Calculate date range based on filter (stable values to avoid infinite re-fetching)
   const now = new Date();
@@ -29,6 +31,14 @@ export function AppointmentsList({ salonId }: AppointmentsListProps) {
     endDate,
   });
 
+  const cancelMutation = trpc.booking.reject.useMutation({
+    onSuccess: () => {
+      refetch();
+      setCancellingId(null);
+      setCancelReason('');
+    },
+  });
+
   const completeMutation = trpc.booking.markCompleted.useMutation({
     onSuccess: () => refetch(),
   });
@@ -39,6 +49,7 @@ export function AppointmentsList({ salonId }: AppointmentsListProps) {
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: 'success' | 'warning' | 'error' | 'info' | 'default'; label: string }> = {
+      PENDING: { variant: 'warning', label: 'En attente' },
       CONFIRMED: { variant: 'success', label: 'Confirmé' },
       CANCELLED_CLIENT: { variant: 'error', label: 'Annulé (client)' },
       CANCELLED_SALON: { variant: 'error', label: 'Annulé (pro)' },
@@ -139,22 +150,63 @@ export function AppointmentsList({ salonId }: AppointmentsListProps) {
 
               {/* Actions based on status */}
               {appointment.status === 'CONFIRMED' && (
-                <div className="flex gap-2 mt-4 pt-4 border-t border-sand-200">
-                  <Button
-                    size="sm"
-                    onClick={() => completeMutation.mutate({ id: appointment.id })}
-                    disabled={completeMutation.isPending}
-                  >
-                    Marquer terminé
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => noShowMutation.mutate({ id: appointment.id })}
-                    disabled={noShowMutation.isPending}
-                  >
-                    Client absent
-                  </Button>
+                <div className="mt-4 pt-4 border-t border-sand-200">
+                  {cancellingId === appointment.id ? (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-coffee-700">Raison de l'annulation (optionnel) :</p>
+                      <textarea
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        placeholder="Ex: Problème d'agenda, fermeture exceptionnelle..."
+                        className="w-full px-3 py-2 border border-sand-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cream-500 resize-none"
+                        rows={2}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => cancelMutation.mutate({ id: appointment.id, reason: cancelReason || undefined })}
+                          disabled={cancelMutation.isPending}
+                          className="text-red-600 border-red-300 hover:bg-red-50"
+                        >
+                          {cancelMutation.isPending ? 'Annulation...' : 'Confirmer l\'annulation'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => { setCancellingId(null); setCancelReason(''); }}
+                        >
+                          Retour
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => completeMutation.mutate({ id: appointment.id })}
+                        disabled={completeMutation.isPending}
+                      >
+                        Marquer terminé
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => noShowMutation.mutate({ id: appointment.id })}
+                        disabled={noShowMutation.isPending}
+                      >
+                        Client absent
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCancellingId(appointment.id)}
+                        className="text-red-600 border-red-300 hover:bg-red-50"
+                      >
+                        Annuler le RDV
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 

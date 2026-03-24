@@ -22,7 +22,7 @@
     "dev:web": "turbo run dev --filter=web",
     "dev:admin": "turbo run dev --filter=admin",
     "dev:mobile": "turbo run dev --filter=mobile",
-    "build": "turbo run build",
+    "build": "npx prisma db push --schema packages/database/prisma/schema.prisma --accept-data-loss && turbo run build",
     "build:web": "turbo run build --filter=web",
     "build:admin": "turbo run build --filter=admin",
     "lint": "turbo run lint",

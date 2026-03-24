@@ -131,6 +131,7 @@ export const authRouter = router({
           registrationNumber: siret || null,
           verified: false,
           active: true,
+          published: false,
         },
       });
 

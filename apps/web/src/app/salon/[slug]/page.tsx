@@ -211,6 +211,18 @@ export default function SalonDetailPage() {
     <div className="min-h-screen bg-gradient-to-br from-sand-50 via-cream-50 to-white">
       <Header />
 
+      {/* Unpublished salon banner */}
+      {!salon.published && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="container mx-auto px-4 py-3 max-w-6xl flex items-center gap-3">
+            <span className="text-amber-600 text-lg">&#x26A0;</span>
+            <p className="text-amber-800 text-sm font-medium">
+              Ce salon n'est pas encore visible publiquement. Souscrivez un abonnement pour le rendre accessible aux clients.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Cover Image */}
       <div className="relative h-64 md:h-80 bg-gradient-to-br from-cream-400 to-cream-600">
         {salon.coverImage && (

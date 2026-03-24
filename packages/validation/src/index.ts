@@ -21,3 +21,6 @@ export * from './review.schema';
 
 // Category schemas
 export * from './category.schema';
+
+// Team schemas
+export * from './team.schema';
