@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { router, salonOwnerProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import {
