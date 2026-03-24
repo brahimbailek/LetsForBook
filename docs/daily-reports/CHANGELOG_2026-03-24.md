@@ -17,6 +17,7 @@
 6. [Correction Bug Prix en Centimes](#6-correction-bug-prix-en-centimes)
 7. [Visibilité par Abonnement (Salon Non Publié)](#7-visibilité-par-abonnement-salon-non-publié)
 8. [Résumé des Fichiers](#8-résumé-des-fichiers)
+9. [Corrections Build & Déploiement Railway](#9-corrections-build--déploiement-railway)
 
 ---
 
@@ -311,6 +312,40 @@ Inscription owner → Salon créé avec published: false
 | `packages/api/src/routers/auth.router.ts` | `published: false` à la création du salon lors de l'inscription owner |
 | `apps/web/src/app/salon/[slug]/page.tsx` | Bannière jaune "salon non publié" pour owner/pro |
 | `apps/web/src/app/dashboard/page.tsx` | Badge "Non publié" sur les cartes salon (vue d'ensemble + onglet établissements) |
+
+---
+
+## 9. Corrections Build & Déploiement Railway
+
+### Fix Build TypeScript (`@letsforbook/api`)
+
+**Erreur :** `TS6133: 'z' is declared but its value is never read` dans `team.router.ts`
+
+**Cause :** `import { z } from 'zod'` était importé mais jamais utilisé (les schemas viennent de `@letsforbook/validation`). Le tsconfig a `noUnusedLocals: true` ce qui fait échouer le build.
+
+**Fix :** Suppression de l'import inutilisé dans `packages/api/src/routers/team.router.ts`.
+
+### Dockerfile — Prisma db push automatique
+
+**Problème :** Le champ `published` ajouté au schema Prisma n'était pas appliqué à la BDD. Il n'y a pas de terminal local pour lancer `prisma db push` manuellement.
+
+**Solution :** Ajout d'une étape `prisma db push` dans le Dockerfile, utilisant un build argument `DATABASE_PUBLIC_URL` :
+
+```dockerfile
+ARG DATABASE_PUBLIC_URL
+RUN if [ -n "$DATABASE_PUBLIC_URL" ]; then DATABASE_URL=$DATABASE_PUBLIC_URL npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate; fi
+```
+
+**Config Railway :** Variable `DATABASE_PUBLIC_URL` ajoutée au service Website via une référence vers `${{Postgres.DATABASE_PUBLIC_URL}}`.
+
+**Pourquoi l'URL publique ?** L'URL interne (`postgres.railway.internal`) n'est pas accessible pendant le build Docker. L'URL publique (`nozomi.proxy.rlwy.net:17514`) est accessible depuis n'importe où.
+
+### Fichiers modifiés
+
+| Fichier | Modifications |
+|---------|---------------|
+| `packages/api/src/routers/team.router.ts` | Suppression `import { z } from 'zod'` inutilisé |
+| `Dockerfile` | Ajout étape `prisma db push` avec build arg `DATABASE_PUBLIC_URL` |
 
 ---
 
