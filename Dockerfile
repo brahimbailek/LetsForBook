@@ -17,6 +17,10 @@ RUN npm install
 # Generate Prisma client
 RUN npm run db:generate
 
+# Push schema to database (uses public DB URL passed as build arg)
+ARG DATABASE_PUBLIC_URL
+RUN if [ -n "$DATABASE_PUBLIC_URL" ]; then DATABASE_URL=$DATABASE_PUBLIC_URL npx prisma db push --schema packages/database/prisma/schema.prisma --skip-generate; fi
+
 # Build the Next.js application
 ENV NODE_ENV=production
 RUN npm run build:web
