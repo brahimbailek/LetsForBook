@@ -19,6 +19,7 @@ RUN npm run db:generate
 
 # Build the Next.js application
 ENV NODE_ENV=production
+RUN cd packages/api && npx tsc --noEmit 2>&1 || true
 RUN npm run build:web
 
 # ===========================================
