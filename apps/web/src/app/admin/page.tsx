@@ -180,7 +180,7 @@ export default function AdminPage() {
   };
 
   const handleChangeRole = (userId: string, newRole: string) => {
-    updateUserMutation.mutate({ userId, role: newRole });
+    updateUserMutation.mutate({ userId, role: newRole as 'CLIENT' | 'PROFESSIONAL' | 'SALON_OWNER' | 'ADMIN' });
   };
 
   const handleToggleUserActive = (userId: string, active: boolean) => {
