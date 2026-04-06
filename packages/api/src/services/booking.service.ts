@@ -209,54 +209,59 @@ export class BookingService {
 
     const endTime = addMinutes(startTime, totalDuration);
 
-    // 5. Vérifier que le créneau est encore disponible (protection contre les réservations concurrentes)
-    const isAvailable = await availabilityService.isSlotAvailable(
-      prisma,
-      resolvedProfessionalId,
-      startTime,
-      endTime
-    );
-
-    if (!isAvailable) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message: 'This time slot is no longer available',
-      });
-    }
-
-    // 6. Créer le RDV en base avec statut CONFIRMED et les services associés
-    const appointment = await prisma.appointment.create({
-      data: {
-        clientId: clientProfile.id,
-        professionalId: resolvedProfessionalId,
-        salonId: professional.salonId,
+    // 5 + 6. Vérification atomique + création du RDV dans une transaction interactive.
+    //   Le SELECT FOR UPDATE verrouille les RDV chevauchants pour ce pro,
+    //   empêchant deux réservations concurrentes sur le même créneau.
+    const appointment = await prisma.$transaction(async (tx) => {
+      // 5. Vérifier que le créneau est encore disponible (avec verrou FOR UPDATE)
+      const isAvailable = await availabilityService.isSlotAvailableForUpdate(
+        tx as unknown as PrismaClient,
+        resolvedProfessionalId,
         startTime,
-        endTime,
-        timezone: professional.salon.timezone,
-        status: 'CONFIRMED',
-        clientNotes,
-        services: {
-          create: appointmentServices,
-        },
-      },
-      include: {
-        services: {
-          include: {
-            service: true,
+        endTime
+      );
+
+      if (!isAvailable) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'This time slot is no longer available',
+        });
+      }
+
+      // 6. Créer le RDV en base avec statut CONFIRMED et les services associés
+      return tx.appointment.create({
+        data: {
+          clientId: clientProfile.id,
+          professionalId: resolvedProfessionalId,
+          salonId: professional.salonId,
+          startTime,
+          endTime,
+          timezone: professional.salon.timezone,
+          status: 'CONFIRMED',
+          clientNotes,
+          services: {
+            create: appointmentServices,
           },
         },
-        professional: {
-          include: {
-            user: true,
+        include: {
+          services: {
+            include: {
+              service: true,
+            },
+          },
+          professional: {
+            include: {
+              user: true,
+            },
+          },
+          salon: true,
+          client: {
+            include: {
+              user: true,
+            },
           },
         },
-        salon: true,
-        client: {
-          include: {
-            user: true,
-          },
-        },
-      },
+      });
     });
 
     return appointment;

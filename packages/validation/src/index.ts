@@ -24,3 +24,6 @@ export * from './category.schema';
 
 // Team schemas
 export * from './team.schema';
+
+// Admin schemas
+export * from './admin.schema';

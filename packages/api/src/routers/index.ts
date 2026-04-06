@@ -9,6 +9,7 @@ import { paymentRouter } from './payment.router';
 import { reviewRouter } from './review.router';
 import { notificationRouter } from './notification.router';
 import { teamRouter } from './team.router';
+import { adminRouter } from './admin.router';
 
 /**
  * Main tRPC router combining all sub-routers
@@ -25,6 +26,7 @@ export const appRouter = router({
   review: reviewRouter,
   notification: notificationRouter,
   team: teamRouter,
+  admin: adminRouter,
 });
 
 /**

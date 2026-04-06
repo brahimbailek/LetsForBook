@@ -270,6 +270,35 @@ export class AvailabilityService {
   }
 
   /**
+   * Check if a specific time slot is available WITH row-level locking (FOR UPDATE).
+   * Must be called inside a Prisma interactive transaction ($transaction).
+   * The FOR UPDATE lock prevents two concurrent transactions from both seeing
+   * the slot as available — the second transaction will block until the first commits.
+   *
+   * @param tx - Prisma transaction client (from $transaction callback)
+   */
+  async isSlotAvailableForUpdate(
+    tx: PrismaClient,
+    professionalId: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<boolean> {
+    const conflicting: any[] = await (tx as any).$queryRaw`
+      SELECT id FROM "booking_appointments"
+      WHERE "professionalId" = ${professionalId}
+        AND "status"::"text" IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS')
+        AND (
+          ("startTime" <= ${startTime}::timestamp AND "endTime" > ${startTime}::timestamp)
+          OR ("startTime" < ${endTime}::timestamp AND "endTime" >= ${endTime}::timestamp)
+          OR ("startTime" >= ${startTime}::timestamp AND "endTime" <= ${endTime}::timestamp)
+        )
+      FOR UPDATE
+    `;
+
+    return conflicting.length === 0;
+  }
+
+  /**
    * Get professional availability for a week
    */
   async getProfessionalWeeklyAvailability(
