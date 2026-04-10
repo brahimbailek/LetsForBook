@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getResend } from '../lib/resend';
 import { UserRole } from '@prisma/client';
+import { generateInvitationCode } from '../lib/invitation';
 
 const APP_NAME = 'LetsForBook';
 const APP_URL = process.env['NEXT_PUBLIC_APP_URL'] || 'https://letsforbook.com';
@@ -29,7 +30,7 @@ export const authRouter = router({
       lastName,
       phone,
       role = 'CLIENT',
-      // salonCode, // TODO: Implement invitation system
+      salonCode,
       salonName,
       salonAddress,
       salonCity,
@@ -129,6 +130,7 @@ export const authRouter = router({
           country: 'FR',
           ownerId: user.id,
           registrationNumber: siret || null,
+          invitationCode: generateInvitationCode(),
           verified: false,
           active: true,
           published: false,
@@ -145,7 +147,29 @@ export const authRouter = router({
         },
       });
     }
-    // Note: PROFESSIONAL role without salon will be handled later via invitation system
+    // PROFESSIONAL with invitation code → link to salon
+    if (userRole === 'PROFESSIONAL' && salonCode) {
+      const salon = await ctx.prisma.salon.findUnique({
+        where: { invitationCode: salonCode.toUpperCase().trim() },
+      });
+
+      if (!salon) {
+        // Delete the just-created user to avoid orphans
+        await ctx.prisma.user.delete({ where: { id: user.id } });
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: "Code d'invitation invalide",
+        });
+      }
+
+      await ctx.prisma.professionalProfile.create({
+        data: {
+          userId: user.id,
+          salonId: salon.id,
+          active: true,
+        },
+      });
+    }
 
     return {
       id: user.id,

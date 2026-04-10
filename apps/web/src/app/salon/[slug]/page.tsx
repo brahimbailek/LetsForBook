@@ -338,6 +338,23 @@ export default function SalonDetailPage() {
               </Card>
             )}
 
+            {/* Gallery */}
+            {salon.images && salon.images.length > 0 && (
+              <Card>
+                <h2 className="text-xl font-semibold text-coffee-800 mb-4">Photos</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {salon.images.map((url: string, i: number) => (
+                    <img
+                      key={i}
+                      src={url}
+                      alt={`${salon.name} photo ${i + 1}`}
+                      className="w-full h-48 object-cover rounded-xl hover:opacity-90 transition-opacity cursor-pointer"
+                    />
+                  ))}
+                </div>
+              </Card>
+            )}
+
             {/* Services */}
             <Card>
               <div ref={servicesSectionRef}>

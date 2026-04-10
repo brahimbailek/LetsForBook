@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc/client';
 import { Button, Input, Textarea, Modal, Select, Alert } from '@/components/ui';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 interface SalonFormProps {
   isOpen: boolean;
@@ -18,6 +19,9 @@ interface SalonFormProps {
     email: string | null;
     depositRequired: boolean;
     depositPercentage: number | null;
+    logo: string | null;
+    coverImage: string | null;
+    images: string[];
   };
   onSuccess: () => void;
 }
@@ -35,6 +39,9 @@ export function SalonForm({ isOpen, onClose, salon, onSuccess }: SalonFormProps)
     email: salon?.email || '',
     depositRequired: salon?.depositRequired || false,
     depositPercentage: salon?.depositPercentage || 25,
+    logo: salon?.logo || '',
+    coverImage: salon?.coverImage || '',
+    images: salon?.images || [] as string[],
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +78,9 @@ export function SalonForm({ isOpen, onClose, salon, onSuccess }: SalonFormProps)
       email: '',
       depositRequired: false,
       depositPercentage: 25,
+      logo: '',
+      coverImage: '',
+      images: [],
     });
     setError(null);
   };
@@ -95,6 +105,9 @@ export function SalonForm({ isOpen, onClose, salon, onSuccess }: SalonFormProps)
       email: formData.email,
       depositRequired: formData.depositRequired,
       depositPercentage: formData.depositRequired ? formData.depositPercentage : undefined,
+      logo: formData.logo || undefined,
+      coverImage: formData.coverImage || undefined,
+      images: formData.images.length > 0 ? formData.images : undefined,
     };
 
     if (isEditing && salon) {
@@ -105,6 +118,8 @@ export function SalonForm({ isOpen, onClose, salon, onSuccess }: SalonFormProps)
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  const uploadSalonName = formData.name || salon?.name || 'nouveau-salon';
 
   return (
     <Modal
@@ -135,6 +150,63 @@ export function SalonForm({ isOpen, onClose, salon, onSuccess }: SalonFormProps)
           placeholder="Décrivez votre établissement..."
           rows={3}
         />
+
+        {/* Photos */}
+        <div className="p-4 bg-sand-50 rounded-xl space-y-4">
+          <h3 className="font-semibold text-coffee-800">Photos</h3>
+
+          <div className="grid grid-cols-2 gap-4">
+            <ImageUpload
+              salonName={uploadSalonName}
+              label="Logo"
+              aspectRatio="square"
+              currentImage={formData.logo || null}
+              onUpload={(url) => setFormData({ ...formData, logo: url })}
+              onRemove={() => setFormData({ ...formData, logo: '' })}
+            />
+            <ImageUpload
+              salonName={uploadSalonName}
+              label="Photo de couverture"
+              aspectRatio="16/9"
+              currentImage={formData.coverImage || null}
+              onUpload={(url) => setFormData({ ...formData, coverImage: url })}
+              onRemove={() => setFormData({ ...formData, coverImage: '' })}
+            />
+          </div>
+
+          {/* Gallery */}
+          <div>
+            <label className="block text-sm font-medium text-coffee-700 mb-1.5">
+              Galerie ({formData.images.length}/10)
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {formData.images.map((img, i) => (
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-cream-200">
+                  <img src={img} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newImages = [...formData.images];
+                      newImages.splice(i, 1);
+                      setFormData({ ...formData, images: newImages });
+                    }}
+                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+              {formData.images.length < 10 && (
+                <ImageUpload
+                  salonName={uploadSalonName}
+                  label=""
+                  aspectRatio="square"
+                  onUpload={(url) => setFormData({ ...formData, images: [...formData.images, url] })}
+                />
+              )}
+            </div>
+          </div>
+        </div>
 
         <Input
           label="Adresse *"

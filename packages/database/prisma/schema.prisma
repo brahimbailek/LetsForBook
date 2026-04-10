@@ -214,6 +214,7 @@ model Salon {
   // Business info
   registrationNumber String?
   vatNumber          String?
+  invitationCode     String   @unique @default("")
 
   // Owner
   ownerId     String

@@ -10,6 +10,56 @@ import { AppointmentsList, SalonForm, ServiceForm, PrestationsManager, TeamManag
 
 type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'payments' | 'my-agenda' | 'my-services' | 'my-availability' | 'my-profile';
 
+function InvitationCodeBlock({ salonId }: { salonId: string }) {
+  const [copied, setCopied] = useState(false);
+  const { data, isLoading } = trpc.salon.getInvitationCode.useQuery({ salonId });
+  const regenerateMutation = trpc.salon.regenerateInvitationCode.useMutation({
+    onSuccess: () => {
+      // Force refetch
+      window.location.reload();
+    },
+  });
+
+  const handleCopy = () => {
+    if (data?.invitationCode) {
+      navigator.clipboard.writeText(data.invitationCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  if (isLoading) return null;
+
+  return (
+    <div className="mt-3 p-2.5 bg-cream-50 rounded-lg border border-cream-200">
+      <p className="text-xs text-coffee-500 mb-1">Code d&apos;invitation (pour vos pros)</p>
+      <div className="flex items-center gap-2">
+        <code className="text-sm font-mono font-bold text-coffee-700 tracking-widest">
+          {data?.invitationCode}
+        </code>
+        <button
+          onClick={handleCopy}
+          className="text-xs px-2 py-0.5 rounded bg-cream-200 hover:bg-cream-300 text-coffee-600 transition-colors"
+          title="Copier le code"
+        >
+          {copied ? 'Copié !' : 'Copier'}
+        </button>
+        <button
+          onClick={() => {
+            if (confirm('Régénérer le code ? L\'ancien ne fonctionnera plus.')) {
+              regenerateMutation.mutate({ salonId });
+            }
+          }}
+          className="text-xs px-2 py-0.5 rounded bg-cream-200 hover:bg-cream-300 text-coffee-600 transition-colors"
+          title="Régénérer le code"
+        >
+          {regenerateMutation.isPending ? '...' : 'Régénérer'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [showSalonForm, setShowSalonForm] = useState(false);
@@ -454,8 +504,14 @@ export default function DashboardPage() {
                   {mySalons.map((salon) => (
                     <Card key={salon.id}>
                       <div className="flex items-start gap-4">
-                        <div className="w-16 h-16 bg-cream-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <span className="text-2xl font-bold text-cream-700">{salon.name.charAt(0)}</span>
+                        <div className="w-16 h-16 rounded-xl flex-shrink-0 overflow-hidden">
+                          {(salon as any).logo ? (
+                            <img src={(salon as any).logo} alt={salon.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-cream-200 flex items-center justify-center">
+                              <span className="text-2xl font-bold text-cream-700">{salon.name.charAt(0)}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-start justify-between">
@@ -492,6 +548,9 @@ export default function DashboardPage() {
                             <span>{salon._count?.professionals || 0} pros</span>
                             <span>{salon._count?.reviews || 0} avis</span>
                           </div>
+
+                          <InvitationCodeBlock salonId={salon.id} />
+
                           <div className="flex gap-2 mt-4">
                             <Link href={`/salon/${salon.slug}`}>
                               <Button variant="outline" size="sm">Voir</Button>

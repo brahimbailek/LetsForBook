@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { router, publicProcedure, protectedProcedure, professionalProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure, professionalProcedure, salonOwnerProcedure } from '../trpc';
+import { generateInvitationCode } from '../lib/invitation';
 import { TRPCError } from '@trpc/server';
 import { createSalonSchema, updateSalonSchema, searchSalonsSchema } from '@letsforbook/validation';
 
@@ -503,6 +504,7 @@ export const salonRouter = router({
           ...input,
           slug,
           ownerId: ctx.user.id,
+          invitationCode: generateInvitationCode(),
           published: false,
         },
       });
@@ -723,5 +725,67 @@ export const salonRouter = router({
       });
 
       return { isFavorite: !!favorite };
+    }),
+
+  /**
+   * Get invitation code for a salon
+   * SALON_OWNER ONLY
+   */
+  getInvitationCode: salonOwnerProcedure
+    .input(z.object({ salonId: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      const salon = await ctx.prisma.salon.findUnique({
+        where: { id: input.salonId },
+        select: { ownerId: true, invitationCode: true },
+      });
+
+      if (!salon) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Salon introuvable' });
+      }
+
+      if (salon.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Accès refusé' });
+      }
+
+      // Si le salon n'a pas encore de code (salons existants), en générer un
+      if (!salon.invitationCode) {
+        const code = generateInvitationCode();
+        await ctx.prisma.salon.update({
+          where: { id: input.salonId },
+          data: { invitationCode: code },
+        });
+        return { invitationCode: code };
+      }
+
+      return { invitationCode: salon.invitationCode };
+    }),
+
+  /**
+   * Regenerate invitation code for a salon
+   * SALON_OWNER ONLY
+   */
+  regenerateInvitationCode: salonOwnerProcedure
+    .input(z.object({ salonId: z.string().cuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const salon = await ctx.prisma.salon.findUnique({
+        where: { id: input.salonId },
+        select: { ownerId: true },
+      });
+
+      if (!salon) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Salon introuvable' });
+      }
+
+      if (salon.ownerId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Accès refusé' });
+      }
+
+      const newCode = generateInvitationCode();
+      await ctx.prisma.salon.update({
+        where: { id: input.salonId },
+        data: { invitationCode: newCode },
+      });
+
+      return { invitationCode: newCode };
     }),
 });
