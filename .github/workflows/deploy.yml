@@ -1,4 +1,4 @@
-name: Deploy to OCI
+name: Deploy to OCI Server
 
 on:
   push:
