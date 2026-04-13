@@ -53,8 +53,8 @@ jobs:
             # Générer Prisma
             npm run db:generate
 
-            # Builder l'app
-            npm run build:web
+            # Builder l'app (augmente la mémoire Node.js pour le build)
+            NODE_OPTIONS="--max-old-space-size=1536" npm run build:web
 
             # Démarrer ou redémarrer avec PM2
             if pm2 describe letsforbook > /dev/null 2>&1; then
