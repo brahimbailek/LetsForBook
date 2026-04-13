@@ -35,9 +35,8 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
 
-            # Créer le .env si il n'existe pas
-            if [ ! -f ".env" ]; then
-              cat > .env << EOF
+            # Toujours réécrire le .env depuis les secrets GitHub
+            cat > .env << EOF
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
             NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
@@ -45,7 +44,6 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             NODE_ENV=production
             EOF
-            fi
 
             # Installer les dépendances
             npm install
