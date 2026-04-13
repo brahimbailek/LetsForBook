@@ -275,6 +275,7 @@ async function main() {
       bookingBufferMinutes: 10,
       verified: true,
       active: true,
+      published: true,
     },
   });
 
@@ -766,6 +767,7 @@ async function main() {
           bookingBufferMinutes: [5, 10, 15][Math.floor(Math.random() * 3)],
           verified: true,
           active: true,
+          published: true,
         },
       })
     )
