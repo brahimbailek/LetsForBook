@@ -56,7 +56,7 @@ jobs:
             npm run db:generate
 
             # Synchroniser le schéma Prisma avec la DB (ajoute les colonnes manquantes)
-            npm run db:push -- --accept-data-loss --skip-generate
+            cd packages/database && DATABASE_URL="${{ secrets.DATABASE_URL }}" npx prisma db push --accept-data-loss --skip-generate && cd ../..
 
             # Builder l'app (augmente la mémoire Node.js pour le build)
             NODE_OPTIONS="--max-old-space-size=1536" npm run build:web
