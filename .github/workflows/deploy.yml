@@ -60,6 +60,6 @@ jobs:
             if pm2 describe letsforbook > /dev/null 2>&1; then
               pm2 restart letsforbook
             else
-              pm2 start "npm run start:web" --name letsforbook
+              pm2 start "npm start" --name letsforbook --cwd /app/letsforbook/apps/web
               pm2 save
             fi
