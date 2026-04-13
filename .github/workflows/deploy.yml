@@ -1,0 +1,65 @@
+name: Deploy to OCI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy files via rsync
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          REMOTE_PORT: ${{ secrets.SSH_PORT }}
+          TARGET: ${{ secrets.DEPLOY_PATH }}
+          ARGS: "-avz --delete --exclude='.env' --exclude='node_modules/' --exclude='.next/' --exclude='*.log'"
+
+      - name: Install, build and restart
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          command_timeout: 30m
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # Créer le .env si il n'existe pas
+            if [ ! -f ".env" ]; then
+              cat > .env << EOF
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NODE_ENV=production
+            EOF
+            fi
+
+            # Installer les dépendances
+            npm install
+
+            # Générer Prisma
+            npm run db:generate
+
+            # Builder l'app
+            npm run build:web
+
+            # Démarrer ou redémarrer avec PM2
+            if pm2 describe letsforbook > /dev/null 2>&1; then
+              pm2 restart letsforbook
+            else
+              pm2 start "npm run start:web" --name letsforbook
+              pm2 save
+            fi
