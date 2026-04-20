@@ -276,6 +276,7 @@ async function main() {
       verified: true,
       active: true,
       published: true,
+      invitationCode: Math.random().toString(36).substring(2, 10),
     },
   });
 
@@ -768,6 +769,7 @@ async function main() {
           verified: true,
           active: true,
           published: true,
+          invitationCode: Math.random().toString(36).substring(2, 10),
         },
       })
     )
