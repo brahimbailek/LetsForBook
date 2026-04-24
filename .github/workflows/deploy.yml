@@ -37,7 +37,7 @@ jobs:
 
             npm install
 
-            cd packages/database && npx prisma migrate deploy && cd ../..
+            cd packages/database && DATABASE_URL="${{ secrets.DATABASE_URL }}" npx prisma migrate deploy && cd ../..
 
             NODE_OPTIONS="--max-old-space-size=1536" npm run build:web
 
