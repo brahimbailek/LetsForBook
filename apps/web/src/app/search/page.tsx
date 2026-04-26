@@ -21,14 +21,23 @@ function SearchContent() {
   const [minRating, setMinRating] = useState<number | undefined>(undefined);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  // Available categories
+  // Scroll to top
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Available categories (must match category names in DB)
   const availableCategories = [
     'Coiffure',
-    'Manucure',
-    'Pédicure',
-    'Massage',
-    'Soins du visage',
-    'Épilation',
+    'Coloration',
+    'Barbier',
+    'Beauté',
+    'Bien-être & Spa',
+    'Tatouage & Piercing',
+    'Sport & Fitness',
   ];
 
   // Autocomplete states
@@ -346,6 +355,18 @@ function SearchContent() {
           )}
         </main>
       </div>
+      {/* Scroll to top button */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-8 right-8 bg-amber-600 hover:bg-amber-700 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition z-50"
+          aria-label="Retour en haut"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
