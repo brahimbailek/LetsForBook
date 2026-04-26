@@ -182,7 +182,7 @@ export const salonRouter = router({
       if (categories && categories.length > 0) {
         where.services = {
           some: {
-            categoryId: { in: categories },
+            category: { name: { in: categories } },
             active: true,
           },
         };

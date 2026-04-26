@@ -48,13 +48,26 @@ function SearchContent() {
     { enabled: city.length >= 2 }
   );
 
-  const { data: salons, isLoading } = trpc.salon.search.useQuery({
-    query: searchQuery,
-    city: searchCity,
-    categories: selectedCategories.length > 0 ? selectedCategories : undefined,
-    minRating: minRating,
-    limit: 20,
-  });
+  const {
+    data: salonsData,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = trpc.salon.search.useInfiniteQuery(
+    {
+      query: searchQuery,
+      city: searchCity,
+      categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+      minRating: minRating,
+      limit: 20,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    }
+  );
+
+  const salons = salonsData?.pages.flatMap((page) => page.items) ?? [];
 
   // Toggle category filter
   const toggleCategory = (category: string) => {
@@ -253,7 +266,7 @@ function SearchContent() {
         <main className="flex-1">
           <div className="mb-6">
             <h2 className="text-2xl font-bold">
-              {salons?.items.length || 0} salon{(salons?.items.length || 0) > 1 ? 's' : ''} trouvé{(salons?.items.length || 0) > 1 ? 's' : ''}
+              {salons.length || 0} salon{(salons.length || 0) > 1 ? 's' : ''} trouvé{(salons.length || 0) > 1 ? 's' : ''}
             </h2>
             {searchCity && (
               <p className="text-gray-600">à {searchCity}</p>
@@ -272,14 +285,14 @@ function SearchContent() {
                 />
               ))}
             </div>
-          ) : salons?.items.length === 0 ? (
+          ) : salons.length === 0 ? (
             <div className="bg-white rounded-lg shadow-md p-8 text-center">
               <p className="text-gray-500 text-lg mb-4">Aucun salon trouvé</p>
               <p className="text-gray-400">Essayez avec d'autres termes de recherche</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {salons?.items.map((salon: any) => (
+              {salons.map((salon: any) => (
                 <Link
                   key={salon.id}
                   href={`/salon/${salon.slug}`}
@@ -318,6 +331,17 @@ function SearchContent() {
                   </div>
                 </Link>
               ))}
+              {hasNextPage && (
+                <div className="flex justify-center pt-4">
+                  <button
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white px-8 py-3 rounded-md font-semibold transition"
+                  >
+                    {isFetchingNextPage ? 'Chargement...' : 'Charger plus'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </main>
