@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { trpc } from '@/lib/trpc/client';
+import { keepPreviousData } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
@@ -29,16 +30,20 @@ function SearchContent() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Available categories (must match category names in DB)
-  const availableCategories = [
-    'Coiffure',
-    'Coloration',
-    'Barbier',
-    'Beauté',
-    'Bien-être & Spa',
-    'Tatouage & Piercing',
-    'Sport & Fitness',
+  // Category label → DB names mapping (one label can cover multiple DB category names)
+  const categoryMappings = [
+    { label: 'Coiffure', dbNames: ['Coiffure Femme', 'Coiffure Homme', 'Coiffure Enfant'] },
+    { label: 'Coloration', dbNames: ['Coloration'] },
+    { label: 'Barbier', dbNames: ['Barbier'] },
+    { label: 'Beauté des ongles', dbNames: ['Beauté'] },
+    { label: 'Bien-être & Spa', dbNames: ['Bien-être & Spa'] },
+    { label: 'Tatouage & Piercing', dbNames: ['Tatouage & Piercing'] },
+    { label: 'Sport & Fitness', dbNames: ['Sport & Fitness'] },
   ];
+
+  const resolvedCategories = selectedCategories.flatMap(
+    (label) => categoryMappings.find((m) => m.label === label)?.dbNames ?? [label]
+  );
 
   // Autocomplete states
   const [showQuerySuggestions, setShowQuerySuggestions] = useState(false);
@@ -60,6 +65,7 @@ function SearchContent() {
   const {
     data: salonsData,
     isLoading,
+    isFetching,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -67,12 +73,13 @@ function SearchContent() {
     {
       query: searchQuery,
       city: searchCity,
-      categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+      categories: resolvedCategories.length > 0 ? resolvedCategories : undefined,
       minRating: minRating,
       limit: 20,
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+      placeholderData: keepPreviousData,
     }
   );
 
@@ -256,15 +263,15 @@ function SearchContent() {
 
             <div>
               <h4 className="font-medium mb-2">Services</h4>
-              {availableCategories.map((category) => (
-                <label key={category} className="flex items-center gap-2 mb-2 cursor-pointer">
+              {categoryMappings.map(({ label }) => (
+                <label key={label} className="flex items-center gap-2 mb-2 cursor-pointer">
                   <input
                     type="checkbox"
                     className="rounded text-amber-600 focus:ring-amber-500"
-                    checked={selectedCategories.includes(category)}
-                    onChange={() => toggleCategory(category)}
+                    checked={selectedCategories.includes(label)}
+                    onChange={() => toggleCategory(label)}
                   />
-                  <span className="text-sm">{category}</span>
+                  <span className="text-sm">{label}</span>
                 </label>
               ))}
             </div>
@@ -272,7 +279,7 @@ function SearchContent() {
         </aside>
 
         {/* Results List */}
-        <main className="flex-1">
+        <main className={`flex-1 transition-opacity duration-200 ${isFetching && !isFetchingNextPage ? 'opacity-60' : 'opacity-100'}`}>
           <div className="mb-6">
             <h2 className="text-2xl font-bold">
               {salons.length || 0} salon{(salons.length || 0) > 1 ? 's' : ''} trouvé{(salons.length || 0) > 1 ? 's' : ''}
