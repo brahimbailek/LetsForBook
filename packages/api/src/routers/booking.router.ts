@@ -382,16 +382,33 @@ export const bookingRouter = router({
         serviceIds: z.array(z.string()).min(1),
         startTime: z.coerce.date(),
         clientNotes: z.string().max(500).optional(),
+        salonId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const { clientFirstName, clientLastName, clientEmail, clientPhone, serviceIds, startTime, clientNotes } = input;
 
-      // Find the pro's profile and salon
-      const professional = await ctx.prisma.professionalProfile.findUnique({
+      // Find the pro's profile — or fall back to salon owner's first salon
+      let professional = await ctx.prisma.professionalProfile.findUnique({
         where: { userId: ctx.user.id },
         include: { salon: true },
       });
+
+      if (!professional && input.salonId) {
+        // SALON_OWNER without a professionalProfile: find or create one for this salon
+        const salon = await ctx.prisma.salon.findUnique({
+          where: { id: input.salonId, ownerId: ctx.user.id },
+        });
+        if (!salon) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Salon introuvable ou accès refusé' });
+        }
+        professional = await ctx.prisma.professionalProfile.upsert({
+          where: { userId: ctx.user.id },
+          create: { userId: ctx.user.id, salonId: salon.id, active: true },
+          update: {},
+          include: { salon: true },
+        });
+      }
 
       if (!professional) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Profil professionnel introuvable' });

@@ -70,7 +70,11 @@ const EMPTY_FORM: ManualBookingForm = {
   clientNotes: '',
 };
 
-export function ProCalendar() {
+interface ProCalendarProps {
+  salonId?: string;
+}
+
+export function ProCalendar({ salonId: salonIdProp }: ProCalendarProps) {
   const utils = trpc.useUtils();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [showForm, setShowForm] = useState(false);
@@ -86,9 +90,9 @@ export function ProCalendar() {
     endDate: weekEnd,
   });
 
-  // Services of the pro's salon
+  // Services: use prop salonId first, fallback to professionalProfile salon
   const { data: userData } = trpc.auth.me.useQuery();
-  const salonId = userData?.professionalProfile?.salon?.id ?? '';
+  const salonId = salonIdProp ?? userData?.professionalProfile?.salon?.id ?? '';
   const { data: services } = trpc.service.getBySalonId.useQuery(
     { salonId },
     { enabled: !!salonId }
@@ -150,6 +154,7 @@ export function ProCalendar() {
       serviceIds: form.serviceIds,
       startTime,
       clientNotes: form.clientNotes || undefined,
+      salonId: salonId || undefined,
     });
   };
 

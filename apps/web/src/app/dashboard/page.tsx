@@ -530,7 +530,7 @@ export default function DashboardPage() {
           {activeTab === 'appointments' && isSalonOwner && (
             <div>
               <h1 className="text-3xl font-bold text-coffee-800 mb-6">Rendez-vous</h1>
-              <ProCalendar />
+              <ProCalendar salonId={primarySalonId || undefined} />
             </div>
           )}
 
@@ -540,7 +540,7 @@ export default function DashboardPage() {
           {activeTab === 'my-agenda' && (
             <div>
               <h1 className="text-3xl font-bold text-coffee-800 mb-6">Mon agenda</h1>
-              <ProCalendar />
+              <ProCalendar salonId={primarySalonId || undefined} />
             </div>
           )}
 
