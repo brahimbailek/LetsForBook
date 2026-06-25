@@ -506,6 +506,7 @@ export class NotificationService {
     const notifications = await prisma.notification.findMany({
       where: {
         userId,
+        channel: 'IN_APP',
         ...(cursor ? { id: { lt: cursor } } : {}),
       },
       take: limit,

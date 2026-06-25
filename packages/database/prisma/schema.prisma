@@ -616,6 +616,7 @@ model Notification {
   // Status
   sent          Boolean             @default(false)
   sentAt        DateTime?
+  readAt        DateTime?
   failed        Boolean             @default(false)
   failureReason String?             @db.Text
 

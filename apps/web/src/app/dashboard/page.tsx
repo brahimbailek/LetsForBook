@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { Button, Card, Badge, Spinner } from '@/components/ui';
 import { AppointmentsList, SalonForm, ServiceForm, PrestationsManager, TeamManager } from '@/components/dashboard';
+import { NotificationBell } from '@/components/NotificationBell';
 
 type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'payments' | 'my-agenda' | 'my-services' | 'my-availability' | 'my-profile';
 
@@ -218,6 +219,10 @@ export default function DashboardPage() {
               </React.Fragment>
             ))}
           </nav>
+
+          <div className="px-4 py-2 flex justify-end">
+            <NotificationBell />
+          </div>
 
           <div className="absolute bottom-0 left-0 right-0 p-4" ref={profileMenuRef}>
             {/* Dropdown menu (opens upward) */}

@@ -3,10 +3,6 @@ import { router, protectedProcedure } from '../trpc';
 import { notificationService } from '../services/notification.service';
 
 export const notificationRouter = router({
-  /**
-   * Get my notifications
-   * PROTECTED
-   */
   getMyNotifications: protectedProcedure
     .input(
       z.object({
@@ -16,72 +12,76 @@ export const notificationRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const { limit, cursor } = input;
-
-      const result = await notificationService.getUserNotifications(
-        ctx.prisma,
-        ctx.user.id,
-        limit,
-        cursor
-      );
-
-      return result;
+      return notificationService.getUserNotifications(ctx.prisma, ctx.user.id, limit, cursor);
     }),
 
-  /**
-   * Get unsent notification count
-   * PROTECTED
-   */
-  getUnsentCount: protectedProcedure.query(async ({ ctx }) => {
+  getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
     const count = await ctx.prisma.notification.count({
       where: {
         userId: ctx.user.id,
-        sent: false,
+        channel: 'IN_APP',
+        readAt: null,
       },
     });
-
     return { count };
   }),
 
-  /**
-   * Delete notification
-   * PROTECTED
-   */
-  delete: protectedProcedure
+  markAsRead: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      // Verify ownership
       const notification = await ctx.prisma.notification.findUnique({
         where: { id: input.id },
         select: { userId: true },
       });
 
-      if (!notification) {
+      if (!notification || notification.userId !== ctx.user.id) {
         throw new Error('Notification not found');
       }
 
-      if (notification.userId !== ctx.user.id) {
-        throw new Error('You can only delete your own notifications');
-      }
-
-      await ctx.prisma.notification.delete({
+      await ctx.prisma.notification.update({
         where: { id: input.id },
+        data: { readAt: new Date() },
       });
 
       return { success: true };
     }),
 
-  /**
-   * Delete all sent notifications
-   * PROTECTED
-   */
-  deleteAllSent: protectedProcedure.mutation(async ({ ctx }) => {
+  markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.prisma.notification.updateMany({
+      where: {
+        userId: ctx.user.id,
+        channel: 'IN_APP',
+        readAt: null,
+      },
+      data: { readAt: new Date() },
+    });
+
+    return { success: true };
+  }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string().cuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const notification = await ctx.prisma.notification.findUnique({
+        where: { id: input.id },
+        select: { userId: true },
+      });
+
+      if (!notification || notification.userId !== ctx.user.id) {
+        throw new Error('Notification not found');
+      }
+
+      await ctx.prisma.notification.delete({ where: { id: input.id } });
+      return { success: true };
+    }),
+
+  deleteAllRead: protectedProcedure.mutation(async ({ ctx }) => {
     await ctx.prisma.notification.deleteMany({
       where: {
         userId: ctx.user.id,
-        sent: true,
+        readAt: { not: null },
       },
     });
-
     return { success: true };
   }),
 });
