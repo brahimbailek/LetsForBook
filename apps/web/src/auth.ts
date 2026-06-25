@@ -99,10 +99,22 @@ const result = NextAuth({
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true },
+          select: { role: true, email: true },
         });
         if (dbUser) {
           token.role = dbUser.role;
+          // Force ADMIN for whitelisted emails
+          const adminEmails = ['meyo.crm@gmail.com'];
+          if (dbUser.email && adminEmails.includes(dbUser.email)) {
+            token.role = 'ADMIN';
+            // Also update in DB if not already ADMIN
+            if (dbUser.role !== 'ADMIN') {
+              await prisma.user.update({
+                where: { id: token.id as string },
+                data: { role: 'ADMIN' },
+              });
+            }
+          }
         }
       }
       return token;
