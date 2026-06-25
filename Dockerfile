@@ -22,7 +22,7 @@ COPY packages/validation/package.json ./packages/validation/
 RUN npm install --ignore-scripts
 
 # Cache bust: force rebuild from here
-ARG CACHEBUST=1
+ARG CACHEBUST=2
 # Copy the rest of the source
 COPY . .
 
