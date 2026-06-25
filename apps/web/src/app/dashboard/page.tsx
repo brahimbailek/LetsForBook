@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { Button, Card, Badge, Spinner } from '@/components/ui';
-import { SalonForm, ServiceForm, PrestationsManager, TeamManager, ProCalendar } from '@/components/dashboard';
+import { SalonForm, ServiceForm, PrestationsManager, TeamManager, ProCalendar, AdminPanel } from '@/components/dashboard';
 import { NotificationBell } from '@/components/NotificationBell';
 
-type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'payments' | 'my-agenda' | 'my-services' | 'my-availability' | 'my-profile';
+type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'payments' | 'my-agenda' | 'my-services' | 'my-availability' | 'my-profile' | 'admin';
 
 function InvitationCodeBlock({ salonId }: { salonId: string }) {
   const [copied, setCopied] = useState(false);
@@ -176,6 +176,7 @@ export default function DashboardPage() {
         { id: 'my-agenda', label: 'Mon agenda', icon: '📅', separator: true },
         { id: 'my-availability', label: 'Mes disponibilités', icon: '🕐' },
         { id: 'my-profile', label: 'Mon profil', icon: '👤' },
+        ...(user?.role === 'ADMIN' ? [{ id: 'admin' as TabId, label: 'Administration', icon: '⚙️', separator: true }] : []),
       ];
 
   const roleLabel = isSalonOwner ? 'Propriétaire' : 'Professionnel';
@@ -811,6 +812,13 @@ export default function DashboardPage() {
           {/* ========================== */}
           {activeTab === 'payments' && isSalonOwner && mySalons && (
             <PaymentsSection salons={mySalons} />
+          )}
+
+          {/* =================== */}
+          {/* ADMINISTRATION      */}
+          {/* =================== */}
+          {activeTab === 'admin' && user?.role === 'ADMIN' && (
+            <AdminPanel />
           )}
 
         </main>
