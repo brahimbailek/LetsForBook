@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, getSession } from 'next-auth/react';
 import { Button, Input, Card } from '@/components/ui';
+import { trpc } from '@/lib/trpc/client';
 
 function LoginForm() {
   const router = useRouter();
@@ -17,6 +18,9 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
 
   const getErrorMessage = (errorCode: string | null) => {
     switch (errorCode) {
@@ -44,7 +48,13 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setFormError('Email ou mot de passe incorrect');
+        if (result.error === 'EmailNotVerified' || result.error?.includes('EmailNotVerified')) {
+          setEmailNotVerified(true);
+          setFormError('');
+        } else {
+          setEmailNotVerified(false);
+          setFormError('Email ou mot de passe incorrect');
+        }
       } else {
         // Get updated session to check role
         const session = await getSession();
@@ -75,6 +85,18 @@ function LoginForm() {
       setFormError('Une erreur est survenue avec Google');
       setIsLoading(false);
     }
+  };
+
+  const resendMutation = trpc.auth.resendVerificationEmailPublic.useMutation({
+    onSuccess: () => { setResendSent(true); setResendLoading(false); },
+    onError: () => { setResendLoading(false); },
+  });
+
+  const handleResend = async () => {
+    if (!email) return;
+    setResendLoading(true);
+    setResendSent(false);
+    resendMutation.mutate({ email });
   };
 
   const displayError = formError || getErrorMessage(error);
@@ -140,7 +162,33 @@ function LoginForm() {
           </Link>
         </div>
 
-        {displayError && (
+        {emailNotVerified && (
+          <div className="bg-amber-50 border-2 border-amber-200 rounded-xl px-4 py-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <span className="text-amber-500 text-xl">✉️</span>
+              <div>
+                <p className="font-semibold text-amber-800 text-sm">Email non vérifié</p>
+                <p className="text-amber-700 text-sm mt-1">
+                  Vérifiez votre boîte mail et cliquez sur le lien de confirmation avant de vous connecter.
+                </p>
+              </div>
+            </div>
+            {resendSent ? (
+              <p className="text-sm text-sage-700 font-medium">✅ Email renvoyé ! Vérifiez votre boîte mail.</p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendLoading || !email}
+                className="text-sm text-amber-700 underline hover:text-amber-900 disabled:opacity-50"
+              >
+                {resendLoading ? 'Envoi en cours...' : 'Renvoyer l\'email de confirmation'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {displayError && !emailNotVerified && (
           <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl">
             {displayError}
           </div>

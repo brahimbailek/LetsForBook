@@ -57,6 +57,7 @@ authProviders.push(
             lastName: true,
             role: true,
             avatar: true,
+            emailVerified: true,
           },
         });
 
@@ -68,6 +69,10 @@ authProviders.push(
 
         if (!isPasswordValid) {
           return null;
+        }
+
+        if (!user.emailVerified) {
+          throw new Error('EmailNotVerified');
         }
 
         return {

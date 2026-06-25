@@ -649,6 +649,57 @@ export const authRouter = router({
   }),
 
   /**
+   * Resend verification email by email address (PUBLIC - for login page)
+   */
+  resendVerificationEmailPublic: publicProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { email: input.email },
+        select: { id: true, email: true, firstName: true, emailVerified: true },
+      });
+
+      // Always return success to avoid email enumeration
+      if (!user || user.emailVerified) return { success: true };
+
+      await ctx.prisma.verificationToken.deleteMany({
+        where: { identifier: `verify:${user.email}` },
+      });
+
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await ctx.prisma.verificationToken.create({
+        data: { identifier: `verify:${user.email}`, token, expires },
+      });
+
+      const verifyUrl = `${APP_URL}/verify-email?token=${token}`;
+
+      try {
+        const resend = getResend();
+        await resend.emails.send({
+          from: `${APP_NAME} <${FROM_EMAIL}>`,
+          to: user.email,
+          subject: `Vérifiez votre adresse email - ${APP_NAME}`,
+          html: `<!DOCTYPE html><html><head><meta charset="utf-8">
+            <style>body{font-family:'Segoe UI',sans-serif;margin:0;background:#f5f3ef}.container{max-width:600px;margin:0 auto;background:#fff}.header{background:linear-gradient(135deg,#6b8e6b,#4a6b4a);padding:30px;text-align:center}.header h1{color:#fff;margin:0;font-size:24px}.content{padding:30px;color:#4a3728;line-height:1.6}.button{display:inline-block;background:#6b8e6b;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:600;margin:20px 0}.footer{background:#f5f3ef;padding:20px;text-align:center;color:#6b5b4d;font-size:12px}</style>
+            </head><body><div class="container">
+            <div class="header"><h1>Vérification de votre email</h1></div>
+            <div class="content"><p>Bonjour <strong>${user.firstName}</strong>,</p>
+            <p>Cliquez sur le bouton ci-dessous pour vérifier votre adresse email :</p>
+            <div style="text-align:center"><a href="${verifyUrl}" class="button">Vérifier mon email</a></div>
+            <p style="font-size:14px;color:#6b5b4d">Ce lien est valide pendant 24 heures.</p></div>
+            <div class="footer"><p>${APP_NAME} - Votre plateforme de réservation beauté</p></div>
+            </div></body></html>`,
+        });
+      } catch (err) {
+        console.error('Failed to send verification email:', err);
+      }
+
+      return { success: true };
+    }),
+
+  /**
    * Request password reset
    * PUBLIC - Sends email with reset link
    */
