@@ -18,6 +18,44 @@ function SearchContent() {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [searchCity, setSearchCity] = useState(initialCity);
 
+  // Geolocation states
+  const [userLat, setUserLat] = useState<number | undefined>(undefined);
+  const [userLng, setUserLng] = useState<number | undefined>(undefined);
+  const [radius, setRadius] = useState(10);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState('');
+  const [usingGeo, setUsingGeo] = useState(false);
+
+  const handleGeolocate = () => {
+    if (!navigator.geolocation) {
+      setGeoError('La géolocalisation n\'est pas supportée par votre navigateur.');
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLat(pos.coords.latitude);
+        setUserLng(pos.coords.longitude);
+        setUsingGeo(true);
+        setCity('');
+        setSearchCity('');
+        setGeoLoading(false);
+      },
+      () => {
+        setGeoError('Impossible d\'obtenir votre position. Vérifiez les permissions.');
+        setGeoLoading(false);
+      }
+    );
+  };
+
+  const clearGeo = () => {
+    setUserLat(undefined);
+    setUserLng(undefined);
+    setUsingGeo(false);
+    setGeoError('');
+  };
+
   // Filter states
   const [minRating, setMinRating] = useState<number | undefined>(undefined);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -72,9 +110,12 @@ function SearchContent() {
   } = trpc.salon.search.useInfiniteQuery(
     {
       query: searchQuery,
-      city: searchCity,
+      city: usingGeo ? undefined : searchCity,
       categories: resolvedCategories.length > 0 ? resolvedCategories : undefined,
       minRating: minRating,
+      latitude: usingGeo ? userLat : undefined,
+      longitude: usingGeo ? userLng : undefined,
+      radius: usingGeo ? radius : undefined,
       limit: 20,
     },
     {
@@ -148,19 +189,11 @@ function SearchContent() {
               placeholder="Coiffeur, manucure, massage..."
               className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
-            {/* Suggestions dropdown */}
             {showQuerySuggestions && querySuggestions && querySuggestions.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 max-h-60 overflow-auto">
-                {querySuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      selectQuerySuggestion(suggestion);
-                    }}
-                    className="w-full text-left px-4 py-3 hover:bg-amber-50 transition flex items-center gap-2"
-                  >
+                {querySuggestions.map((suggestion: any, index: any) => (
+                  <button key={index} type="button" onMouseDown={(e) => { e.preventDefault(); selectQuerySuggestion(suggestion); }}
+                    className="w-full text-left px-4 py-3 hover:bg-amber-50 transition flex items-center gap-2">
                     <span className="text-amber-600">🔍</span>
                     <span>{suggestion}</span>
                   </button>
@@ -169,48 +202,69 @@ function SearchContent() {
             )}
           </div>
 
-          {/* City input with autocomplete */}
-          <div className="w-48 relative">
-            <input
-              ref={cityInputRef}
-              type="text"
-              value={city}
-              onChange={(e) => {
-                setCity(e.target.value);
-                setShowCitySuggestions(e.target.value.length >= 2);
-              }}
-              onFocus={() => setShowCitySuggestions(city.length >= 2)}
-              placeholder="Ville"
-              className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
-            {/* City suggestions dropdown */}
-            {showCitySuggestions && citySuggestions && citySuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 max-h-60 overflow-auto">
-                {citySuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      selectCitySuggestion(suggestion);
-                    }}
-                    className="w-full text-left px-4 py-3 hover:bg-amber-50 transition flex items-center gap-2"
-                  >
-                    <span className="text-amber-600">📍</span>
-                    <span>{suggestion}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* City input or GPS active indicator */}
+          {usingGeo ? (
+            <div className="w-56 flex items-center gap-2 px-3 py-2 rounded-md border border-amber-400 bg-amber-50">
+              <span className="text-amber-600 text-sm font-medium flex-1">📍 Position GPS active</span>
+              <button type="button" onClick={clearGeo} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+            </div>
+          ) : (
+            <div className="w-48 relative">
+              <input
+                ref={cityInputRef}
+                type="text"
+                value={city}
+                onChange={(e) => { setCity(e.target.value); setShowCitySuggestions(e.target.value.length >= 2); }}
+                onFocus={() => setShowCitySuggestions(city.length >= 2)}
+                placeholder="Ville"
+                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              {showCitySuggestions && citySuggestions && citySuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 max-h-60 overflow-auto">
+                  {citySuggestions.map((suggestion: any, index: any) => (
+                    <button key={index} type="button" onMouseDown={(e) => { e.preventDefault(); selectCitySuggestion(suggestion); }}
+                      className="w-full text-left px-4 py-3 hover:bg-amber-50 transition flex items-center gap-2">
+                      <span className="text-amber-600">📍</span>
+                      <span>{suggestion}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-          <button
-            type="submit"
-            className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-md font-semibold transition"
-          >
+          {/* GPS button */}
+          <button type="button" onClick={handleGeolocate} disabled={geoLoading}
+            title="Utiliser ma position GPS"
+            className={`px-4 py-3 rounded-md border transition flex items-center gap-2 text-sm font-medium ${usingGeo ? 'bg-amber-100 border-amber-400 text-amber-700' : 'bg-white border-gray-300 text-gray-600 hover:bg-amber-50 hover:border-amber-400'}`}>
+            {geoLoading ? (
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            )}
+            <span className="hidden sm:inline">Près de moi</span>
+          </button>
+
+          <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-md font-semibold transition">
             Rechercher
           </button>
         </div>
+
+        {/* GPS error */}
+        {geoError && <p className="mt-2 text-sm text-red-500">{geoError}</p>}
+
+        {/* Radius selector (only when GPS active) */}
+        {usingGeo && (
+          <div className="mt-4 flex items-center gap-3">
+            <span className="text-sm text-gray-600 font-medium">Rayon :</span>
+            {[5, 10, 20, 50].map((r) => (
+              <button key={r} type="button" onClick={() => setRadius(r)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition ${radius === r ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-amber-100'}`}>
+                {r} km
+              </button>
+            ))}
+          </div>
+        )}
       </form>
 
       {/* Results */}
@@ -220,15 +274,46 @@ function SearchContent() {
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lg">Filtres</h3>
-              {(minRating || selectedCategories.length > 0) && (
+              {(minRating || selectedCategories.length > 0 || usingGeo) && (
                 <button
                   onClick={() => {
                     setMinRating(undefined);
                     setSelectedCategories([]);
+                    clearGeo();
                   }}
                   className="text-xs text-amber-600 hover:text-amber-700"
                 >
                   Réinitialiser
+                </button>
+              )}
+            </div>
+
+            {/* GPS filter */}
+            <div className="mb-6">
+              <h4 className="font-medium mb-2">Localisation</h4>
+              {usingGeo ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-amber-700 font-medium">
+                    <span>📍 Position GPS active</span>
+                    <button onClick={clearGeo} className="text-gray-400 hover:text-gray-600 text-xs ml-auto">✕</button>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Rayon</p>
+                    <div className="flex flex-wrap gap-1">
+                      {[5, 10, 20, 50].map((r) => (
+                        <button key={r} onClick={() => setRadius(r)}
+                          className={`px-2 py-1 rounded text-xs font-medium transition ${radius === r ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-amber-100'}`}>
+                          {r} km
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={handleGeolocate} disabled={geoLoading}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-600 hover:bg-amber-50 hover:border-amber-400 transition">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  {geoLoading ? 'Localisation...' : 'Près de moi'}
                 </button>
               )}
             </div>
@@ -284,7 +369,10 @@ function SearchContent() {
             <h2 className="text-2xl font-bold">
               {salons.length || 0} salon{(salons.length || 0) > 1 ? 's' : ''} trouvé{(salons.length || 0) > 1 ? 's' : ''}
             </h2>
-            {searchCity && (
+            {usingGeo && (
+              <p className="text-gray-600">dans un rayon de {radius} km autour de vous</p>
+            )}
+            {!usingGeo && searchCity && (
               <p className="text-gray-600">à {searchCity}</p>
             )}
             {searchQuery && (
@@ -341,8 +429,14 @@ function SearchContent() {
                     )}
 
                     <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>📞 {salon.phone}</span>
+                      {salon.phone && <span>📞 {salon.phone}</span>}
                       <span>📍 {salon.city}</span>
+                      {salon.distanceKm !== null && salon.distanceKm !== undefined && (
+                        <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                          {salon.distanceKm < 1 ? `${Math.round(salon.distanceKm * 1000)} m` : `${salon.distanceKm} km`}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </Link>

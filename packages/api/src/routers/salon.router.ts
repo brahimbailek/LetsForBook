@@ -252,18 +252,44 @@ export const salonRouter = router({
         },
       });
 
-      // Calculate average rating
+      // Haversine distance in km
+      const haversine = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      };
+
+      // Calculate average rating and distance
       let salonsWithRating = salons.map((salon) => {
         const totalRating = salon.reviews.reduce((sum, r) => sum + r.rating, 0);
         const averageRating = salon.reviews.length > 0 ? totalRating / salon.reviews.length : 0;
+
+        const distanceKm =
+          latitude && longitude && salon.latitude && salon.longitude
+            ? Math.round(haversine(latitude, longitude, salon.latitude, salon.longitude) * 10) / 10
+            : null;
 
         return {
           ...salon,
           averageRating: Math.round(averageRating * 10) / 10,
           reviewCount: salon.reviews.length,
-          reviews: undefined, // Remove full reviews from response
+          distanceKm,
+          reviews: undefined,
         };
       });
+
+      // Filter by exact radius using real distance (bounding box may include corners outside radius)
+      if (latitude && longitude && radius) {
+        salonsWithRating = salonsWithRating.filter(
+          (s) => s.distanceKm === null || s.distanceKm <= radius
+        );
+        // Sort by proximity
+        salonsWithRating.sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+      }
 
       // Filter by minimum rating if specified
       if (minRating) {
