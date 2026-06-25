@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { Header } from '@/components/ui';
+import { GeoRadiusMap } from '@/components/GeoRadiusMap';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -292,7 +293,7 @@ function SearchContent() {
             <div className="mb-6">
               <h4 className="font-medium mb-2">Localisation</h4>
               {usingGeo ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-amber-700 font-medium">
                     <span>📍 Position GPS active</span>
                     <button onClick={clearGeo} className="text-gray-400 hover:text-gray-600 text-xs ml-auto">✕</button>
@@ -308,6 +309,10 @@ function SearchContent() {
                       ))}
                     </div>
                   </div>
+                  {/* Mini map */}
+                  {userLat && userLng && (
+                    <GeoRadiusMap latitude={userLat} longitude={userLng} radius={radius} />
+                  )}
                 </div>
               ) : (
                 <button onClick={handleGeolocate} disabled={geoLoading}
