@@ -253,7 +253,7 @@ export const bookingRouter = router({
    * PROFESSIONAL ONLY
    */
   getSalonStats: professionalProcedure
-    .input(z.object({ salonId: z.string().cuid() }))
+    .input(z.object({ salonId: z.string() }))
     .query(async ({ ctx, input }) => {
       const { salonId } = input;
 

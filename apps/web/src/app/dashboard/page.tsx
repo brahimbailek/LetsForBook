@@ -137,8 +137,8 @@ export default function DashboardPage() {
   const primarySalonId = mySalons?.[0]?.id ?? '';
 
   const { data: salonStats } = trpc.booking.getSalonStats.useQuery(
-    { salonId: primarySalonId },
-    { enabled: !!primarySalonId }
+    { salonId: primarySalonId || 'none' },
+    { enabled: !!primarySalonId && primarySalonId.length > 0 }
   );
 
   const handleEditSalon = (salon: any) => {
