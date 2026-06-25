@@ -57,6 +57,11 @@ COPY --from=builder /app/apps/web/public ./apps/web/public
 # Copy Prisma schema + migrations for migrate deploy at startup
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 
+# Copy prisma CLI and client for runtime migrations
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
 # Copy startup script
 COPY --from=builder /app/apps/web/start.sh ./start.sh
 RUN chmod +x ./start.sh
