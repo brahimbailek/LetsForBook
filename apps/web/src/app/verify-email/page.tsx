@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { api } from '@/lib/trpc/client';
+import { trpc } from '@/lib/trpc/client';
 import Link from 'next/link';
 
 export default function VerifyEmailPage() {
@@ -13,7 +13,7 @@ export default function VerifyEmailPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const verifyEmail = api.auth.verifyEmail.useMutation({
+  const verifyEmail = trpc.auth.verifyEmail.useMutation({
     onSuccess: () => {
       setStatus('success');
       setTimeout(() => router.push('/'), 3000);
