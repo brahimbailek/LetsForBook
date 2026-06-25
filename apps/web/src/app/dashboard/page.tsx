@@ -135,9 +135,14 @@ export default function DashboardPage() {
   }
 
   // SALON_OWNER stats
-  const totalAppointments = mySalons?.reduce((sum, s) => sum + (s._count?.appointments || 0), 0) || 0;
   const totalServices = mySalons?.reduce((sum, s) => sum + (s._count?.services || 0), 0) || 0;
   const totalReviews = mySalons?.reduce((sum, s) => sum + (s._count?.reviews || 0), 0) || 0;
+  const primarySalonId = mySalons?.[0]?.id ?? '';
+
+  const { data: salonStats } = trpc.booking.getSalonStats.useQuery(
+    { salonId: primarySalonId },
+    { enabled: !!primarySalonId }
+  );
 
   const handleEditSalon = (salon: any) => {
     setEditingSalon(salon);
@@ -291,99 +296,151 @@ export default function DashboardPage() {
                 Bonjour, {user.firstName} 👋
               </h1>
 
+              {/* KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <Card className="bg-gradient-to-br from-cream-500 to-cream-600 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-cream-100">Établissements</p>
-                      <p className="text-3xl font-bold">{mySalons?.length || 0}</p>
-                    </div>
-                    <div className="text-4xl opacity-50">🏪</div>
-                  </div>
-                </Card>
-
                 <Card className="bg-gradient-to-br from-sage-500 to-sage-600 text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sage-100">Rendez-vous</p>
-                      <p className="text-3xl font-bold">{totalAppointments}</p>
+                      <p className="text-sage-100 text-sm">Aujourd&apos;hui</p>
+                      <p className="text-3xl font-bold">{salonStats?.today ?? '-'}</p>
+                      <p className="text-sage-200 text-xs mt-1">{salonStats?.thisWeek ?? '-'} cette semaine</p>
                     </div>
                     <div className="text-4xl opacity-50">📅</div>
                   </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-sand-500 to-sand-600 text-white">
+                <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sand-100">Prestations</p>
-                      <p className="text-3xl font-bold">{totalServices}</p>
+                      <p className="text-yellow-100 text-sm">En attente</p>
+                      <p className="text-3xl font-bold">{salonStats?.pending ?? '-'}</p>
+                      <p className="text-yellow-200 text-xs mt-1">à confirmer</p>
                     </div>
-                    <div className="text-4xl opacity-50">✂️</div>
+                    <div className="text-4xl opacity-50">⏳</div>
+                  </div>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-cream-500 to-cream-600 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-cream-100 text-sm">Taux confirmation</p>
+                      <p className="text-3xl font-bold">{salonStats?.confirmationRate ?? '-'}%</p>
+                      <p className="text-cream-200 text-xs mt-1">ce mois</p>
+                    </div>
+                    <div className="text-4xl opacity-50">✅</div>
                   </div>
                 </Card>
 
                 <Card className="bg-gradient-to-br from-coffee-500 to-coffee-600 text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-coffee-200">Avis clients</p>
-                      <p className="text-3xl font-bold">{totalReviews}</p>
+                      <p className="text-coffee-200 text-sm">RDV ce mois</p>
+                      <p className="text-3xl font-bold">{salonStats?.thisMonth.total ?? '-'}</p>
+                      {salonStats?.completionVsLastMonth !== null && salonStats?.completionVsLastMonth !== undefined && (
+                        <p className={`text-xs mt-1 ${salonStats.completionVsLastMonth >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                          {salonStats.completionVsLastMonth >= 0 ? '+' : ''}{salonStats.completionVsLastMonth}% vs mois dernier
+                        </p>
+                      )}
                     </div>
-                    <div className="text-4xl opacity-50">⭐</div>
+                    <div className="text-4xl opacity-50">📊</div>
                   </div>
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Stats détaillées + actions */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Répartition ce mois */}
                 <Card>
-                  <h2 className="text-xl font-semibold text-coffee-800 mb-4">Actions rapides</h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" fullWidth onClick={() => setShowSalonForm(true)}>
-                      + Nouvel établissement
-                    </Button>
-                    <Button variant="outline" fullWidth onClick={() => setActiveTab('services')}>
-                      + Nouvelle prestation
-                    </Button>
-                    <Button variant="outline" fullWidth onClick={() => setActiveTab('team')}>
-                      + Nouveau collaborateur
-                    </Button>
-                    <Button variant="outline" fullWidth onClick={() => setActiveTab('appointments')}>
-                      Voir l'agenda
-                    </Button>
-                  </div>
-                </Card>
-
-                <Card>
-                  <h2 className="text-xl font-semibold text-coffee-800 mb-4">Mes établissements</h2>
+                  <h2 className="text-lg font-semibold text-coffee-800 mb-4">Ce mois</h2>
                   <div className="space-y-3">
-                    {mySalons?.slice(0, 3).map((salon) => (
-                      <div key={salon.id} className="flex items-center justify-between p-3 bg-sand-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-coffee-800">{salon.name}</p>
-                          <p className="text-sm text-coffee-500">
-                            {salon._count?.appointments || 0} RDV · {salon._count?.reviews || 0} avis
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Badge variant={salon.active ? 'success' : 'error'}>
-                            {salon.active ? 'Actif' : 'Inactif'}
-                          </Badge>
-                          {!(salon as any).published && (
-                            <Badge variant="warning">Non publié</Badge>
-                          )}
-                        </div>
+                    {[
+                      { label: 'Terminés', value: salonStats?.thisMonth.completed ?? 0, color: 'bg-green-500' },
+                      { label: 'Confirmés', value: salonStats?.thisMonth.confirmed ?? 0, color: 'bg-blue-500' },
+                      { label: 'Annulés', value: salonStats?.thisMonth.cancelled ?? 0, color: 'bg-red-400' },
+                      { label: 'No-shows', value: salonStats?.thisMonth.noShow ?? 0, color: 'bg-orange-400' },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${item.color}`} />
+                        <span className="text-sm text-coffee-600 flex-1">{item.label}</span>
+                        <span className="text-sm font-semibold text-coffee-800">{item.value}</span>
                       </div>
                     ))}
-                    {(!mySalons || mySalons.length === 0) && (
-                      <div className="text-center py-4">
-                        <p className="text-coffee-500 mb-4">Aucun établissement</p>
-                        <Button size="sm" onClick={() => setShowSalonForm(true)}>
-                          Créer mon premier établissement
-                        </Button>
-                      </div>
-                    )}
+                  </div>
+                </Card>
+
+                {/* Top services */}
+                <Card>
+                  <h2 className="text-lg font-semibold text-coffee-800 mb-4">Top prestations</h2>
+                  {salonStats?.topServices.length ? (
+                    <div className="space-y-3">
+                      {salonStats.topServices.map((s, i) => (
+                        <div key={s.name} className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-coffee-400 w-4">#{i + 1}</span>
+                          <span className="text-sm text-coffee-700 flex-1 truncate">{s.name}</span>
+                          <span className="text-xs font-semibold text-cream-700 bg-cream-100 px-2 py-0.5 rounded-full">{s.count}x</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-coffee-400 text-sm text-center py-4">Aucune donnée ce mois</p>
+                  )}
+                </Card>
+
+                {/* Actions rapides */}
+                <Card>
+                  <h2 className="text-lg font-semibold text-coffee-800 mb-4">Actions rapides</h2>
+                  <div className="space-y-2">
+                    <Button variant="outline" fullWidth onClick={() => setActiveTab('appointments')}>
+                      📅 Voir l&apos;agenda
+                    </Button>
+                    <Button variant="outline" fullWidth onClick={() => setActiveTab('services')}>
+                      ✂️ Gérer les prestations
+                    </Button>
+                    <Button variant="outline" fullWidth onClick={() => setActiveTab('team')}>
+                      👥 Gérer l&apos;équipe
+                    </Button>
+                    <Button variant="outline" fullWidth onClick={() => setActiveTab('payments')}>
+                      💰 Voir les revenus
+                    </Button>
                   </div>
                 </Card>
               </div>
+
+              {/* Établissements */}
+              <Card>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-coffee-800">Mes établissements</h2>
+                  <Button size="sm" onClick={() => setShowSalonForm(true)}>+ Ajouter</Button>
+                </div>
+                <div className="space-y-3">
+                  {mySalons?.map((salon) => (
+                    <div key={salon.id} className="flex items-center justify-between p-3 bg-sand-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-coffee-800">{salon.name}</p>
+                        <p className="text-sm text-coffee-500">
+                          {salon._count?.services || 0} prestations · {salon._count?.reviews || 0} avis
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant={salon.active ? 'success' : 'error'}>
+                          {salon.active ? 'Actif' : 'Inactif'}
+                        </Badge>
+                        {!(salon as any).published && (
+                          <Badge variant="warning">Non publié</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {(!mySalons || mySalons.length === 0) && (
+                    <div className="text-center py-4">
+                      <p className="text-coffee-500 mb-4">Aucun établissement</p>
+                      <Button size="sm" onClick={() => setShowSalonForm(true)}>
+                        Créer mon premier établissement
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Card>
             </div>
           )}
 

@@ -247,4 +247,123 @@ export const bookingRouter = router({
 
       return updatedAppointment;
     }),
+
+  /**
+   * Get salon booking analytics
+   * PROFESSIONAL ONLY
+   */
+  getSalonStats: professionalProcedure
+    .input(z.object({ salonId: z.string().cuid() }))
+    .query(async ({ ctx, input }) => {
+      const { salonId } = input;
+
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay() + 1);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const [
+        thisMonthAll,
+        lastMonthCompleted,
+        pendingCount,
+        todayCount,
+        thisWeekCount,
+        noShowCount,
+        topServices,
+      ] = await Promise.all([
+        // This month appointments
+        ctx.prisma.appointment.findMany({
+          where: { salonId, startTime: { gte: startOfMonth } },
+          select: { status: true },
+        }),
+        // Last month completed (for comparison)
+        ctx.prisma.appointment.count({
+          where: {
+            salonId,
+            status: 'COMPLETED',
+            startTime: { gte: startOfLastMonth, lte: endOfLastMonth },
+          },
+        }),
+        // Pending appointments
+        ctx.prisma.appointment.count({
+          where: { salonId, status: 'PENDING' },
+        }),
+        // Today
+        ctx.prisma.appointment.count({
+          where: {
+            salonId,
+            startTime: {
+              gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+              lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
+            },
+            status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_SALON'] },
+          },
+        }),
+        // This week
+        ctx.prisma.appointment.count({
+          where: {
+            salonId,
+            startTime: { gte: startOfWeek },
+            status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_SALON'] },
+          },
+        }),
+        // No-shows this month
+        ctx.prisma.appointment.count({
+          where: { salonId, status: 'NO_SHOW', startTime: { gte: startOfMonth } },
+        }),
+        // Top services this month
+        ctx.prisma.appointmentService.groupBy({
+          by: ['serviceName'],
+          where: {
+            appointment: {
+              salonId,
+              startTime: { gte: startOfMonth },
+              status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_SALON'] },
+            },
+          },
+          _count: { serviceName: true },
+          orderBy: { _count: { serviceName: 'desc' } },
+          take: 5,
+        }),
+      ]);
+
+      const thisMonthTotal = thisMonthAll.length;
+      const thisMonthCompleted = thisMonthAll.filter((a) => a.status === 'COMPLETED').length;
+      const thisMonthCancelled = thisMonthAll.filter(
+        (a) => a.status === 'CANCELLED_CLIENT' || a.status === 'CANCELLED_SALON'
+      ).length;
+      const thisMonthConfirmed = thisMonthAll.filter((a) => a.status === 'CONFIRMED').length;
+
+      const confirmationRate =
+        thisMonthTotal > 0
+          ? Math.round(((thisMonthCompleted + thisMonthConfirmed) / thisMonthTotal) * 100)
+          : 0;
+
+      const completionVsLastMonth =
+        lastMonthCompleted > 0
+          ? Math.round(((thisMonthCompleted - lastMonthCompleted) / lastMonthCompleted) * 100)
+          : null;
+
+      return {
+        thisMonth: {
+          total: thisMonthTotal,
+          completed: thisMonthCompleted,
+          confirmed: thisMonthConfirmed,
+          cancelled: thisMonthCancelled,
+          noShow: noShowCount,
+        },
+        pending: pendingCount,
+        today: todayCount,
+        thisWeek: thisWeekCount,
+        confirmationRate,
+        completionVsLastMonth,
+        topServices: topServices.map((s) => ({
+          name: s.serviceName,
+          count: s._count.serviceName,
+        })),
+      };
+    }),
 });
