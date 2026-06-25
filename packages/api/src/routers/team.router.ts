@@ -1,4 +1,5 @@
-import { router, salonOwnerProcedure } from '../trpc';
+import { z } from 'zod';
+import { router, salonOwnerProcedure, protectedProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import {
   addProfessionalSchema,
@@ -211,5 +212,46 @@ export const teamRouter = router({
       });
 
       return { success: true };
+    }),
+
+  /**
+   * Join a salon with an invitation code (post-registration)
+   * PROTECTED — any authenticated user with PROFESSIONAL role
+   */
+  joinWithCode: protectedProcedure
+    .input(z.object({ code: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== 'PROFESSIONAL') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Réservé aux professionnels' });
+      }
+
+      const salon = await ctx.prisma.salon.findUnique({
+        where: { invitationCode: input.code.toUpperCase().trim() },
+      });
+
+      if (!salon) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: "Code d'invitation invalide" });
+      }
+
+      const existing = await ctx.prisma.professionalProfile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+
+      if (existing) {
+        if (existing.salonId === salon.id) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'Vous êtes déjà rattaché à cet établissement' });
+        }
+        // Update to new salon
+        await ctx.prisma.professionalProfile.update({
+          where: { id: existing.id },
+          data: { salonId: salon.id, active: true },
+        });
+      } else {
+        await ctx.prisma.professionalProfile.create({
+          data: { userId: ctx.user.id, salonId: salon.id, active: true },
+        });
+      }
+
+      return { success: true, salonName: salon.name };
     }),
 });

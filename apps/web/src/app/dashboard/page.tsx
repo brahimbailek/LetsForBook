@@ -1166,6 +1166,22 @@ function ProfileSection({ user }: { user: any }) {
     lastName: user.lastName || '',
     phone: user.phone || '',
   });
+  const [salonCode, setSalonCode] = useState('');
+  const [joinSuccess, setJoinSuccess] = useState('');
+  const [joinError, setJoinError] = useState('');
+
+  const joinMutation = trpc.team.joinWithCode.useMutation({
+    onSuccess: (data) => {
+      setJoinSuccess(`Vous avez rejoint "${data.salonName}" avec succès !`);
+      setJoinError('');
+      setSalonCode('');
+      utils.auth.me.invalidate();
+    },
+    onError: (err) => {
+      setJoinError(err.message);
+      setJoinSuccess('');
+    },
+  });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -1340,6 +1356,37 @@ function ProfileSection({ user }: { user: any }) {
           </form>
         </Card>
       </div>
+
+      {/* Join salon with code — PROFESSIONAL only */}
+      {user.role === 'PROFESSIONAL' && (
+        <Card className="mt-8">
+          <h2 className="text-xl font-semibold text-coffee-800 mb-2">Rejoindre un établissement</h2>
+          <p className="text-sm text-coffee-500 mb-4">
+            Entrez le code d&apos;invitation fourni par le propriétaire du salon.
+            {user.professionalProfile?.salon && (
+              <span className="ml-1">Établissement actuel : <strong>{user.professionalProfile.salon.name}</strong></span>
+            )}
+          </p>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={salonCode}
+              onChange={(e) => setSalonCode(e.target.value.toUpperCase())}
+              placeholder="ex: ABC123"
+              className="flex-1 px-3 py-2 border border-sand-300 rounded-lg text-sm font-mono tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-cream-500"
+              maxLength={10}
+            />
+            <Button
+              onClick={() => joinMutation.mutate({ code: salonCode })}
+              disabled={!salonCode.trim() || joinMutation.isPending}
+            >
+              {joinMutation.isPending ? 'Vérification...' : 'Rejoindre'}
+            </Button>
+          </div>
+          {joinSuccess && <p className="mt-3 text-sm text-green-600 font-medium">{joinSuccess}</p>}
+          {joinError && <p className="mt-3 text-sm text-red-500">{joinError}</p>}
+        </Card>
+      )}
 
       {/* Account Info */}
       <Card className="mt-8">
