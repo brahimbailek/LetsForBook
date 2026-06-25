@@ -506,6 +506,11 @@ export const bookingRouter = router({
         },
       });
 
+      // Send confirmation notification (async, don't block)
+      notificationService.sendBookingConfirmation(ctx.prisma, appointment.id).catch((err) => {
+        console.error('Failed to send manual booking confirmation:', err);
+      });
+
       return appointment;
     }),
 });
