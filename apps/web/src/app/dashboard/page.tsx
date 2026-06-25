@@ -298,6 +298,21 @@ export default function DashboardPage() {
                 Bonjour, {user.firstName} 👋
               </h1>
 
+              {/* Pending approval banners */}
+              {mySalons?.filter((s: any) => !s.published).map((salon: any) => (
+                <div key={salon.id} className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  <span className="text-amber-500 text-lg">⏳</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-amber-800">
+                      "{salon.name}" est en attente d'approbation
+                    </p>
+                    <p className="text-xs text-amber-600">
+                      Votre établissement sera visible publiquement une fois approuvé par notre équipe.
+                    </p>
+                  </div>
+                </div>
+              ))}
+
               {/* KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <Card className="bg-gradient-to-br from-sage-500 to-sage-600 text-white">

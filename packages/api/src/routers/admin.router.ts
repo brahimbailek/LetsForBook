@@ -370,8 +370,25 @@ export const adminRouter = router({
           active: true,
           deletedAt: true,
           updatedAt: true,
+          ownerId: true,
         },
       });
+
+      // Notify the owner when published status changes
+      if (published !== undefined) {
+        await ctx.prisma.notification.create({
+          data: {
+            userId: updatedSalon.ownerId,
+            type: published ? 'BOOKING_ACCEPTED' : 'BOOKING_REJECTED',
+            channel: 'IN_APP',
+            recipient: '',
+            subject: published ? 'Salon approuvé' : 'Salon non approuvé',
+            body: published
+              ? `Votre salon "${updatedSalon.name}" a été approuvé et est maintenant visible publiquement.`
+              : `Votre salon "${updatedSalon.name}" n'a pas été approuvé. Contactez le support pour plus d'informations.`,
+          },
+        });
+      }
 
       return updatedSalon;
     }),

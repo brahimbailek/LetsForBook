@@ -135,6 +135,12 @@ export default function AdminPage() {
     { enabled: !!user && user.role === 'ADMIN' && activeTab === 'salons' }
   );
 
+  // Pending salons (unpublished, for approval section)
+  const { data: pendingSalonsData, refetch: refetchPendingSalons } = trpc.admin.getSalons.useQuery(
+    { page: 1, limit: 50, published: false },
+    { enabled: !!user && user.role === 'ADMIN' && activeTab === 'salons' }
+  );
+
   // Moderation
   const { data: reviewsData, isLoading: isLoadingReviews, refetch: refetchReviews } = trpc.admin.getReviews.useQuery(
     { page: reviewsPage, limit: 10 },
@@ -154,6 +160,7 @@ export default function AdminPage() {
   const updateSalonMutation = trpc.admin.updateSalon.useMutation({
     onSuccess: () => {
       refetchSalons();
+      refetchPendingSalons();
     },
   });
 
@@ -669,8 +676,65 @@ export default function AdminPage() {
   // =========================================================================
 
   const renderSalons = () => {
+    const pendingSalons = pendingSalonsData?.items ?? [];
+
     return (
       <div className="space-y-6">
+
+        {/* Pending approval section */}
+        {pendingSalons.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-base font-semibold text-amber-700">En attente d'approbation</span>
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
+                {pendingSalons.length}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {pendingSalons.map((salon: any) => (
+                <div key={salon.id} className="flex items-center gap-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-coffee-800">{salon.name}</p>
+                    <p className="text-sm text-coffee-500">
+                      {salon.city ?? ''}{salon.city && salon.owner ? ' · ' : ''}{salon.owner ? `${salon.owner.firstName} ${salon.owner.lastName}` : ''}
+                      {' · '}Créé le {formatDate(salon.createdAt)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => updateSalonMutation.mutate({ salonId: salon.id, published: true })}
+                      disabled={updateSalonMutation.isPending}
+                      className="px-4 py-2 rounded-lg bg-sage-500 hover:bg-sage-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      Approuver
+                    </button>
+                    <button
+                      onClick={() => updateSalonMutation.mutate({ salonId: salon.id, published: false, active: false })}
+                      disabled={updateSalonMutation.isPending}
+                      className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      Rejeter
+                    </button>
+                    {salon.slug && (
+                      <Link
+                        href={`/salon/${salon.slug}`}
+                        target="_blank"
+                        className="p-2 text-coffee-400 hover:text-cream-600 rounded-lg transition-colors"
+                        title="Voir la page"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <hr className="mt-6 border-sand-200" />
+          </div>
+        )}
+
         {/* Search & filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">

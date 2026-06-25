@@ -509,6 +509,26 @@ export const salonRouter = router({
         },
       });
 
+      // Notify all admins about new salon pending approval
+      const admins = await ctx.prisma.user.findMany({
+        where: { role: 'ADMIN' },
+        select: { id: true },
+      });
+      await Promise.all(
+        admins.map((admin) =>
+          ctx.prisma.notification.create({
+            data: {
+              userId: admin.id,
+              type: 'NEW_BOOKING_REQUEST',
+              channel: 'IN_APP',
+              recipient: '',
+              subject: 'Nouveau salon à approuver',
+              body: `Le salon "${salon.name}" (${salon.city}) vient d'être créé et attend votre approbation.`,
+            },
+          })
+        )
+      );
+
       return salon;
     }),
 
