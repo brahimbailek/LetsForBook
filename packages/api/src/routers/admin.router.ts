@@ -374,9 +374,9 @@ export const adminRouter = router({
         },
       });
 
-      // Notify the owner when published status changes
+      // Notify the owner when published status changes (non-blocking)
       if (published !== undefined) {
-        await ctx.prisma.notification.create({
+        ctx.prisma.notification.create({
           data: {
             userId: updatedSalon.ownerId,
             type: published ? 'BOOKING_ACCEPTED' : 'BOOKING_REJECTED',
@@ -387,7 +387,7 @@ export const adminRouter = router({
               ? `Votre salon "${updatedSalon.name}" a été approuvé et est maintenant visible publiquement.`
               : `Votre salon "${updatedSalon.name}" n'a pas été approuvé. Contactez le support pour plus d'informations.`,
           },
-        });
+        }).catch((err: any) => console.error('Failed to send salon notification:', err));
       }
 
       return updatedSalon;

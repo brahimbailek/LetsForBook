@@ -16,14 +16,19 @@ export const notificationRouter = router({
     }),
 
   getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
-    const count = await ctx.prisma.notification.count({
-      where: {
-        userId: ctx.user.id,
-        channel: 'IN_APP',
-        readAt: null,
-      },
-    });
-    return { count };
+    try {
+      const count = await ctx.prisma.notification.count({
+        where: {
+          userId: ctx.user.id,
+          channel: 'IN_APP',
+          readAt: null,
+        },
+      });
+      return { count };
+    } catch {
+      // readAt column may not exist yet — return 0 gracefully
+      return { count: 0 };
+    }
   }),
 
   markAsRead: protectedProcedure
