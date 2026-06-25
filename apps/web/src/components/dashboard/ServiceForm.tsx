@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc/client';
 import { Button, Input, Textarea, Modal, Select, Alert } from '@/components/ui';
 
@@ -48,6 +48,13 @@ export function ServiceForm({ isOpen, onClose, salonId, service, defaultCategory
   });
 
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-select first category once loaded if none selected
+  useEffect(() => {
+    if (categories && categories.length > 0 && !formData.categoryId) {
+      setFormData((prev) => ({ ...prev, categoryId: categories[0]!.id }));
+    }
+  }, [categories]);
 
   const createMutation = trpc.service.create.useMutation({
     onSuccess: () => {
