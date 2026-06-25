@@ -110,6 +110,13 @@ export default function DashboardPage() {
     { enabled: !!user && !!user.professionalProfile }
   );
 
+  const primarySalonId = mySalons?.[0]?.id ?? '';
+
+  const { data: salonStats } = trpc.booking.getSalonStats.useQuery(
+    { salonId: primarySalonId || 'none' },
+    { enabled: !!primarySalonId && primarySalonId.length > 0 }
+  );
+
   if (isLoadingUser) {
     return (
       <div className="min-h-screen bg-sand-50 flex items-center justify-center">
@@ -133,13 +140,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
-  const primarySalonId = mySalons?.[0]?.id ?? '';
-
-  const { data: salonStats } = trpc.booking.getSalonStats.useQuery(
-    { salonId: primarySalonId || 'none' },
-    { enabled: !!primarySalonId && primarySalonId.length > 0 }
-  );
 
   const handleEditSalon = (salon: any) => {
     setEditingSalon(salon);
