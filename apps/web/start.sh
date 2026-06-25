@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-echo "Running database migrations..."
-node /app/node_modules/prisma/build/index.js migrate deploy --schema /app/packages/database/prisma/schema.prisma
+echo "Pushing database schema..."
+node_modules/.bin/prisma db push --schema packages/database/prisma/schema.prisma --accept-data-loss
 
-echo "Migrations completed."
+echo "Database schema up to date."
 
 echo "Starting Next.js application..."
-exec node /app/apps/web/server.js
+exec node apps/web/server.js
