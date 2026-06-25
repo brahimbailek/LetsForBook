@@ -3,6 +3,7 @@
 # ===========================================
 FROM node:22-slim AS builder
 
+ARG CACHEBUST=3
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -21,8 +22,6 @@ COPY packages/validation/package.json ./packages/validation/
 
 RUN npm install --ignore-scripts
 
-# Cache bust: force rebuild from here
-ARG CACHEBUST=2
 # Copy the rest of the source
 COPY . .
 
@@ -31,7 +30,8 @@ RUN npx prisma generate --schema packages/database/prisma/schema.prisma
 
 # Build the Next.js application directly (bypass Turbo to avoid caching issues)
 ENV NODE_ENV=production
-RUN cd apps/web && npx next build && echo "=== BUILD OUTPUT ===" && ls -la .next/ && echo "=== STANDALONE ===" && ls -la .next/standalone/ || echo "STANDALONE NOT FOUND"
+RUN cd apps/web && npx next build
+RUN test -d apps/web/.next/standalone || (echo "ERROR: standalone not generated - check next.config.js output setting" && exit 1)
 
 # ===========================================
 # Stage 2: Production
