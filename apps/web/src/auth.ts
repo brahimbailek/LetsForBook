@@ -88,6 +88,25 @@ const result = NextAuth({
   providers: authProviders,
   callbacks: {
     ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      // On first sign-in, user is populated
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+        token.name = `${user.firstName} ${user.lastName}`;
+      }
+      // Always refresh role from DB so admin promotions take effect immediately
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
+      }
+      return token;
+    },
     async signIn({ user, account }) {
       if (account?.provider === 'google') {
         const existingUser = await prisma.user.findUnique({
