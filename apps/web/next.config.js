@@ -1,5 +1,10 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
+  // Required for monorepo: trace files up to the repo root so workspace packages are included
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   reactStrictMode: true,
   transpilePackages: [
     '@letsforbook/api',
