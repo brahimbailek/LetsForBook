@@ -38,7 +38,13 @@ export default function ProfilePage() {
     }
   }, [user]);
 
+  const [verifyBannerDismissed, setVerifyBannerDismissed] = useState(false);
+  const [verifyResent, setVerifyResent] = useState(false);
+
   const utils = trpc.useUtils();
+  const resendVerificationMutation = trpc.auth.resendVerificationEmail.useMutation({
+    onSuccess: () => setVerifyResent(true),
+  });
   const updateProfileMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => {
       setProfileSuccess(true);
@@ -141,6 +147,38 @@ export default function ProfilePage() {
             </div>
           </div>
         </Card>
+
+        {/* Email verification banner */}
+        {!user.emailVerified && !verifyBannerDismissed && (
+          <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 text-amber-500">⚠</span>
+              <div>
+                <p className="text-sm font-medium text-amber-800">Votre adresse email n&apos;est pas vérifiée</p>
+                {verifyResent ? (
+                  <p className="text-sm text-amber-700 mt-0.5">Email envoyé ! Vérifiez votre boîte de réception.</p>
+                ) : (
+                  <p className="text-sm text-amber-700 mt-0.5">
+                    Vérifiez votre email pour accéder à toutes les fonctionnalités.{' '}
+                    <button
+                      onClick={() => resendVerificationMutation.mutate()}
+                      disabled={resendVerificationMutation.isPending}
+                      className="underline hover:no-underline font-medium disabled:opacity-50"
+                    >
+                      {resendVerificationMutation.isPending ? 'Envoi...' : 'Renvoyer l\'email'}
+                    </button>
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setVerifyBannerDismissed(true)}
+              className="text-amber-400 hover:text-amber-600 text-lg leading-none"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
