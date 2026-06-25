@@ -19,7 +19,7 @@ COPY packages/types/package.json ./packages/types/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/validation/package.json ./packages/validation/
 
-RUN npm ci
+RUN npm install --ignore-scripts
 
 # Cache bust: force rebuild from here
 ARG CACHEBUST=1
