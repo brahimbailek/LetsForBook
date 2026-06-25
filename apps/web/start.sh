@@ -2,7 +2,7 @@
 set -e
 
 echo "Pushing database schema..."
-node_modules/.bin/prisma db push --schema packages/database/prisma/schema.prisma --accept-data-loss
+node node_modules/prisma/build/index.js db push --schema packages/database/prisma/schema.prisma --accept-data-loss
 
 echo "Database schema up to date."
 
