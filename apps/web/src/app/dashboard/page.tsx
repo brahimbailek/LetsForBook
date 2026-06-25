@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { Button, Card, Badge, Spinner } from '@/components/ui';
-import { AppointmentsList, SalonForm, ServiceForm, PrestationsManager, TeamManager, ProCalendar } from '@/components/dashboard';
+import { SalonForm, ServiceForm, PrestationsManager, TeamManager, ProCalendar } from '@/components/dashboard';
 import { NotificationBell } from '@/components/NotificationBell';
 
 type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'payments' | 'my-agenda' | 'my-services' | 'my-availability' | 'my-profile';
