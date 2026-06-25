@@ -171,6 +171,58 @@ export const authRouter = router({
       });
     }
 
+    // Send welcome email (non-blocking)
+    try {
+      const resend = getResend();
+      const roleLabel = userRole === 'SALON_OWNER'
+        ? 'professionnel'
+        : userRole === 'PROFESSIONAL'
+          ? 'professionnel'
+          : 'client';
+      await resend.emails.send({
+        from: `${APP_NAME} <${FROM_EMAIL}>`,
+        to: email,
+        subject: `Bienvenue sur ${APP_NAME} !`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f5f3ef; }
+              .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+              .header { background: linear-gradient(135deg, #6b8e6b 0%, #4a6b4a 100%); padding: 30px; text-align: center; }
+              .header h1 { color: #ffffff; margin: 0; font-size: 24px; }
+              .content { padding: 30px; color: #4a3728; line-height: 1.6; }
+              .button { display: inline-block; background-color: #6b8e6b; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+              .footer { background-color: #f5f3ef; padding: 20px; text-align: center; color: #6b5b4d; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Bienvenue sur ${APP_NAME} !</h1>
+              </div>
+              <div class="content">
+                <p>Bonjour <strong>${firstName}</strong>,</p>
+                <p>Votre compte ${roleLabel} a bien été créé. Vous pouvez dès maintenant${userRole === 'CLIENT' ? ' rechercher des salons et réserver vos prestations.' : ' configurer votre salon et gérer vos réservations.'}</p>
+                <div style="text-align: center;">
+                  <a href="${APP_URL}" class="button">Accéder à mon compte</a>
+                </div>
+                <p style="font-size: 14px; color: #6b5b4d;">Si vous n'êtes pas à l'origine de cette inscription, ignorez cet email.</p>
+              </div>
+              <div class="footer">
+                <p>${APP_NAME} - Votre plateforme de réservation beauté</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      });
+    } catch (error) {
+      console.error('Failed to send welcome email:', error);
+    }
+
     return {
       id: user.id,
       email: user.email,
