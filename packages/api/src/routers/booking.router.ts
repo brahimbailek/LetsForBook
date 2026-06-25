@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure, professionalProcedure } fr
 import { bookingService } from '../services/booking.service';
 import { availabilityService } from '../services/availability.service';
 import { notificationService } from '../services/notification.service';
+import { TRPCError } from '@trpc/server';
 import {
   createBookingSchema,
   getAvailableSlotsSchema,
@@ -365,5 +366,129 @@ export const bookingRouter = router({
           count: s._count.serviceName,
         })),
       };
+    }),
+
+  /**
+   * Create a booking manually (pro side) for an existing or new client
+   * PROFESSIONAL ONLY
+   */
+  createManual: professionalProcedure
+    .input(
+      z.object({
+        clientFirstName: z.string().min(1),
+        clientLastName: z.string().min(1),
+        clientEmail: z.string().email().optional(),
+        clientPhone: z.string().optional(),
+        serviceIds: z.array(z.string()).min(1),
+        startTime: z.coerce.date(),
+        clientNotes: z.string().max(500).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { clientFirstName, clientLastName, clientEmail, clientPhone, serviceIds, startTime, clientNotes } = input;
+
+      // Find the pro's profile and salon
+      const professional = await ctx.prisma.professionalProfile.findUnique({
+        where: { userId: ctx.user.id },
+        include: { salon: true },
+      });
+
+      if (!professional) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profil professionnel introuvable' });
+      }
+
+      // Find or create client user
+      let clientUser = clientEmail
+        ? await ctx.prisma.user.findUnique({ where: { email: clientEmail } })
+        : null;
+
+      if (!clientUser) {
+        // Create a lightweight client account
+        clientUser = await ctx.prisma.user.create({
+          data: {
+            email: clientEmail ?? `manual+${Date.now()}@letsforbook.internal`,
+            firstName: clientFirstName,
+            lastName: clientLastName,
+            phone: clientPhone ?? null,
+            role: 'CLIENT',
+            password: null,
+          },
+        });
+      }
+
+      // Ensure client profile exists
+      let clientProfile = await ctx.prisma.clientProfile.findUnique({
+        where: { userId: clientUser.id },
+      });
+
+      if (!clientProfile) {
+        clientProfile = await ctx.prisma.clientProfile.create({
+          data: { userId: clientUser.id },
+        });
+      }
+
+      // Fetch services and calculate total duration + price
+      const services = await ctx.prisma.service.findMany({
+        where: { id: { in: serviceIds }, salonId: professional.salonId, active: true },
+        include: {
+          professionals: {
+            where: { professionalId: professional.id, active: true },
+          },
+        },
+      });
+
+      if (services.length !== serviceIds.length) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Certains services sont introuvables' });
+      }
+
+      let totalDuration = 0;
+      let totalPrice = 0;
+
+      const appointmentServices = services.map((service) => {
+        const ps = service.professionals[0];
+        const duration = ps?.customDurationMinutes ?? service.durationMinutes;
+        const price = ps?.customPrice ?? service.price;
+        totalDuration += duration;
+        totalPrice += price;
+        return { serviceId: service.id, serviceName: service.name, price, duration };
+      });
+
+      const { addMinutes } = await import('date-fns');
+      const endTime = addMinutes(startTime, totalDuration);
+
+      // Check slot availability
+      const isAvailable = await availabilityService.isSlotAvailable(
+        ctx.prisma,
+        professional.id,
+        startTime,
+        endTime
+      );
+
+      if (!isAvailable) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Ce créneau est déjà occupé' });
+      }
+
+      // Create appointment
+      const appointment = await ctx.prisma.appointment.create({
+        data: {
+          clientId: clientProfile.id,
+          professionalId: professional.id,
+          salonId: professional.salonId,
+          startTime,
+          endTime,
+          timezone: professional.salon.timezone,
+          status: 'CONFIRMED',
+          clientNotes,
+          services: { create: appointmentServices },
+        },
+        include: {
+          services: { include: { service: true } },
+          client: { include: { user: true } },
+          professional: { include: { user: true } },
+          salon: true,
+        },
+      });
+
+      return appointment;
     }),
 });

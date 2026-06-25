@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { Button, Card, Badge, Spinner } from '@/components/ui';
-import { AppointmentsList, SalonForm, ServiceForm, PrestationsManager, TeamManager } from '@/components/dashboard';
+import { AppointmentsList, SalonForm, ServiceForm, PrestationsManager, TeamManager, ProCalendar } from '@/components/dashboard';
 import { NotificationBell } from '@/components/NotificationBell';
 
 type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'payments' | 'my-agenda' | 'my-services' | 'my-availability' | 'my-profile';
@@ -529,8 +529,8 @@ export default function DashboardPage() {
           {/* ========================== */}
           {activeTab === 'appointments' && isSalonOwner && (
             <div>
-              <h1 className="text-3xl font-bold text-coffee-800 mb-8">Rendez-vous</h1>
-              <AppointmentsList />
+              <h1 className="text-3xl font-bold text-coffee-800 mb-6">Rendez-vous</h1>
+              <ProCalendar />
             </div>
           )}
 
@@ -539,8 +539,8 @@ export default function DashboardPage() {
           {/* ======================== */}
           {activeTab === 'my-agenda' && (
             <div>
-              <h1 className="text-3xl font-bold text-coffee-800 mb-8">Mon agenda</h1>
-              <AppointmentsList />
+              <h1 className="text-3xl font-bold text-coffee-800 mb-6">Mon agenda</h1>
+              <ProCalendar />
             </div>
           )}
 
