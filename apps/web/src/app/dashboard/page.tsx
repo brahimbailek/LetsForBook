@@ -134,9 +134,6 @@ export default function DashboardPage() {
     );
   }
 
-  // SALON_OWNER stats
-  const totalServices = mySalons?.reduce((sum, s) => sum + (s._count?.services || 0), 0) || 0;
-  const totalReviews = mySalons?.reduce((sum, s) => sum + (s._count?.reviews || 0), 0) || 0;
   const primarySalonId = mySalons?.[0]?.id ?? '';
 
   const { data: salonStats } = trpc.booking.getSalonStats.useQuery(
