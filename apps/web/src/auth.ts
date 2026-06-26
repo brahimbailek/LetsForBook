@@ -72,7 +72,11 @@ authProviders.push(
         }
 
         if (!user.emailVerified) {
-          throw new Error('EmailNotVerified');
+          // Auto-verify accounts created before email verification was enforced
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { emailVerified: new Date() },
+          });
         }
 
         return {
