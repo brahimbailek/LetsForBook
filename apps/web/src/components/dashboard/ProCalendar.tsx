@@ -119,17 +119,20 @@ export function ProCalendar({ salonId: salonIdProp }: ProCalendarProps) {
     [weekStart]
   );
 
-  // Index appointments by day+hour for the grid
-  const aptsByDayHour = useMemo(() => {
+  // Index appointments by day (date string) for absolute positioning
+  const aptsByDay = useMemo(() => {
     const map: Record<string, any[]> = {};
     (appointments ?? []).forEach((apt) => {
       const d = new Date(apt.startTime);
-      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
       if (!map[key]) map[key] = [];
       map[key]!.push(apt);
     });
     return map;
   }, [appointments]);
+
+  // Row height in px per hour slot
+  const ROW_H = 52;
 
   const openFormForSlot = (day: Date, hour: number) => {
     const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
@@ -209,7 +212,7 @@ export function ProCalendar({ salonId: salonIdProp }: ProCalendarProps) {
           <div className="overflow-auto">
             <div className="min-w-[700px]">
               {/* Header row */}
-              <div className="grid grid-cols-8 border-b border-sand-200">
+              <div className="grid grid-cols-8 border-b border-sand-200 sticky top-0 bg-white z-10">
                 <div className="py-2 px-2 text-xs text-coffee-400" />
                 {weekDays.map((day, i) => {
                   const isToday =
@@ -227,42 +230,76 @@ export function ProCalendar({ salonId: salonIdProp }: ProCalendarProps) {
                 })}
               </div>
 
-              {/* Hour rows */}
-              {HOURS.map((hour) => (
-                <div key={hour} className="grid grid-cols-8 border-b border-sand-100 min-h-[52px]">
-                  <div className="px-2 py-1 text-xs text-coffee-400 text-right leading-none pt-1.5">
-                    {String(hour).padStart(2, '0')}:00
-                  </div>
-                  {weekDays.map((day, di) => {
-                    const key = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}-${hour}`;
-                    const apts = aptsByDayHour[key] ?? [];
-                    const isToday =
-                      day.getDate() === today.getDate() &&
-                      day.getMonth() === today.getMonth() &&
-                      day.getFullYear() === today.getFullYear();
+              {/* Grid body — time column + 7 day columns with absolute-positioned events */}
+              <div className="grid grid-cols-8">
+                {/* Time labels column */}
+                <div className="border-r border-sand-100">
+                  {HOURS.map((hour) => (
+                    <div key={hour} style={{ height: ROW_H }} className="border-b border-sand-100 px-2 text-xs text-coffee-400 text-right leading-none pt-1.5">
+                      {String(hour).padStart(2, '0')}:00
+                    </div>
+                  ))}
+                </div>
 
-                    return (
-                      <div
-                        key={di}
-                        className={`border-l border-sand-100 px-1 py-0.5 cursor-pointer hover:bg-cream-50 transition-colors relative ${isToday ? 'bg-cream-50/40' : ''}`}
-                        onClick={() => openFormForSlot(day, hour)}
-                      >
-                        {apts.map((apt) => (
+                {/* Day columns */}
+                {weekDays.map((day, di) => {
+                  const isToday =
+                    day.getDate() === today.getDate() &&
+                    day.getMonth() === today.getMonth() &&
+                    day.getFullYear() === today.getFullYear();
+                  const dayKey = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+                  const dayApts = aptsByDay[dayKey] ?? [];
+                  const gridStart = HOURS[0]!; // first visible hour
+
+                  return (
+                    <div
+                      key={di}
+                      className={`border-l border-sand-100 relative ${isToday ? 'bg-cream-50/30' : ''}`}
+                      style={{ height: ROW_H * HOURS.length }}
+                    >
+                      {/* Hour lines + click targets */}
+                      {HOURS.map((hour) => (
+                        <div
+                          key={hour}
+                          style={{ top: (hour - gridStart) * ROW_H, height: ROW_H }}
+                          className="absolute w-full border-b border-sand-100 cursor-pointer hover:bg-cream-50/50 transition-colors"
+                          onClick={() => openFormForSlot(day, hour)}
+                        />
+                      ))}
+
+                      {/* Appointments — absolutely positioned by time */}
+                      {dayApts.map((apt) => {
+                        const start = new Date(apt.startTime);
+                        const end = new Date(apt.endTime);
+                        const startMinutes = start.getHours() * 60 + start.getMinutes();
+                        const endMinutes = end.getHours() * 60 + end.getMinutes();
+                        const gridStartMinutes = gridStart * 60;
+                        const topPx = ((startMinutes - gridStartMinutes) / 60) * ROW_H;
+                        const durationMinutes = Math.max(endMinutes - startMinutes, 30);
+                        const heightPx = (durationMinutes / 60) * ROW_H;
+
+                        return (
                           <button
                             key={apt.id}
                             onClick={(e) => { e.stopPropagation(); setSelectedApt(apt); }}
-                            className={`w-full text-left text-xs rounded px-1.5 py-1 mb-0.5 truncate leading-tight ${STATUS_COLORS[apt.status] ?? 'bg-sand-200 text-coffee-700'}`}
-                            title={`${apt.client.user.firstName} ${apt.client.user.lastName} — ${fmtTime(new Date(apt.startTime))}`}
+                            style={{ top: topPx, height: heightPx }}
+                            className={`absolute left-1 right-1 z-10 text-left text-xs rounded-lg px-2 py-1 overflow-hidden shadow-sm border border-white/30 transition-opacity hover:opacity-90 ${STATUS_COLORS[apt.status] ?? 'bg-sand-200 text-coffee-700'}`}
+                            title={`${apt.client.user.firstName} ${apt.client.user.lastName} — ${fmtTime(start)} → ${fmtTime(end)}`}
                           >
-                            <span className="font-semibold">{fmtTime(new Date(apt.startTime))}</span>
-                            {' '}{apt.client.user.firstName} {apt.client.user.lastName}
+                            <span className="font-semibold block leading-tight">{fmtTime(start)}</span>
+                            <span className="block leading-tight truncate">{apt.client.user.firstName} {apt.client.user.lastName.charAt(0)}.</span>
+                            {heightPx >= 60 && (
+                              <span className="block leading-tight text-[10px] opacity-80 mt-0.5 truncate">
+                                {apt.services?.map((s: any) => s.serviceName).join(', ')}
+                              </span>
+                            )}
                           </button>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
