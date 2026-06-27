@@ -407,7 +407,27 @@ function SearchContent() {
                   href={`/salon/${salon.slug}`}
                   className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition flex"
                 >
-                  <div className="w-64 h-48 bg-gradient-to-br from-amber-400 to-amber-600 flex-shrink-0" />
+                  <div className="w-64 h-48 bg-gradient-to-br from-amber-400 to-amber-600 flex-shrink-0 relative overflow-hidden">
+                    {salon.coverImage ? (
+                      <img
+                        src={salon.coverImage}
+                        alt={salon.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : salon.logo ? (
+                      <img
+                        src={salon.logo}
+                        alt={salon.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-white text-4xl font-bold opacity-60">
+                          {salon.name.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <div className="p-6 flex-1">
                     <div className="flex items-start justify-between">
                       <div>
