@@ -515,7 +515,7 @@ export const bookingRouter = router({
         for (let i = days - 1; i >= 0; i--) {
           const d = new Date(now);
           d.setDate(now.getDate() - i);
-          const key = d.toISOString().split('T')[0];
+          const key: string = d.toISOString().split('T')[0]!;
           revenueTimeline.push({ date: key, amount: (revenueByDay.get(key) ?? 0) / 100 });
         }
       }
