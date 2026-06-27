@@ -496,9 +496,9 @@ export const bookingRouter = router({
       const revenueByDay = new Map<string, number>();
       for (const p of payments) {
         if (!p.paidAt) continue;
-        const key = period === '12m'
+        const key: string = period === '12m'
           ? `${p.paidAt.getFullYear()}-${String(p.paidAt.getMonth() + 1).padStart(2, '0')}`
-          : p.paidAt.toISOString().split('T')[0];
+          : p.paidAt.toISOString().split('T')[0]!;
         revenueByDay.set(key, (revenueByDay.get(key) ?? 0) + p.amount);
       }
 
