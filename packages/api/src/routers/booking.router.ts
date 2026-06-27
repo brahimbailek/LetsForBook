@@ -369,6 +369,239 @@ export const bookingRouter = router({
     }),
 
   /**
+   * Advanced statistics for salon owner dashboard
+   * PROFESSIONAL ONLY
+   */
+  getAdvancedStats: professionalProcedure
+    .input(z.object({
+      salonId: z.string(),
+      period: z.enum(['7d', '30d', '90d', '12m']).default('30d'),
+    }))
+    .query(async ({ ctx, input }) => {
+      const { salonId, period } = input;
+      const now = new Date();
+
+      const periodStart = new Date(now);
+      if (period === '7d') periodStart.setDate(now.getDate() - 7);
+      else if (period === '30d') periodStart.setDate(now.getDate() - 30);
+      else if (period === '90d') periodStart.setDate(now.getDate() - 90);
+      else periodStart.setFullYear(now.getFullYear() - 1);
+
+      const prevStart = new Date(periodStart);
+      const diffMs = now.getTime() - periodStart.getTime();
+      prevStart.setTime(periodStart.getTime() - diffMs);
+
+      const [
+        appointments,
+        prevAppointments,
+        payments,
+        prevPayments,
+        serviceRevenue,
+        proRevenue,
+        clientRetention,
+        hourlyDistribution,
+        weekdayDistribution,
+        reviewStats,
+      ] = await Promise.all([
+        // Current period appointments
+        ctx.prisma.appointment.findMany({
+          where: { salonId, startTime: { gte: periodStart } },
+          select: { id: true, status: true, startTime: true, clientId: true },
+        }),
+        // Previous period appointments (for comparison)
+        ctx.prisma.appointment.findMany({
+          where: { salonId, startTime: { gte: prevStart, lt: periodStart } },
+          select: { status: true },
+        }),
+        // Current period revenue
+        ctx.prisma.payment.findMany({
+          where: {
+            appointment: { salonId },
+            status: 'PAID',
+            paidAt: { gte: periodStart },
+          },
+          select: { amount: true, paidAt: true },
+        }),
+        // Previous period revenue
+        ctx.prisma.payment.aggregate({
+          where: {
+            appointment: { salonId },
+            status: 'PAID',
+            paidAt: { gte: prevStart, lt: periodStart },
+          },
+          _sum: { amount: true },
+        }),
+        // Revenue by service
+        ctx.prisma.appointmentService.groupBy({
+          by: ['serviceName'],
+          where: {
+            appointment: {
+              salonId,
+              startTime: { gte: periodStart },
+              status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_SALON'] },
+            },
+          },
+          _count: { serviceName: true },
+          _sum: { price: true },
+          orderBy: { _sum: { price: 'desc' } },
+          take: 8,
+        }),
+        // Revenue by professional
+        ctx.prisma.appointment.groupBy({
+          by: ['professionalId'],
+          where: {
+            salonId,
+            startTime: { gte: periodStart },
+            status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_SALON'] },
+          },
+          _count: { id: true },
+        }),
+        // Client retention: count clients with more than 1 appointment
+        ctx.prisma.appointment.groupBy({
+          by: ['clientId'],
+          where: {
+            salonId,
+            status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_SALON'] },
+          },
+          _count: { id: true },
+          having: { id: { _count: { gt: 1 } } },
+        }),
+        // Hourly distribution (0-23)
+        ctx.prisma.appointment.findMany({
+          where: {
+            salonId,
+            startTime: { gte: periodStart },
+            status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_SALON'] },
+          },
+          select: { startTime: true },
+        }),
+        // Weekday distribution
+        ctx.prisma.appointment.findMany({
+          where: {
+            salonId,
+            startTime: { gte: periodStart },
+            status: { notIn: ['CANCELLED_CLIENT', 'CANCELLED_SALON'] },
+          },
+          select: { startTime: true },
+        }),
+        // Review stats
+        ctx.prisma.review.aggregate({
+          where: { salonId },
+          _avg: { rating: true },
+          _count: { id: true },
+        }),
+      ]);
+
+      // Revenue over time (group by day or month depending on period)
+      const revenueByDay = new Map<string, number>();
+      for (const p of payments) {
+        if (!p.paidAt) continue;
+        const key = period === '12m'
+          ? `${p.paidAt.getFullYear()}-${String(p.paidAt.getMonth() + 1).padStart(2, '0')}`
+          : p.paidAt.toISOString().split('T')[0];
+        revenueByDay.set(key, (revenueByDay.get(key) ?? 0) + p.amount);
+      }
+
+      // Build revenue timeline
+      const revenueTimeline: { date: string; amount: number }[] = [];
+      if (period === '12m') {
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          revenueTimeline.push({ date: key, amount: (revenueByDay.get(key) ?? 0) / 100 });
+        }
+      } else {
+        const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
+        for (let i = days - 1; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          const key = d.toISOString().split('T')[0];
+          revenueTimeline.push({ date: key, amount: (revenueByDay.get(key) ?? 0) / 100 });
+        }
+      }
+
+      // Hourly slots distribution
+      const hourCounts = Array(24).fill(0);
+      for (const a of hourlyDistribution) {
+        hourCounts[a.startTime.getHours()]++;
+      }
+      const peakHours = hourCounts
+        .map((count, hour) => ({ hour, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      // Weekday distribution
+      const weekdayCounts = Array(7).fill(0);
+      const weekdayLabels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+      for (const a of weekdayDistribution) {
+        weekdayCounts[a.startTime.getDay()]++;
+      }
+      const weekdayData = weekdayCounts.map((count, i) => ({ day: weekdayLabels[i], count }));
+
+      // Current period aggregates
+      const total = appointments.length;
+      const completed = appointments.filter(a => a.status === 'COMPLETED').length;
+      const cancelled = appointments.filter(a => a.status === 'CANCELLED_CLIENT' || a.status === 'CANCELLED_SALON').length;
+      const noShow = appointments.filter(a => a.status === 'NO_SHOW').length;
+      const totalRevenue = payments.reduce((s, p) => s + p.amount, 0) / 100;
+
+      const prevTotal = prevAppointments.length;
+      const prevCompleted = prevAppointments.filter(a => a.status === 'COMPLETED').length;
+      const prevRevenue = (prevPayments._sum.amount ?? 0) / 100;
+
+      const noShowRate = total > 0 ? Math.round((noShow / total) * 100) : 0;
+      const cancellationRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+
+      // Professional revenue lookup
+      const proDetails = await ctx.prisma.professionalProfile.findMany({
+        where: { id: { in: proRevenue.map(p => p.professionalId).filter(Boolean) as string[] } },
+        select: { id: true, user: { select: { firstName: true, lastName: true } } },
+      });
+      const proMap = new Map(proDetails.map(p => [p.id, `${p.user.firstName} ${p.user.lastName}`]));
+
+      const uniqueClients = new Set(appointments.map(a => a.clientId)).size;
+      const returningClients = clientRetention.length;
+      const newClients = uniqueClients - returningClients;
+
+      return {
+        period,
+        summary: {
+          totalAppointments: total,
+          completedAppointments: completed,
+          cancelledAppointments: cancelled,
+          noShowCount: noShow,
+          totalRevenue,
+          noShowRate,
+          cancellationRate,
+          uniqueClients,
+          returningClients,
+          newClients,
+          vsLastPeriod: {
+            appointments: prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : null,
+            revenue: prevRevenue > 0 ? Math.round(((totalRevenue - prevRevenue) / prevRevenue) * 100) : null,
+            completed: prevCompleted > 0 ? Math.round(((completed - prevCompleted) / prevCompleted) * 100) : null,
+          },
+        },
+        revenueTimeline,
+        topServices: serviceRevenue.map(s => ({
+          name: s.serviceName,
+          count: s._count.serviceName,
+          revenue: (s._sum.price ?? 0) / 100,
+        })),
+        proPerformance: proRevenue.map(p => ({
+          name: p.professionalId ? (proMap.get(p.professionalId) ?? 'Inconnu') : 'Non assigné',
+          appointments: p._count.id,
+        })).sort((a, b) => b.appointments - a.appointments),
+        peakHours,
+        weekdayData,
+        reviewStats: {
+          average: reviewStats._avg.rating ?? 0,
+          total: reviewStats._count.id,
+        },
+      };
+    }),
+
+  /**
    * Create a booking manually (pro side) for an existing or new client
    * PROFESSIONAL ONLY
    */

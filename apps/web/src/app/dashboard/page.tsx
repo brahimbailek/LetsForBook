@@ -7,9 +7,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { Button, Card, Badge, Spinner } from '@/components/ui';
 import { SalonForm, ServiceForm, PrestationsManager, TeamManager, ProCalendar, AdminPanel } from '@/components/dashboard';
+import { StatsPanel } from '@/components/dashboard/StatsPanel';
 import { NotificationBell } from '@/components/NotificationBell';
 
-type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'payments' | 'my-agenda' | 'my-services' | 'my-availability' | 'my-profile' | 'admin';
+type TabId = 'overview' | 'appointments' | 'salons' | 'services' | 'team' | 'payments' | 'stats' | 'my-agenda' | 'my-services' | 'my-availability' | 'my-profile' | 'admin';
 
 function InvitationCodeBlock({ salonId }: { salonId: string }) {
   const [copied, setCopied] = useState(false);
@@ -173,6 +174,7 @@ export default function DashboardPage() {
         { id: 'services', label: 'Prestations', icon: '✂️' },
         { id: 'team', label: 'Équipe', icon: '👥' },
         { id: 'payments', label: 'Revenus', icon: '💰' },
+        { id: 'stats', label: 'Statistiques', icon: '📈' },
         { id: 'my-agenda', label: 'Mon agenda', icon: '📅', separator: true },
         { id: 'my-availability', label: 'Mes disponibilités', icon: '🕐' },
         { id: 'my-profile', label: 'Mon profil', icon: '👤' },
@@ -812,6 +814,13 @@ export default function DashboardPage() {
           {/* ========================== */}
           {activeTab === 'payments' && isSalonOwner && mySalons && (
             <PaymentsSection salons={mySalons} />
+          )}
+
+          {/* =================== */}
+          {/* STATISTIQUES        */}
+          {/* =================== */}
+          {activeTab === 'stats' && isSalonOwner && primarySalonId && (
+            <StatsPanel salonId={primarySalonId} />
           )}
 
           {/* =================== */}

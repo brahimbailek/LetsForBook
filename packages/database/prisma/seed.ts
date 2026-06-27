@@ -381,6 +381,8 @@ async function main() {
       phone: '+33142345678',
       email: 'contact@beaute-eternelle.fr',
       ownerId: owners[0]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&q=80',
     },
     {
       name: 'Le Studio Coiffure',
@@ -394,6 +396,8 @@ async function main() {
       phone: '+33145678901',
       email: 'contact@studio-coiffure.fr',
       ownerId: owners[0]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1559599101-f09722fb4948?w=200&q=80',
     },
     {
       name: 'Ink Master Tattoo',
@@ -407,6 +411,8 @@ async function main() {
       phone: '+33156789012',
       email: 'contact@inkmaster.fr',
       ownerId: owners[1]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?w=200&q=80',
     },
     {
       name: 'FitCoach Paris',
@@ -420,6 +426,8 @@ async function main() {
       phone: '+33167890123',
       email: 'contact@fitcoach-paris.fr',
       ownerId: owners[1]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&q=80',
     },
     {
       name: 'Barber\'s Republic',
@@ -433,6 +441,8 @@ async function main() {
       phone: '+33178901234',
       email: 'contact@barbers-republic.fr',
       ownerId: owners[2]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=200&q=80',
     },
     {
       name: 'Zen Attitude Spa',
@@ -446,6 +456,8 @@ async function main() {
       phone: '+33189012345',
       email: 'contact@zenattitude.fr',
       ownerId: owners[2]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=200&q=80',
     },
     {
       name: 'Garage Expert Paris',
@@ -459,6 +471,8 @@ async function main() {
       phone: '+33190123456',
       email: 'contact@garage-expert-paris.fr',
       ownerId: owners[3]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=200&q=80',
     },
 
     // LYON (45.7640, 4.8357) - 5 salons
@@ -474,6 +488,8 @@ async function main() {
       phone: '+33478123456',
       email: 'hello@elegance-coiffure.fr',
       ownerId: owners[3]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&q=80',
     },
     {
       name: 'Lyon Piercing Studio',
@@ -487,6 +503,8 @@ async function main() {
       phone: '+33478234567',
       email: 'contact@lyon-piercing.fr',
       ownerId: owners[3]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?w=200&q=80',
     },
     {
       name: 'Massage & Bien-être Lyon',
@@ -500,6 +518,8 @@ async function main() {
       phone: '+33478345678',
       email: 'contact@massage-lyon.fr',
       ownerId: owners[4]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=200&q=80',
     },
     {
       name: 'Nails Factory Lyon',
@@ -513,6 +533,8 @@ async function main() {
       phone: '+33478456789',
       email: 'contact@nailsfactory-lyon.fr',
       ownerId: owners[4]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&q=80',
     },
     {
       name: 'Auto Service Lyon',
@@ -526,6 +548,8 @@ async function main() {
       phone: '+33478567890',
       email: 'contact@autoservice-lyon.fr',
       ownerId: owners[4]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=200&q=80',
     },
 
     // MARSEILLE (43.2965, 5.3698) - 4 salons
@@ -541,6 +565,8 @@ async function main() {
       phone: '+33491234567',
       email: 'info@zenitude-spa.fr',
       ownerId: owners[5]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=200&q=80',
     },
     {
       name: 'Coiff\'Style Marseille',
@@ -554,6 +580,8 @@ async function main() {
       phone: '+33491345678',
       email: 'contact@coiffstyle-marseille.fr',
       ownerId: owners[5]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1559599101-f09722fb4948?w=200&q=80',
     },
     {
       name: 'Marseille Tattoo Art',
@@ -567,6 +595,8 @@ async function main() {
       phone: '+33491456789',
       email: 'contact@marseille-tattoo.fr',
       ownerId: owners[6]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?w=200&q=80',
     },
     {
       name: 'CrossFit Marseille',
@@ -580,6 +610,8 @@ async function main() {
       phone: '+33491567890',
       email: 'contact@crossfit-marseille.fr',
       ownerId: owners[6]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&q=80',
     },
 
     // TOULOUSE (43.6047, 1.4442) - 4 salons
@@ -595,6 +627,8 @@ async function main() {
       phone: '+33561876543',
       email: 'contact@atelier-sourcil.fr',
       ownerId: owners[7]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&q=80',
     },
     {
       name: 'Yoga Studio Toulouse',
@@ -608,6 +642,8 @@ async function main() {
       phone: '+33561987654',
       email: 'contact@yoga-toulouse.fr',
       ownerId: owners[7]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=200&q=80',
     },
     {
       name: 'Barber Shop Toulouse',
@@ -621,6 +657,8 @@ async function main() {
       phone: '+33561098765',
       email: 'contact@barber-toulouse.fr',
       ownerId: owners[0]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=200&q=80',
     },
     {
       name: 'Garage Toulouse Auto',
@@ -634,6 +672,8 @@ async function main() {
       phone: '+33561109876',
       email: 'contact@garage-toulouse.fr',
       ownerId: owners[0]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=200&q=80',
     },
 
     // NICE (43.6951, 7.2658) - 3 salons
@@ -649,6 +689,8 @@ async function main() {
       phone: '+33493456789',
       email: 'hello@nailart-paradise.fr',
       ownerId: owners[1]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=200&q=80',
     },
     {
       name: 'Nice Coiffure Premium',
@@ -662,6 +704,8 @@ async function main() {
       phone: '+33493567890',
       email: 'contact@nice-coiffure.fr',
       ownerId: owners[2]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1559599101-f09722fb4948?w=200&q=80',
     },
     {
       name: 'Riviera Massage',
@@ -675,6 +719,8 @@ async function main() {
       phone: '+33493678901',
       email: 'contact@riviera-massage.fr',
       ownerId: owners[3]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=200&q=80',
     },
 
     // BORDEAUX (44.8378, -0.5792) - 3 salons
@@ -690,6 +736,8 @@ async function main() {
       phone: '+33556789012',
       email: 'contact@barbers-club.fr',
       ownerId: owners[4]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=200&q=80',
     },
     {
       name: 'Bordeaux Ink',
@@ -703,6 +751,8 @@ async function main() {
       phone: '+33556890123',
       email: 'contact@bordeaux-ink.fr',
       ownerId: owners[5]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?w=200&q=80',
     },
     {
       name: 'Spa Vinothérapie Bordeaux',
@@ -716,6 +766,8 @@ async function main() {
       phone: '+33556901234',
       email: 'contact@spa-vino-bordeaux.fr',
       ownerId: owners[6]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=200&q=80',
     },
 
     // NANTES (47.2184, -1.5536) - 2 salons
@@ -731,6 +783,8 @@ async function main() {
       phone: '+33240123456',
       email: 'contact@hairdesign-nantes.fr',
       ownerId: owners[7]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=200&q=80',
     },
     {
       name: 'Pilates Studio Nantes',
@@ -744,6 +798,8 @@ async function main() {
       phone: '+33240234567',
       email: 'contact@pilates-nantes.fr',
       ownerId: owners[0]!.id,
+      coverImage: 'https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?w=800&q=80',
+      logo: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=200&q=80',
     },
   ];
 

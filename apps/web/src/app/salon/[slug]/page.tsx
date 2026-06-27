@@ -688,12 +688,20 @@ export default function SalonDetailPage() {
               <p className="text-sm text-coffee-500 mb-4">
                 Prenez rendez-vous en quelques clics
               </p>
-              <Button
-                fullWidth
-                onClick={() => servicesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-              >
-                Prendre rendez-vous
-              </Button>
+              {salon.services && salon.services.length > 0 ? (
+                <Button
+                  fullWidth
+                  onClick={() => servicesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                >
+                  Prendre rendez-vous
+                </Button>
+              ) : (
+                <div className="text-center py-2">
+                  <p className="text-sm text-coffee-500 italic">
+                    Aucune prestation disponible pour le moment
+                  </p>
+                </div>
+              )}
             </Card>
 
             {/* Contact Info */}
