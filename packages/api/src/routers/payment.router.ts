@@ -347,22 +347,26 @@ export const paymentRouter = router({
         });
       }
 
-      const payments = await ctx.prisma.payment.findMany({
-        where: {
-          appointment: {
-            salonId,
+      const [payments, appointmentServices] = await Promise.all([
+        ctx.prisma.payment.findMany({
+          where: {
+            appointment: { salonId },
+            createdAt: { gte: startDate, lte: endDate },
           },
-          createdAt: {
-            gte: startDate,
-            lte: endDate,
+          select: { amount: true, status: true, type: true },
+        }),
+        // CA réel = somme des services sur RDV COMPLETED ou CONFIRMED dans la période
+        ctx.prisma.appointmentService.findMany({
+          where: {
+            appointment: {
+              salonId,
+              startTime: { gte: startDate, lte: endDate },
+              status: { in: ['COMPLETED', 'CONFIRMED', 'IN_PROGRESS'] },
+            },
           },
-        },
-        select: {
-          amount: true,
-          status: true,
-          type: true,
-        },
-      });
+          select: { price: true },
+        }),
+      ]);
 
       const stats = {
         totalRevenue: 0,
@@ -373,6 +377,8 @@ export const paymentRouter = router({
         paymentCount: payments.length,
         depositCount: 0,
         fullPaymentCount: 0,
+        // CA basé sur les prestations effectuées (inclut RDV manuels sans Stripe)
+        totalServiceRevenue: appointmentServices.reduce((s, a) => s + a.price, 0),
       };
 
       payments.forEach((payment) => {

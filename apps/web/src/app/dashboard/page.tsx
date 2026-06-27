@@ -1464,12 +1464,14 @@ function ProfileSection({ user }: { user: any }) {
 // ==============================================
 function PaymentsSection({ salons }: { salons: any[] }) {
   const [selectedSalonId, setSelectedSalonId] = useState(salons[0]?.id || '');
-  const [dateRange, setDateRange] = useState(() => {
+  const [monthOffset, setMonthOffset] = useState(0);
+  const dateRange = (() => {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const month = now.getMonth() + monthOffset;
+    const start = new Date(now.getFullYear(), month, 1);
+    const end = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59);
     return { start, end };
-  });
+  })();
 
   const { data: stats, isLoading: statsLoading } = trpc.payment.getSalonPaymentStats.useQuery(
     { salonId: selectedSalonId, startDate: dateRange.start, endDate: dateRange.end },
@@ -1489,13 +1491,6 @@ function PaymentsSection({ salons }: { salons: any[] }) {
     CANCELLED: { label: 'Annulé', color: 'bg-gray-100 text-gray-700' },
   };
 
-  const setMonth = (offset: number) => {
-    const now = new Date();
-    const month = now.getMonth() + offset;
-    const start = new Date(now.getFullYear(), month, 1);
-    const end = new Date(now.getFullYear(), month + 1, 0, 23, 59, 59);
-    setDateRange({ start, end });
-  };
 
   return (
     <div>
@@ -1520,21 +1515,41 @@ function PaymentsSection({ salons }: { salons: any[] }) {
       )}
 
       {/* Period Selector */}
-      <div className="flex gap-2 mb-6">
-        <Button variant="outline" size="sm" onClick={() => setMonth(-1)}>Mois dernier</Button>
-        <Button variant="primary" size="sm" onClick={() => setMonth(0)}>Ce mois</Button>
-        <span className="flex items-center text-sm text-coffee-600 ml-2">
+      <div className="flex items-center gap-2 mb-6">
+        <button
+          onClick={() => setMonthOffset(o => o - 1)}
+          className="p-1.5 rounded-lg hover:bg-sand-100 text-coffee-600"
+        >‹</button>
+        <span className="text-sm font-medium text-coffee-800 min-w-[120px] text-center capitalize">
           {dateRange.start.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
         </span>
+        <button
+          onClick={() => setMonthOffset(o => Math.min(o + 1, 0))}
+          className="p-1.5 rounded-lg hover:bg-sand-100 text-coffee-600 disabled:opacity-30"
+          disabled={monthOffset >= 0}
+        >›</button>
+        {monthOffset !== 0 && (
+          <button
+            onClick={() => setMonthOffset(0)}
+            className="text-xs px-2.5 py-1 rounded-lg bg-cream-100 hover:bg-cream-200 text-cream-700 ml-1"
+          >
+            Aujourd'hui
+          </button>
+        )}
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <p className="text-green-100">Total encaissé</p>
+          <p className="text-green-100">Chiffre d'affaires</p>
           <p className="text-3xl font-bold">
-            {statsLoading ? '...' : `${((stats as any)?.totalPaid / 100 || 0).toFixed(2)} €`}
+            {statsLoading ? '...' : `${((stats as any)?.totalServiceRevenue / 100 || 0).toFixed(2)} €`}
           </p>
+          {(stats as any)?.totalPaid > 0 && (
+            <p className="text-green-200 text-xs mt-1">
+              dont {((stats as any).totalPaid / 100).toFixed(2)} € via Stripe
+            </p>
+          )}
         </Card>
 
         <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
