@@ -584,6 +584,12 @@ export default function SalonDetailPage() {
                         className="py-3 text-base"
                         disabled={createBookingMutation.isPending}
                         onClick={() => {
+                          if (!user) {
+                            const dateStr = selectedDate.toISOString().split('T')[0];
+                            const callbackUrl = `/salon/${slug}?book_service=${selectedService}&book_pro=${selectedPro}&book_date=${dateStr}&book_time=${selectedTime}`;
+                            router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+                            return;
+                          }
                           setBookingError(null);
                           const dateStr = selectedDate.toISOString().split('T')[0];
                           const startTime = new Date(`${dateStr}T${selectedTime}:00`);
@@ -595,7 +601,7 @@ export default function SalonDetailPage() {
                           });
                         }}
                       >
-                        {createBookingMutation.isPending ? 'Réservation en cours...' : 'Confirmer le rendez-vous'}
+                        {createBookingMutation.isPending ? 'Réservation en cours...' : user ? 'Confirmer le rendez-vous' : 'Se connecter pour réserver'}
                       </Button>
                     </div>
                   )}
