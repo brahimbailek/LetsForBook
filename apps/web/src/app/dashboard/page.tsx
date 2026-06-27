@@ -223,10 +223,6 @@ export default function DashboardPage() {
             ))}
           </nav>
 
-          <div className="px-4 py-2 flex justify-end">
-            <NotificationBell />
-          </div>
-
           <div className="absolute bottom-0 left-0 right-0 p-4" ref={profileMenuRef}>
             {/* Dropdown menu (opens upward) */}
             {showProfileMenu && (
@@ -291,6 +287,10 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <main className="flex-1 ml-64 p-8">
+          {/* Top bar */}
+          <div className="fixed top-0 right-0 z-20 flex items-center gap-3 px-6 py-3">
+            <NotificationBell />
+          </div>
 
           {/* ===================== */}
           {/* OVERVIEW - SALON_OWNER */}
