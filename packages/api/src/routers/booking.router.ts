@@ -413,23 +413,27 @@ export const bookingRouter = router({
           where: { salonId, startTime: { gte: prevStart, lt: periodStart } },
           select: { status: true },
         }),
-        // Current period revenue
-        ctx.prisma.payment.findMany({
+        // Current period revenue — based on appointment services (includes manual bookings)
+        ctx.prisma.appointmentService.findMany({
           where: {
-            appointment: { salonId },
-            status: 'PAID',
-            paidAt: { gte: periodStart },
+            appointment: {
+              salonId,
+              startTime: { gte: periodStart },
+              status: { in: ['COMPLETED', 'CONFIRMED', 'IN_PROGRESS'] },
+            },
           },
-          select: { amount: true, paidAt: true },
+          select: { price: true, appointment: { select: { startTime: true } } },
         }),
         // Previous period revenue
-        ctx.prisma.payment.aggregate({
+        ctx.prisma.appointmentService.aggregate({
           where: {
-            appointment: { salonId },
-            status: 'PAID',
-            paidAt: { gte: prevStart, lt: periodStart },
+            appointment: {
+              salonId,
+              startTime: { gte: prevStart, lt: periodStart },
+              status: { in: ['COMPLETED', 'CONFIRMED', 'IN_PROGRESS'] },
+            },
           },
-          _sum: { amount: true },
+          _sum: { price: true },
         }),
         // Revenue by service
         ctx.prisma.appointmentService.groupBy({
@@ -495,11 +499,11 @@ export const bookingRouter = router({
       // Revenue over time (group by day or month depending on period)
       const revenueByDay = new Map<string, number>();
       for (const p of payments) {
-        if (!p.paidAt) continue;
+        const aptDate = p.appointment.startTime;
         const key: string = period === '12m'
-          ? `${p.paidAt.getFullYear()}-${String(p.paidAt.getMonth() + 1).padStart(2, '0')}`
-          : p.paidAt.toISOString().split('T')[0]!;
-        revenueByDay.set(key, (revenueByDay.get(key) ?? 0) + p.amount);
+          ? `${aptDate.getFullYear()}-${String(aptDate.getMonth() + 1).padStart(2, '0')}`
+          : aptDate.toISOString().split('T')[0]!;
+        revenueByDay.set(key, (revenueByDay.get(key) ?? 0) + p.price);
       }
 
       // Build revenue timeline
@@ -543,11 +547,11 @@ export const bookingRouter = router({
       const completed = appointments.filter(a => a.status === 'COMPLETED').length;
       const cancelled = appointments.filter(a => a.status === 'CANCELLED_CLIENT' || a.status === 'CANCELLED_SALON').length;
       const noShow = appointments.filter(a => a.status === 'NO_SHOW').length;
-      const totalRevenue = payments.reduce((s, p) => s + p.amount, 0) / 100;
+      const totalRevenue = payments.reduce((s, p) => s + p.price, 0) / 100;
 
       const prevTotal = prevAppointments.length;
       const prevCompleted = prevAppointments.filter(a => a.status === 'COMPLETED').length;
-      const prevRevenue = (prevPayments._sum.amount ?? 0) / 100;
+      const prevRevenue = (prevPayments._sum.price ?? 0) / 100;
 
       const noShowRate = total > 0 ? Math.round((noShow / total) * 100) : 0;
       const cancellationRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
