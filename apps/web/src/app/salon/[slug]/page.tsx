@@ -7,6 +7,83 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { Button, Card, Header } from '@/components/ui';
 import { PaymentModal } from '@/components/payment/PaymentModal';
 
+function Lightbox({ images, initialIndex, onClose }: { images: string[]; initialIndex: number; onClose: () => void }) {
+  const [index, setIndex] = useState(initialIndex);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight') setIndex(i => (i + 1) % images.length);
+      if (e.key === 'ArrowLeft') setIndex(i => (i - 1 + images.length) % images.length);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [images.length, onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+      onClick={onClose}
+    >
+      {/* Close */}
+      <button
+        className="absolute top-4 right-4 text-white/80 hover:text-white bg-black/40 rounded-full w-10 h-10 flex items-center justify-center text-xl"
+        onClick={onClose}
+      >
+        ✕
+      </button>
+
+      {/* Counter */}
+      <span className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-sm">
+        {index + 1} / {images.length}
+      </span>
+
+      {/* Prev */}
+      {images.length > 1 && (
+        <button
+          className="absolute left-4 text-white/80 hover:text-white bg-black/40 rounded-full w-10 h-10 flex items-center justify-center text-xl"
+          onClick={(e) => { e.stopPropagation(); setIndex(i => (i - 1 + images.length) % images.length); }}
+        >
+          ‹
+        </button>
+      )}
+
+      {/* Image */}
+      <img
+        src={images[index]}
+        alt={`Photo ${index + 1}`}
+        className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+
+      {/* Next */}
+      {images.length > 1 && (
+        <button
+          className="absolute right-4 text-white/80 hover:text-white bg-black/40 rounded-full w-10 h-10 flex items-center justify-center text-xl"
+          onClick={(e) => { e.stopPropagation(); setIndex(i => (i + 1) % images.length); }}
+        >
+          ›
+        </button>
+      )}
+
+      {/* Thumbnails */}
+      {images.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          {images.map((img, i) => (
+            <button
+              key={i}
+              onClick={(e) => { e.stopPropagation(); setIndex(i); }}
+              className={`w-12 h-8 rounded overflow-hidden border-2 transition-all ${i === index ? 'border-white' : 'border-transparent opacity-60 hover:opacity-90'}`}
+            >
+              <img src={img} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SalonDetailPage() {
   const params = useParams();
   const slug = params['slug'] as string;
@@ -65,6 +142,8 @@ export default function SalonDetailPage() {
       setBookingError(err.message);
     },
   });
+
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const [selectedService, setSelectedService] = useState<string | null>(pendingBooking?.service ?? null);
   const [selectedPro, setSelectedPro] = useState<string | null>(pendingBooking?.pro ?? null);
@@ -202,6 +281,12 @@ export default function SalonDetailPage() {
     );
   }
 
+  // All photos for lightbox: cover first, then gallery
+  const allPhotos = [
+    ...(salon.coverImage ? [salon.coverImage] : []),
+    ...(salon.images ?? []),
+  ];
+
   // Calculate average rating
   const averageRating = salon.reviews && salon.reviews.length > 0
     ? (salon.reviews.reduce((sum, r) => sum + r.rating, 0) / salon.reviews.length).toFixed(1)
@@ -223,8 +308,20 @@ export default function SalonDetailPage() {
         </div>
       )}
 
+      {/* Lightbox */}
+      {lightboxIndex !== null && allPhotos.length > 0 && (
+        <Lightbox
+          images={allPhotos}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+
       {/* Cover Image */}
-      <div className="relative h-64 md:h-80 bg-gradient-to-br from-cream-400 to-cream-600">
+      <div
+        className={`relative h-64 md:h-80 bg-gradient-to-br from-cream-400 to-cream-600 ${allPhotos.length > 0 ? 'cursor-pointer' : ''}`}
+        onClick={() => allPhotos.length > 0 && setLightboxIndex(0)}
+      >
         {salon.coverImage && (
           <img
             src={salon.coverImage}
@@ -233,6 +330,15 @@ export default function SalonDetailPage() {
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        {/* Photo count badge */}
+        {allPhotos.length > 0 && (
+          <div className="absolute bottom-20 right-4 bg-black/50 text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {allPhotos.length} photo{allPhotos.length > 1 ? 's' : ''}
+          </div>
+        )}
 
         {/* Favorite Button */}
         {user && (
@@ -341,16 +447,30 @@ export default function SalonDetailPage() {
             {/* Gallery */}
             {salon.images && salon.images.length > 0 && (
               <Card>
-                <h2 className="text-xl font-semibold text-coffee-800 mb-4">Photos</h2>
+                <h2 className="text-xl font-semibold text-coffee-800 mb-4">Photos ({salon.images.length})</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {salon.images.map((url: string, i: number) => (
-                    <img
-                      key={i}
-                      src={url}
-                      alt={`${salon.name} photo ${i + 1}`}
-                      className="w-full h-48 object-cover rounded-xl hover:opacity-90 transition-opacity cursor-pointer"
-                    />
-                  ))}
+                  {salon.images.map((url: string, i: number) => {
+                    // index in allPhotos: cover takes index 0, gallery starts at 1 if cover exists
+                    const lightboxIdx = salon.coverImage ? i + 1 : i;
+                    return (
+                      <div
+                        key={i}
+                        className="relative overflow-hidden rounded-xl cursor-pointer group"
+                        onClick={() => setLightboxIndex(lightboxIdx)}
+                      >
+                        <img
+                          src={url}
+                          alt={`${salon.name} photo ${i + 1}`}
+                          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                          </svg>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </Card>
             )}
